@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Build/output files
+dist/
+build/
+
+# Log files
+*.log
+
+# Environment variables
+.env
+
+# IDE-specific files
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
+
+# Uncompiled source files (if applicable)
+*.scss
