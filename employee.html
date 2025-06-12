@@ -444,7 +444,11 @@
             <nav class="nav-menu">
                 <div class="nav-group">
                     <div class="nav-group-title">Khách hàng</div>
-                    <div class="nav-item active">
+                    <div class="nav-item">
+                        <span class="material-icons">group_add</span>
+                        Tạo mới khách hàng
+                    </div>
+                    <div class="nav-item activeactive">
                         <span class="material-icons">group_add</span>
                         Quản lý khách hàng
                     </div>
@@ -504,7 +508,7 @@
 
         <main class="main-content">
             <div class="stats-grid">
-                <div class="stat-card">
+                <div class="stat-card" >
                     <div class="stat-header">
                         <div class="stat-icon orders">
                             <span class="material-icons">receipt</span>
@@ -563,6 +567,7 @@
             </div>
 
             <div class="content-grid">
+                <!-- Tao don thuoc moi -->
                 <div class="form-container">
                     <h3 class="form-title">
                         <span class="material-icons">receipt_long</span>
@@ -605,7 +610,7 @@
                         </button>
                     </form>
                 </div>
-
+                <!-- danh sachs khach hang  -->
                 <div class="customers-list">
                     <h3 class="form-title" style="margin-bottom: 20px;">Khách hàng gần đây</h3>
                     <div class="customer-item">
@@ -645,7 +650,7 @@
                     </div>
                 </div>
             </div>
-
+<!-- Hien thi danh sach khach hang -->
             <div class="form-container">
                 <h3 class="form-title" style="margin-bottom: 20px;">
                     <span class="material-icons">medication</span>
@@ -688,6 +693,11 @@
     </div>
 
     <script>
+        document.querySelector('.stats-grid').style.display = 'none';
+        document.querySelector('.schedule-container').style.display = 'none';
+        document.querySelector('.content-grid').style.display = '';
+        document.querySelector('.form-container').style.display = '';
+
         // Tự động cập nhật thời gian
         function updateTime() {
             const now = new Date();
