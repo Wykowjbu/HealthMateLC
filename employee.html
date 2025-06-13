@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -24,7 +25,7 @@
             grid-template-columns: 280px 1fr;
             grid-template-rows: 70px 1fr;
             height: 100vh;
-            grid-template-areas: 
+            grid-template-areas:
                 "sidebar header"
                 "sidebar main";
         }
@@ -38,7 +39,7 @@
 
         .sidebar-header {
             padding: 20px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .logo {
@@ -75,11 +76,11 @@
         }
 
         .nav-item:hover {
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.1);
         }
 
         .nav-item.active {
-            background: rgba(255,255,255,0.2);
+            background: rgba(255, 255, 255, 0.2);
             border-right: 3px solid white;
         }
 
@@ -90,7 +91,7 @@
             align-items: center;
             justify-content: space-between;
             padding: 0 30px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             z-index: 100;
         }
 
@@ -165,7 +166,7 @@
             background: white;
             padding: 20px;
             border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
             transition: transform 0.3s ease;
         }
 
@@ -190,10 +191,21 @@
             color: white;
         }
 
-        .stat-icon.orders { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-        .stat-icon.customers { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
-        .stat-icon.revenue { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
-        .stat-icon.time { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .stat-icon.orders {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .stat-icon.customers {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+
+        .stat-icon.revenue {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+
+        .stat-icon.time {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
 
         .stat-value {
             font-size: 28px;
@@ -218,7 +230,7 @@
             background: white;
             padding: 25px;
             border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
         }
 
         .form-title {
@@ -292,7 +304,7 @@
             background: white;
             padding: 25px;
             border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
         }
 
         .customer-item {
@@ -341,7 +353,7 @@
             background: white;
             padding: 25px;
             border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
             margin-bottom: 30px;
         }
 
@@ -390,7 +402,7 @@
             background: white;
             padding: 15px;
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
             border: 1px solid #e2e8f0;
         }
 
@@ -413,25 +425,26 @@
         @media (max-width: 768px) {
             .dashboard {
                 grid-template-columns: 1fr;
-                grid-template-areas: 
+                grid-template-areas:
                     "header"
                     "main";
             }
-            
+
             .sidebar {
                 display: none;
             }
-            
+
             .content-grid {
                 grid-template-columns: 1fr;
             }
-            
+
             .stats-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
         }
     </style>
 </head>
+
 <body>
     <div class="dashboard">
         <aside class="sidebar">
@@ -444,43 +457,37 @@
             <nav class="nav-menu">
                 <div class="nav-group">
                     <div class="nav-group-title">Khách hàng</div>
-                    <div class="nav-item">
+                    <div class="nav-item" class="tao-moi-khach-hang">
                         <span class="material-icons">group_add</span>
                         Tạo mới khách hàng
                     </div>
-                    <div class="nav-item activeactive">
+                    <div class="nav-item activeactive" class="danh-sach-khach-hang">
                         <span class="material-icons">group_add</span>
-                        Quản lý khách hàng
+                        Danh sách khách hàng
                     </div>
-                    <div class="nav-item">
-                        <span class="material-icons">search</span>
-                        Tìm kiếm
-                    </div>
+
                 </div>
-                
+
                 <div class="nav-group">
                     <div class="nav-group-title">Đơn hàng</div>
-                    <div class="nav-item">
+                    <div class="nav-item" class="tao-don-thuoc">
                         <span class="material-icons">receipt_long</span>
                         Tạo đơn thuốc
                     </div>
-                    <div class="nav-item">
-                        <span class="material-icons">shopping_cart</span>
-                        Tạo đơn bán
-                    </div>
-                    <div class="nav-item">
+
+                    <div class="nav-item" class="danh-sach-don-hang">
                         <span class="material-icons">keyboard_return</span>
-                        Quản lý trả hàng
+                        Danh sách đơn hàng
                     </div>
                 </div>
-                
+
                 <div class="nav-group">
                     <div class="nav-group-title">Cá nhân</div>
-                    <div class="nav-item">
+                    <div class="nav-item" class="lich-lam-viec">
                         <span class="material-icons">schedule</span>
                         Lịch làm việc
                     </div>
-                    <div class="nav-item">
+                    <div class="nav-item" class="thong-tin-thuoc">
                         <span class="material-icons">medication</span>
                         Thông tin thuốc
                     </div>
@@ -507,8 +514,26 @@
         </header>
 
         <main class="main-content">
+            <div class="customers-list" >
+                <h3 class="form-title" style="margin-bottom: 20px;">Danh sách khách hàng</h3>
+                <div class="customer-item">
+                    <div id="customer-list"></div>
+                </div>
+            </div>
+            <div class="create-customer-form" id="create-customer-form">
+                <h3 class="form-title">Tạo khách hàng mới</h3>
+                <form id="customer-form">
+                    <input type="text" name="fullName" placeholder="Họ và tên" required>
+                    <input type="text" name="phone" placeholder="Số điện thoại">
+                    <input type="email" name="email" placeholder="Email">
+                    <textarea name="medicalHistory" placeholder="Tiểu sử bệnh"></textarea>
+                    <textarea name="allergies" placeholder="Dị ứng"></textarea>
+                    <button type="submit">Tạo khách hàng</button>
+                </form>
+            </div>
+
             <div class="stats-grid">
-                <div class="stat-card" >
+                <div class="stat-card">
                     <div class="stat-header">
                         <div class="stat-icon orders">
                             <span class="material-icons">receipt</span>
@@ -517,7 +542,7 @@
                     <div class="stat-value">24</div>
                     <div class="stat-label">Đơn hôm nay</div>
                 </div>
-                
+
                 <div class="stat-card">
                     <div class="stat-header">
                         <div class="stat-icon customers">
@@ -527,7 +552,7 @@
                     <div class="stat-value">18</div>
                     <div class="stat-label">Khách hàng mới</div>
                 </div>
-                
+
                 <div class="stat-card">
                     <div class="stat-header">
                         <div class="stat-icon revenue">
@@ -537,7 +562,7 @@
                     <div class="stat-value">2.4M</div>
                     <div class="stat-label">Doanh số hôm nay</div>
                 </div>
-                
+
                 <div class="stat-card">
                     <div class="stat-header">
                         <div class="stat-icon time">
@@ -578,12 +603,12 @@
                             <label class="form-label">Số điện thoại khách hàng</label>
                             <input type="tel" class="form-input" placeholder="0901234567">
                         </div>
-                        
+
                         <div class="form-group">
                             <label class="form-label">Tên khách hàng</label>
                             <input type="text" class="form-input" placeholder="Nguyễn Văn A" readonly>
                         </div>
-                        
+
                         <div class="form-group">
                             <label class="form-label">Chọn thuốc</label>
                             <select class="form-select">
@@ -593,17 +618,17 @@
                                 <option>Aspirin 100mg</option>
                             </select>
                         </div>
-                        
+
                         <div class="form-group">
                             <label class="form-label">Số lượng</label>
                             <input type="number" class="form-input" placeholder="1" min="1">
                         </div>
-                        
+
                         <div class="form-group">
                             <label class="form-label">Ghi chú</label>
                             <textarea class="form-input" rows="3" placeholder="Uống sau ăn, ngày 3 lần..."></textarea>
                         </div>
-                        
+
                         <button type="submit" class="btn btn-primary">
                             <span class="material-icons">add_shopping_cart</span>
                             Thêm vào đơn
@@ -612,45 +637,13 @@
                 </div>
                 <!-- danh sachs khach hang  -->
                 <div class="customers-list">
-                    <h3 class="form-title" style="margin-bottom: 20px;">Khách hàng gần đây</h3>
+                    <h3 class="form-title" style="margin-bottom: 20px;">Danh sách khách hàng</h3>
                     <div class="customer-item">
-                        <div class="customer-avatar">NV</div>
-                        <div class="customer-info">
-                            <h4>Nguyễn Văn An</h4>
-                            <p>0901234567 • Mua lần cuối: 10/05/2025</p>
-                        </div>
-                    </div>
-                    <div class="customer-item">
-                        <div class="customer-avatar">LT</div>
-                        <div class="customer-info">
-                            <h4>Lê Thị Bình</h4>
-                            <p>0912345678 • Mua lần cuối: 09/05/2025</p>
-                        </div>
-                    </div>
-                    <div class="customer-item">
-                        <div class="customer-avatar">TM</div>
-                        <div class="customer-info">
-                            <h4>Trần Minh Châu</h4>
-                            <p>0923456789 • Mua lần cuối: 08/05/2025</p>
-                        </div>
-                    </div>
-                    <div class="customer-item">
-                        <div class="customer-avatar">PH</div>
-                        <div class="customer-info">
-                            <h4>Phạm Hoàng Dũng</h4>
-                            <p>0934567890 • Mua lần cuối: 07/05/2025</p>
-                        </div>
-                    </div>
-                    <div class="customer-item">
-                        <div class="customer-avatar">VT</div>
-                        <div class="customer-info">
-                            <h4>Võ Thị Emy</h4>
-                            <p>0945678901 • Mua lần cuối: 06/05/2025</p>
-                        </div>
+                        <div id="customer-list"></div>
                     </div>
                 </div>
             </div>
-<!-- Hien thi danh sach khach hang -->
+            <!-- Hien thi d -->
             <div class="form-container">
                 <h3 class="form-title" style="margin-bottom: 20px;">
                     <span class="material-icons">medication</span>
@@ -693,35 +686,95 @@
     </div>
 
     <script>
-        document.querySelector('.stats-grid').style.display = 'none';
-        document.querySelector('.schedule-container').style.display = 'none';
-        document.querySelector('.content-grid').style.display = '';
-        document.querySelector('.form-container').style.display = '';
-
+        
         // Tự động cập nhật thời gian
         function updateTime() {
             const now = new Date();
             const timeString = now.toLocaleTimeString('vi-VN');
             document.querySelector('.schedule-time').textContent = timeString;
         }
-        
         setInterval(updateTime, 1000);
-        
-        // Xử lý form tạo đơn thuốc
-        document.querySelector('form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            alert('Đã thêm thuốc vào đơn thành công!');
-        });
-        
-        // Xử lý click khách hàng
-        document.querySelectorAll('.customer-item').forEach(item => {
-            item.addEventListener('click', function() {
-                const name = this.querySelector('h4').textContent;
-                const phone = this.querySelector('p').textContent.split(' • ')[0];
-                document.querySelector('input[type="tel"]').value = phone;
-                document.querySelector('input[type="text"]').value = name;
+
+
+
+
+
+        //  ham lay list customer tu data
+        async function fetchCustomers() {
+            try {
+                console.log("Fetching customers...");
+                const response = await fetch('http://localhost:8080/employee/danh-sach-khach-hang', {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                const customers = await response.json();
+                console.log("Received customers:", customers);
+                displayCustomers(customers);
+            } catch (error) {
+                console.error('Error fetching customers:', error);
+            }
+        }
+        //  ham hien thi list customer
+        function displayCustomers(customers) {
+            const customerList = document.getElementById('customer-list');
+            customerList.innerHTML = '';
+            customers.forEach(customer => {
+                const customerItem = document.createElement('div');
+                customerItem.className = 'customer-item';
+                const initials = customer.fullName.split(' ')
+                    .map(word => word.charAt(0))
+                    .slice(-2)
+                    .join('')
+                    .toUpperCase();
+                customerItem.innerHTML = `
+                    <div class="customer-avatar">${initials}</div>
+                    <div class="customer-info">
+                        <h4>${customer.fullName}</h4>
+                        <p>${customer.phone || 'N/A'} • Mua lần cuối: ${formatDate(customer.createdDate)}</p>
+                    </div>
+                `;
+                customerList.appendChild(customerItem);
             });
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('vi-VN');
+        }
+
+        document.addEventListener('DOMContentLoaded', fetchCustomers);
+        // Xử lý form tạo khách hàng
+        document.getElementById('create-customer-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const customer = {
+                fullName: formData.get('fullName'),
+                phone: formData.get('phone'),
+                email: formData.get('email') || null,
+                medicalHistory: formData.get('medicalHistory') || null,
+                allergies: formData.get('allergies') || null,
+                totalPoints: 0
+            };
+
+            try {
+                const response = await fetch('http://localhost:8080/employee/tao-moi-khach-hang', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(customer)
+                });
+                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+                const addNewCustomer = await response.json();
+                console.log('Customer created:', addNewCustomer);
+                
+            } catch (error) {
+                console.error('Error creating customer:', error);
+            }
         });
     </script>
 </body>
+
 </html>
