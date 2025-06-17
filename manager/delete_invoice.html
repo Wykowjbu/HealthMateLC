@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Xóa hóa đơn - Long Châu</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/manager/delete_invoice.css">
+
+</head>
+
+<body>
+  <div class="dashboard">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <span class="material-icons">store</span>
+          Long Châu Manager
+        </div>
+      </div>
+      <nav class="nav-menu">
+        <div class="nav-group">
+          <div class="nav-group-title">Báo cáo</div>
+          <div class="nav-item active">
+            <a href="/HealthMateLC/manager/manager.html">
+              <span class="material-icons">analytics</span>
+              Báo cáo doanh thu
+            </a>
+          </div>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-group-title">Quản lý nhân viên</div>
+          <div class="nav-item">
+            <a href="/HealthMateLC/manager/work_schedule.html">
+              <span class="material-icons">schedule</span>
+              Lịch làm việc
+            </a>
+          </div>
+          <div class="nav-item">
+            <a href="/HealthMateLC/manager/edit_schedule.html">
+              <span class="material-icons">edit_calendar</span>
+              Chỉnh sửa lịch
+            </a>
+          </div>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-group-title">Quản lý hóa đơn</div>
+          <div class="nav-item">
+            <a href="/HealthMateLC/manager/view_invoices.html">
+              <span class="material-icons">receipt</span>
+              Xem hóa đơn
+            </a>
+          </div>
+          <div class="nav-item">
+            <a href="/HealthMateLC/manager/edit_invoice.html">
+              <span class="material-icons">edit</span>
+              Chỉnh sửa hóa đơn
+            </a>
+          </div>
+          <div class="nav-item">
+            <a href="/HealthMateLC/manager/delete_invoice.html">
+              <span class="material-icons">delete</span>
+              Xóa hóa đơn
+            </a>
+          </div>
+          <div class="nav-item">
+            <a href="/HealthMateLC/manager/export_vat.html">
+              <span class="material-icons">print</span>
+              Xuất VAT
+            </a>
+          </div>
+        </div>
+      </nav>
+    </aside>
+
+    <header class="header">
+      <h1 class="header-title">Xóa hóa đơn - Chi nhánh Quận 1</h1>
+      <div class="header-actions">
+        <button class="btn btn-primary">
+          <span class="material-icons">add</span>
+          Tạo hóa đơn mới
+        </button>
+        <div class="user-profile">
+          <div class="avatar">QL</div>
+          <div>
+            <div style="font-weight: 500;">Nguyễn Thị Lan</div>
+            <div style="font-size: 12px; color: #718096;">Quản lý chi nhánh</div>
+          </div>
+          <span class="material-icons">expand_more</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="main-content">
+      <div class="form-container">
+        <h3 class="chart-title" style="margin-bottom: 20px;">Xóa hóa đơn #1</h3>
+        <p style="margin-bottom: 20px;">Bạn có chắc chắn muốn xóa hóa đơn này? Hành động này không thể hoàn tác.</p>
+        <div class="form-group">
+          <label>Mã hóa đơn</label>
+          <input type="text" value="#1" readonly>
+        </div>
+        <div class="form-group">
+          <label>Khách hàng</label>
+          <input type="text" value="Nguyễn Thị Hoa" readonly>
+        </div>
+        <div class="form-group">
+          <label>Tổng tiền</label>
+          <input type="text" value="25,000đ" readonly>
+        </div>
+        <div class="form-group">
+          <label>Ngày hóa đơn</label>
+          <input type="text" value="11/06/2025" readonly>
+        </div>
+        <button class="btn btn-danger">
+          <span class="material-icons">delete</span>
+          Xóa hóa đơn
+        </button>
+      </div>
+    </main>
+  </div>
+</body>
+
+</html>
