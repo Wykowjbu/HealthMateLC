@@ -1,4 +1,4 @@
-<style>
+
     * {
       margin: 0;
       padding: 0;
@@ -209,9 +209,8 @@
       align-items: center;
       gap: 12px;
       width: 100%;
-
+      }
       .nav-item.active {
         background: rgba(255, 255, 255, 0.2);
         border-right: 3px solid white;
       }
-  </style>
