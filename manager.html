@@ -85,6 +85,16 @@
           <div id="userPharmacyName" style="font-size: 12px; color: #718096">Quản lý chi nhánh</div>
         </div>
         <span class="material-icons">expand_more</span>
+        <div class="user-dropdown" id="userDropdown">
+          <div class="dropdown-item" onclick="showUserInfo()">
+            <span class="material-icons">person</span>
+            <span>Thông tin cá nhân</span>
+          </div>
+          <div class="dropdown-item" onclick="logout()">
+            <span class="material-icons">logout</span>
+            <span>Đăng xuất</span>
+          </div>
+        </div>
       </div>
     </div>
   </header>
@@ -185,160 +195,6 @@
               </div>
             </div>
           </div>
-        </div>
-        <div class="chart-container" style="margin-bottom: 30px">
-          <div class="schedule-header">
-            <h3 class="chart-title">Lịch làm việc tuần này</h3>
-            <div class="schedule-actions">
-              <button class="btn" onclick="handleAddSchedule()">
-                <span class="material-icons">add</span>
-                Thêm lịch
-              </button>
-            </div>
-          </div>
-          <div class="schedule-grid">
-            <div class="schedule-day" onclick="handleScheduleDay('2025-05-12')">
-              <div class="day-name">Thứ 2</div>
-              <div class="day-date">12</div>
-              <div class="employee-shift">An (8-16h)</div>
-              <div class="employee-shift">Bình (16-24h)</div>
-            </div>
-            <div class="schedule-day" onclick="handleScheduleDay('2025-05-13')">
-              <div class="day-name">Thứ 3</div>
-              <div class="day-date">13</div>
-              <div class="employee-shift">Châu (8-16h)</div>
-              <div class="employee-shift">Dũng (16-24h)</div>
-            </div>
-            <div class="schedule-day" onclick="handleScheduleDay('2025-05-14')">
-              <div class="day-name">Thứ 4</div>
-              <div class="day-date">14</div>
-              <div class="employee-shift">Emy (8-16h)</div>
-              <div class="employee-shift">An (16-24h)</div>
-            </div>
-            <div class="schedule-day" onclick="handleScheduleDay('2025-05-15')">
-              <div class="day-name">Thứ 5</div>
-              <div class="day-date">15</div>
-              <div class="employee-shift">Bình (8-16h)</div>
-              <div class="employee-shift">Châu (16-24h)</div>
-            </div>
-            <div class="schedule-day" onclick="handleScheduleDay('2025-05-16')">
-              <div class="day-name">Thứ 6</div>
-              <div class="day-date">16</div>
-              <div class="employee-shift">Dũng (8-16h)</div>
-              <div class="employee-shift">Emy (16-24h)</div>
-            </div>
-            <div class="schedule-day" onclick="handleScheduleDay('2025-05-17')">
-              <div class="day-name">Thứ 7</div>
-              <div class="day-date">17</div>
-              <div class="employee-shift">An (8-16h)</div>
-              <div class="employee-shift">Bình (16-24h)</div>
-            </div>
-            <div class="schedule-day" onclick="handleScheduleDay('2025-05-18')">
-              <div class="day-name">Chủ nhật</div>
-              <div class="day-date">18</div>
-              <div class="employee-shift">Châu (8-16h)</div>
-              <div class="employee-shift">Dũng (16-24h)</div>
-            </div>
-          </div>
-        </div>
-        <div class="invoice-table">
-          <div class="table-header">
-            <h3 class="chart-title">Hóa đơn gần đây</h3>
-            <div class="table-actions">
-              <input type="text" placeholder="Tìm kiếm hóa đơn..." onkeyup="handleSearchInvoices(this.value)">
-              <select onchange="handleFilterInvoices(this.value)">
-                <option value="">Tất cả trạng thái</option>
-                <option value="COMPLETED">Hoàn thành</option>
-                <option value="PENDING">Chờ thanh toán</option>
-              </select>
-            </div>
-          </div>
-          <table class="table">
-            <thead>
-            <tr>
-              <th>Mã HĐ</th>
-              <th>Khách hàng</th>
-              <th>Ngày</th>
-              <th>Tổng tiền</th>
-              <th>Trạng thái</th>
-              <th>Thao tác</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr>
-              <td>#HD001</td>
-              <td>Nguyễn Văn An</td>
-              <td>12/05/2025</td>
-              <td>450,000đ</td>
-              <td>
-                <select onchange="handleStatusChange('HD001', this.value)">
-                  <option value="COMPLETED" selected>Hoàn thành</option>
-                  <option value="PENDING">Chờ thanh toán</option>
-                  <option value="CANCELLED">Đã hủy</option>
-                </select>
-              </td>
-              <td>
-                <button class="btn" onclick="handleInvoiceAction('HD001', 'view')" style="background: #e2e8f0; color: #4a5568; padding: 4px 8px;">
-                  <span class="material-icons" style="font-size: 16px">visibility</span>
-                </button>
-                <button class="btn" onclick="handleInvoiceAction('HD001', 'edit')" style="background: #e2e8f0; color: #4a5568; padding: 4px 8px;">
-                  <span class="material-icons" style="font-size: 16px">edit</span>
-                </button>
-                <button class="btn" onclick="handleInvoiceAction('HD001', 'delete')" style="background: #e2e8f0; color: #4a5568; padding: 4px 8px;">
-                  <span class="material-icons" style="font-size: 16px">delete</span>
-                </button>
-              </td>
-            </tr>
-            <tr>
-              <td>#HD002</td>
-              <td>Lê Thị Bình</td>
-              <td>12/05/2025</td>
-              <td>320,000đ</td>
-              <td>
-                <select onchange="handleStatusChange('HD002', this.value)">
-                  <option value="COMPLETED">Hoàn thành</option>
-                  <option value="PENDING" selected>Chờ thanh toán</option>
-                  <option value="CANCELLED">Đã hủy</option>
-                </select>
-              </td>
-              <td>
-                <button class="btn" onclick="handleInvoiceAction('HD002', 'view')" style="background: #e2e8f0; color: #4a5568; padding: 4px 8px;">
-                  <span class="material-icons" style="font-size: 16px">visibility</span>
-                </button>
-                <button class="btn" onclick="handleInvoiceAction('HD002', 'edit')" style="background: #e2e8f0; color: #4a5568; padding: 4px 8px;">
-                  <span class="material-icons" style="font-size: 16px">edit</span>
-                </button>
-                <button class="btn" onclick="handleInvoiceAction('HD002', 'delete')" style="background: #e2e8f0; color: #4a5568; padding: 4px 8px;">
-                  <span class="material-icons" style="font-size: 16px">delete</span>
-                </button>
-              </td>
-            </tr>
-            <tr>
-              <td>#HD003</td>
-              <td>Trần Minh Châu</td>
-              <td>11/05/2025</td>
-              <td>180,000đ</td>
-              <td>
-                <select onchange="handleStatusChange('HD003', this.value)">
-                  <option value="COMPLETED" selected>Hoàn thành</option>
-                  <option value="PENDING">Chờ thanh toán</option>
-                  <option value="CANCELLED">Đã hủy</option>
-                </select>
-              </td>
-              <td>
-                <button class="btn" onclick="handleInvoiceAction('HD003', 'view')" style="background: #e2e8f0; color: #4a5568; padding: 4px 8px;">
-                  <span class="material-icons" style="font-size: 16px">visibility</span>
-                </button>
-                <button class="btn" onclick="handleInvoiceAction('HD003', 'edit')" style="background: #e2e8f0; color: #4a5568; padding: 4px 8px;">
-                  <span class="material-icons" style="font-size: 16px">edit</span>
-                </button>
-                <button class="btn" onclick="handleInvoiceAction('HD003', 'delete')" style="background: #e2e8f0; color: #4a5568; padding: 4px 8px;">
-                  <span class="material-icons" style="font-size: 16px">delete</span>
-                </button>
-              </td>
-            </tr>
-            </tbody>
-          </table>
         </div>
       </div>
       <!-- Work Schedule Content -->
@@ -642,5 +498,3 @@
   </main>
 </div>
 <script src="assets/js/manager.js"></script>
-</body>
-</html>

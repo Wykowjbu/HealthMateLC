@@ -1,104 +1,145 @@
-  // Các hàm xử lý sự kiện
-  async function handleUserProfile() {
-      console.log('Đang hiển thị thông tin user...');
-      try {
-          const response = await fetch('http://localhost:8080/manager/profile?detail=true', {
-              method: 'GET',
-              credentials: 'include', // IMPORTANT: This ensures session cookies are sent
-              headers: {
-                  'Accept': 'application/json',
-              }
-          });
+async function handleUserProfile() {
+    console.log('Đang hiển thị thông tin user...');
+    try {
+        const response = await fetch('http://localhost:8080/manager/profile?detail=true', {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json',
+            }
+        });
 
-          if (!response.ok) {
-              // Nếu có lỗi HTTP, ném lỗi với status
-              if (response.status === 401) {
-                  // Unauthorized - redirect to login
-                  alert('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
-                  window.location.href = '/login.html'; // Adjust path as needed
-                  return;
-              }
-              throw new Error(`HTTP error! status: ${response.status}`);
-          }
+        if (!response.ok) {
+            if (response.status === 401) {
+                alert('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+                window.location.href = '/index.html';
+                return;
+            }
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-          const data = await response.json();
-          console.log('Dữ liệu user profile:', data);
+        const data = await response.json();
+        console.log('Dữ liệu user profile:', data);
 
-          // Cập nhật UI với dữ liệu người dùng nhận được từ backend
-          const userFullNameElement = document.getElementById('userFullName');
-          const userPharmacyNameElement = document.getElementById('userPharmacyName');
+        const userFullNameElement = document.getElementById('userFullName');
+        const userPharmacyNameElement = document.getElementById('userPharmacyName');
 
-          if (userFullNameElement && data.fullName) {
-              userFullNameElement.textContent = data.fullName;
-          }
-          if (userPharmacyNameElement && data.pharmacyName) {
-              userPharmacyNameElement.textContent = data.pharmacyName;
-          } else if (userPharmacyNameElement && data.pharmacyAddress) {
-              // Nếu không có pharmacyName nhưng có pharmacyAddress, hiển thị địa chỉ chi nhánh
-              userPharmacyNameElement.textContent = data.pharmacyAddress;
-          }
+        if (userFullNameElement && data.fullName) {
+            userFullNameElement.textContent = data.fullName;
+        }
+        if (userPharmacyNameElement && data.pharmacyName) {
+            userPharmacyNameElement.textContent = data.pharmacyName;
+        } else if (userPharmacyNameElement && data.pharmacyAddress) {
+            userPharmacyNameElement.textContent = data.pharmacyAddress;
+        }
 
-          console.log('Thông tin người dùng đã được tải và hiển thị.');
+        console.log('Thông tin người dùng đã được tải và hiển thị.');
 
-      } catch (error) {
-          console.error('Lỗi khi lấy thông tin user profile:', error);
-          alert('Không thể tải thông tin người dùng. Vui lòng thử lại. Lỗi: ' + error.message);
-      }
-  }
+    } catch (error) {
+        console.error('Lỗi khi lấy thông tin user profile:', error);
+        alert('Không thể tải thông tin người dùng. Vui lòng thử lại. Lỗi: ' + error.message);
+    }
+}
 
-  // Gọi hàm handleUserProfile() khi trang tải xong
-  document.addEventListener('DOMContentLoaded', handleUserProfile);
+function initializeUserDropdown() {
+    const userProfile = document.querySelector(".user-profile");
+    const userDropdown = document.getElementById("userDropdown");
 
-  function navigate(section) {
-    // Hide all sections
+    if (userProfile && userDropdown) {
+        userProfile.addEventListener("click", function (e) {
+            e.stopPropagation();
+            userDropdown.classList.toggle("show");
+        });
+
+        document.addEventListener("click", function (e) {
+            if (!userProfile.contains(e.target)) {
+                userDropdown.classList.remove("show");
+            }
+        });
+
+        userDropdown.addEventListener("click", function (e) {
+            e.stopPropagation();
+        });
+    }
+}
+
+function showUserInfo() {
+    console.log('Hiển thị thông tin cá nhân...');
+    // Chuyển hướng hoặc hiển thị modal thông tin cá nhân
+    // Ví dụ: window.location.href = '/profile.html';
+}
+
+function logout() {
+    console.log('Đang đăng xuất...');
+    fetch('http://localhost:8080/logout', {
+        method: 'POST',
+        credentials: 'include'
+    })
+    .then(response => {
+        if (response.ok) {
+            window.location.href = '/index.html';
+        } else {
+            alert('Đăng xuất thất bại. Vui lòng thử lại.');
+        }
+    })
+    .catch(error => {
+        console.error('Lỗi khi đăng xuất:', error);
+        alert('Đã xảy ra lỗi khi đăng xuất.');
+    });
+}
+
+function navigate(section) {
     document.querySelectorAll('.content-section').forEach(el => el.style.display = 'none');
-    // Show selected section
     document.getElementById(`${section}-section`).style.display = 'block';
-    // Update active nav item
     document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
     document.querySelector(`.nav-item[data-section="${section}"]`).classList.add('active');
-    // Update header title and action button
     const headerTitle = document.getElementById('header-title');
     const actionBtn = document.getElementById('header-action-btn');
     const actionText = document.getElementById('header-action-text');
     switch (section) {
-      case 'dashboard':
-        headerTitle.textContent = 'Chi nhánh Quận 1 - Nguyễn Huệ';
-        actionText.textContent = 'Tạo lịch làm việc';
-        actionBtn.onclick = handleCreateSchedule;
-        break;
-      case 'work_schedule':
-        headerTitle.textContent = 'Lịch làm việc - Chi nhánh Quận 1';
-        actionText.textContent = 'Tạo lịch làm việc';
-        actionBtn.onclick = handleCreateSchedule;
-        break;
-      case 'edit_schedule':
-        headerTitle.textContent = 'Chỉnh sửa lịch - Chi nhánh Quận 1';
-        actionText.textContent = 'Tạo lịch làm việc';
-        actionBtn.onclick = handleCreateSchedule;
-        break;
-      case 'view_invoices':
-        headerTitle.textContent = 'Xem hóa đơn - Chi nhánh Quận 1';
-        actionText.textContent = 'Tạo hóa đơn mới';
-        actionBtn.onclick = createInvoice;
-        break;
-      case 'edit_invoice':
-        headerTitle.textContent = 'Chỉnh sửa hóa đơn - Chi nhánh Quận 1';
-        actionText.textContent = 'Tạo hóa đơn mới';
-        actionBtn.onclick = createInvoice;
-        break;
-      case 'delete_invoice':
-        headerTitle.textContent = 'Xóa hóa đơn - Chi nhánh Quận 1';
-        actionText.textContent = 'Tạo hóa đơn mới';
-        actionBtn.onclick = createInvoice;
-        break;
-      case 'export_vat':
-        headerTitle.textContent = 'Xuất VAT - Chi nhánh Quận 1';
-        actionText.textContent = 'Tạo hóa đơn mới';
-        actionBtn.onclick = createInvoice;
-        break;
+        case 'dashboard':
+            headerTitle.textContent = 'Chi nhánh Quận 1 - Nguyễn Huệ';
+            actionText.textContent = 'Tạo lịch làm việc';
+            actionBtn.onclick = handleCreateSchedule;
+            break;
+        case 'work_schedule':
+            headerTitle.textContent = 'Lịch làm việc - Chi nhánh Quận 1';
+            actionText.textContent = 'Tạo lịch làm việc';
+            actionBtn.onclick = handleCreateSchedule;
+            break;
+        case 'edit_schedule':
+            headerTitle.textContent = 'Chỉnh sửa lịch - Chi nhánh Quận 1';
+            actionText.textContent = 'Tạo lịch làm việc';
+            actionBtn.onclick = handleCreateSchedule;
+            break;
+        case 'view_invoices':
+            headerTitle.textContent = 'Xem hóa đơn - Chi nhánh Quận 1';
+            actionText.textContent = 'Tạo hóa đơn mới';
+            actionBtn.onclick = createInvoice;
+            break;
+        case 'edit_invoice':
+            headerTitle.textContent = 'Chỉnh sửa hóa đơn - Chi nhánh Quận 1';
+            actionText.textContent = 'Tạo hóa đơn mới';
+            actionBtn.onclick = createInvoice;
+            break;
+        case 'delete_invoice':
+            headerTitle.textContent = 'Xóa hóa đơn - Chi nhánh Quận 1';
+            actionText.textContent = 'Tạo hóa đơn mới';
+            actionBtn.onclick = createInvoice;
+            break;
+        case 'export_vat':
+            headerTitle.textContent = 'Xuất VAT - Chi nhánh Quận 1';
+            actionText.textContent = 'Tạo hóa đơn mới';
+            actionBtn.onclick = createInvoice;
+            break;
     }
-  }
+
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    handleUserProfile();
+    initializeUserDropdown();
+});
 
   function handleStatCard(type) {
     console.log(`Stat card clicked: ${type}`);
