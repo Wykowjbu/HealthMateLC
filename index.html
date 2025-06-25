@@ -43,7 +43,7 @@
                         </div>
                     </div>
                     <button type="submit" id="loginButton" class="primary-button">Đăng nhập</button>
-                    <a href="javascript:void(0)" class="forgot-password-link">Quên mật khẩu</a>
+                    <a href="resetpass.html" class="forgot-password-link">Quên mật khẩu</a>
 
                 </div>
             </div>
@@ -131,6 +131,11 @@
             document.getElementById('message').innerHTML = '<div class="error">' + decodeURIComponent(message) + '</div>';
         }
     });
+
+        document.getElementById('showPassword').addEventListener('change', function() {
+            const passwordInput = document.getElementById('password');
+            passwordInput.type = this.checked ? 'text' : 'password';
+        });
 </script>
 <!-- Add JavaScript file reference -->
 <!-- <script src="assets/js/login.js"></script> -->
