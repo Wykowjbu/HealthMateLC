@@ -107,7 +107,7 @@ function setActiveNav(activeElement) {
 
 // Section Management Functions
 function hideAllSections() {
-    // Hide main sections
+    // Ẩn tất cả các section
     const customerContainer = document.querySelector(".customer-container")
     const createOrderForm = document.getElementById("createOrderForm")
     const scheduleContainer = document.getElementById("scheduleContainer")
@@ -118,7 +118,7 @@ function hideAllSections() {
     if (scheduleContainer) scheduleContainer.style.display = "none"
     if (mainEditCustomerSection) mainEditCustomerSection.style.display = "none"
 }
-
+// 
 function showCustomerSection() {
     hideAllSections()
     currentSection = "customers"
