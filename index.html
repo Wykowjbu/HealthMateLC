@@ -1,138 +1,67 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tài khoản sử dụng mọi dịch vụ - FPT</title>
-    <link href="assets/css/login.css" rel="stylesheet"/>
+    <link href="assets/css/login.css" rel="stylesheet" />
     <!-- Thêm vào <head> -->
     <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
+
 <body>
-<!-- Left Section - Login Form -->
-<div id="background-img-container">
-    <img class="background-1" src="assets/img/fpt_svg1.svg" alt="Background 1"/>
-    <img class="background-2" src="assets/img/fpt_svg2.svg" alt="Background 2"/>
-</div>
-<section class="grid-gallery">
-    <img src="assets/img/services.jpg">
-</section>
+    <!-- Left Section - Login Form -->
+    <div id="background-img-container">
+        <img class="background-1" src="assets/img/fpt_svg1.svg" alt="Background 1" />
+        <img class="background-2" src="assets/img/fpt_svg2.svg" alt="Background 2" />
+    </div>
+    <section class="grid-gallery">
+        <img src="assets/img/services_new.png">
+    </section>
 
-<!-- Right Section - Login Form -->
-<section class="form-container clear-white-bg">
-    <form id="loginForm" class="form" style="align-content: stretch;">
-        <div id="username-area" class="form-container clear-white-bg">
-            <div id="username-input-area" class="form" style="margin: inherit; align-content: stretch;">
-                <div class="connect">
-                    <img onerror="fallBackImg(this)" src="https://accounts.fpt.vn/sso/api/bucket/LongChau/Logo">
-                </div>
-                <div class="form-body">
-                    <div class="input-field required input-bind">
-                        <span class="f-name bold">Tên đăng nhập</span>
-                        <div class="f-input">
-                            <input placeholder="Nhập tên đăng nhập" type="text" maxlength="100" id="username"
-                                   class="enter-bind" inputmode="numeric">
-                        </div>
-                        <div class="f-input">
-                            <input placeholder="Nhập mật khẩu" type="password" maxlength="100" id="password"
-                                   class="enter-bind">
-                        </div>
-                        <!-- Thêm checkbox hiện mật khẩu -->
-                        <div style="margin-top: 8px;">
-                            <input type="checkbox" id="showPassword"> <label for="showPassword">Hiện mật khẩu</label>
-                        </div>
+    <!-- Right Section - Login Form -->
+    <section class="form-container clear-white-bg">
+        <form id="loginForm" class="form" style="align-content: stretch;">
+            <div id="username-area" class="form-container clear-white-bg">
+                <div id="username-input-area" class="form" style="margin: inherit; align-content: stretch;">
+                    <div class="connect">
+                        <img onerror="fallBackImg(this)" src="https://accounts.fpt.vn/sso/api/bucket/LongChau/Logo">
                     </div>
-                    <button type="submit" id="loginButton" class="primary-button">Đăng nhập</button>
-                    <a href="javascript:void(0)" class="forgot-password-link">Quên mật khẩu</a>
+                    <div class="form-body">
+                        <div class="input-field required input-bind">
+                            <span class="f-name bold">Tên đăng nhập</span>
+                            <div class="f-input">
+                                <input placeholder="Nhập tên đăng nhập" type="text" maxlength="100" id="username"
+                                    class="enter-bind" inputmode="numeric">
+                            </div>
+                            <div class="f-input">
+                                <input placeholder="Nhập mật khẩu" type="password" maxlength="100" id="password"
+                                    class="enter-bind">
+                            </div>
+                            <!-- Thêm checkbox hiện mật khẩu -->
+                            <div style="margin-top: 8px;">
+                                <input type="checkbox" id="showPassword"> <label for="showPassword">Hiện mật
+                                    khẩu</label>
+                            </div>
+                        </div>
+                        <button type="submit" id="loginButton" class="primary-button">Đăng nhập</button>
+                        <a href="javascript:void(0)" class="forgot-password-link">Quên mật khẩu</a>
 
+                    </div>
                 </div>
             </div>
+        </form>
+        <!-- Div để hiển thị thông báo -->
+        <div id="message"></div>
+
+        <!-- Loading indicator -->
+        <div id="loading" class="loading">
+
         </div>
-    </form>
-    <!-- Div để hiển thị thông báo -->
-    <div id="message"></div>
-
-    <!-- Loading indicator -->
-    <div id="loading" class="loading">
-        
-    </div>
-</section>
-<script>
-     document.getElementById('loginForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const username = document.getElementById('username').value.trim();
-        const password = document.getElementById('password').value.trim();
-        const messageDiv = document.getElementById('message');
-        const loadingDiv = document.getElementById('loading');
-        const loginButton = document.getElementById('loginButton');
-
-        // Validate input
-        if (!username || !password) {
-            messageDiv.innerHTML = '<div class="error">Vui lòng nhập đầy đủ tên người dùng và mật khẩu!</div>';
-            return;
-        }
-
-        // Show loading
-        loadingDiv.style.display = 'block';
-        loginButton.disabled = true;
-        messageDiv.innerHTML = '<p>Đang xử lý...</p>';
-
-        try {
-            const response = await fetch('http://localhost:8080/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    username: username,
-                    password: password
-                }),
-            });
-
-            // Parse JSON response
-            const data = await response.json();
-
-            if (response.ok && data.success) {
-                messageDiv.innerHTML = '<div class="success">' + data.message + '</div>';
-
-                // Chuyển hướng sau 1 giây
-                setTimeout(() => {
-                    window.location.href = data.redirectUrl ;
-                }, 1000);
-
-            } else {
-                messageDiv.innerHTML = '<div class="error">' + (data.message || 'Đăng nhập thất bại!') + '</div>';
-            }
-
-        } catch (error) {
-            console.error('Login error:', error);
-            messageDiv.innerHTML = '<div class="error">Có lỗi xảy ra khi kết nối đến server. Vui lòng thử lại!</div>';
-        } finally {
-            // Hide loading
-            loadingDiv.style.display = 'none';
-            loginButton.disabled = false;
-        }
-    });
-
-    // Clear message when user starts typing
-    document.getElementById('username').addEventListener('input', clearMessage);
-    document.getElementById('password').addEventListener('input', clearMessage);
-
-    function clearMessage() {
-        document.getElementById('message').innerHTML = '';
-    }
-
-    // Check for URL parameters (error messages)
-    window.addEventListener('load', () => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const message = urlParams.get('message');
-        if (message) {
-            document.getElementById('message').innerHTML = '<div class="error">' + decodeURIComponent(message) + '</div>';
-        }
-    });
-</script>
-<!-- Add JavaScript file reference -->
-<!-- <script src="assets/js/login.js"></script> -->
+    </section>
+    <!-- Add JavaScript file reference -->
+    <script src="assets/js/login.js"></script>
 </body>
+
 </html>
