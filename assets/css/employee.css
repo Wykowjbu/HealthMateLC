@@ -232,8 +232,7 @@ body {
 }
 
 .customers-list-page.shrink {
-  transform: translateX(-50%);
-  opacity: 0.3;
+  width: 50%;
 }
 
 .customers-list-page.hide {
