@@ -1,64 +1,63 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tài khoản sử dụng mọi dịch vụ - FPT</title>
-    <link href="assets/css/login.css" rel="stylesheet"/>
+    <link href="assets/css/login.css" rel="stylesheet" />
     <!-- Thêm vào <head> -->
     <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
+
 <body>
-<!-- Left Section - Login Form -->
-<div id="background-img-container">
-    <img class="background-1" src="assets/img/fpt_svg1.svg" alt="Background 1"/>
-    <img class="background-2" src="assets/img/fpt_svg2.svg" alt="Background 2"/>
-</div>
-<section class="grid-gallery">
-    <img src="assets/img/services.jpg">
-</section>
+    <!-- Left Section - Login Form -->
+    <div id="background-img-container">
+        <img class="background-1" src="assets/img/fpt_svg1.svg" alt="Background 1" />
+        <img class="background-2" src="assets/img/fpt_svg2.svg" alt="Background 2" />
+    </div>
+    <section class="grid-gallery">
+        <img src="assets/img/services_new.png">
+    </section>
 
-<!-- Right Section - Login Form -->
-<section class="form-container clear-white-bg">
-    <form id="loginForm" class="form" style="align-content: stretch;">
-        <div id="username-area" class="form-container clear-white-bg">
-            <div id="username-input-area" class="form" style="margin: inherit; align-content: stretch;">
-                <div class="connect">
-                    <img onerror="fallBackImg(this)" src="https://accounts.fpt.vn/sso/api/bucket/LongChau/Logo">
-                </div>
-                <div class="form-body">
-                    <div class="input-field required input-bind">
-                        <span class="f-name bold">Tên đăng nhập</span>
-                        <div class="f-input">
-                            <input placeholder="Nhập tên đăng nhập" type="text" maxlength="100" id="username"
-                                   class="enter-bind" inputmode="numeric">
-                        </div>
-                        <div class="f-input">
-                            <input placeholder="Nhập mật khẩu" type="password" maxlength="100" id="password"
-                                   class="enter-bind">
-                        </div>
-                        <!-- Thêm checkbox hiện mật khẩu -->
-                        <div style="margin-top: 8px;">
-                            <input type="checkbox" id="showPassword"> <label for="showPassword">Hiện mật khẩu</label>
-                        </div>
+    <!-- Right Section - Login Form -->
+    <section class="form-container clear-white-bg">
+        <form id="loginForm" class="form" style="align-content: stretch;">
+            <div id="username-area" class="form-container clear-white-bg">
+                <div id="username-input-area" class="form" style="margin: inherit; align-content: stretch;">
+                    <div class="connect">
+                        <img onerror="fallBackImg(this)" src="https://accounts.fpt.vn/sso/api/bucket/LongChau/Logo">
                     </div>
-                    <button type="submit" id="loginButton" class="primary-button">Đăng nhập</button>
-                    <a href="javascript:void(0)" class="forgot-password-link">Quên mật khẩu</a>
+                    <div class="form-body">
+                        <div class="input-field required input-bind">
+                            <span class="f-name bold">Tên đăng nhập</span>
+                            <div class="f-input">
+                                <input placeholder="Nhập tên đăng nhập" type="text" maxlength="100" id="username"
+                                    class="enter-bind" inputmode="numeric">
+                            </div>
+                            <div class="f-input">
+                                <input placeholder="Nhập mật khẩu" type="password" maxlength="100" id="password"
+                                    class="enter-bind">
+                            </div>
+                            <!-- Thêm checkbox hiện mật khẩu -->
+                            <div style="margin-top: 8px;">
+                                <input type="checkbox" id="showPassword"> <label for="showPassword">Hiện mật
+                                    khẩu</label>
+                            </div>
+                        </div>
+                        <button type="submit" id="loginButton" class="primary-button">Đăng nhập</button>
+                        <a href="javascript:void(0)" class="forgot-password-link">Quên mật khẩu</a>
 
+                    </div>
                 </div>
             </div>
-        </div>
     </form>
     <!-- Div để hiển thị thông báo -->
     <div id="message"></div>
 
     <!-- Loading indicator -->
-    <div id="loading" class="loading">
-        
-    </div>
+    <div id="loading" class="loading"></div>
 </section>
-
-
 <!-- Add JavaScript file reference -->
 <script src="assets/js/login.js"></script>
 </body>
