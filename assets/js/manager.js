@@ -23,6 +23,7 @@ async function handleUserProfile() {
 
         const userFullNameElement = document.getElementById('userFullName');
         const userPharmacyNameElement = document.getElementById('userPharmacyName');
+        const branchElement = document.getElementById('branch');
 
         if (userFullNameElement && data.fullName) {
             userFullNameElement.textContent = data.fullName;
@@ -31,6 +32,11 @@ async function handleUserProfile() {
             userPharmacyNameElement.textContent = data.pharmacyName;
         } else if (userPharmacyNameElement && data.pharmacyAddress) {
             userPharmacyNameElement.textContent = data.pharmacyAddress;
+        }
+        if (branchElement && data.branch) {
+            branchElement.textContent = data.branch;
+        } else if (branchElement) {
+            branchElement.textContent = 'Chưa gán chi nhánh';
         }
 
         console.log('Thông tin người dùng đã được tải và hiển thị.');
@@ -146,7 +152,7 @@ async function logout() {
         if (response.ok) {
             const data = await response.json();
             console.log('Logout response:', data);
-            alert(data.message || 'Đăng xuất thành công!');
+           // alert(data.message || 'Đăng xuất thành công!');
             window.location.href = data.redirectUrl || '/HealthMateLC/index.html';
         } else {
             throw new Error('Đăng xuất thất bại. Vui lòng thử lại.');
