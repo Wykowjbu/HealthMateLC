@@ -1,10 +1,3 @@
-// Configuration object for environment-specific settings
-const config = {
-    API_BASE_URL: process.env.NODE_ENV === 'production'
-        ? 'https://healthmate-backend.onrender.com' // Replace with your deployed backend URL
-        : 'http://localhost:8080'
-};
-
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -26,15 +19,15 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     messageDiv.innerHTML = '<p>Đang xử lý...</p>';
 
     try {
-        const response = await fetch(`${config.API_BASE_URL}/login`, {
+        const response = await fetch('http://localhost:8080/login', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            credentials: 'include', // Include cookies for session management
+            credentials: 'include', // IMPORTANT: This ensures cookies are sent and received
             body: JSON.stringify({
-                username,
-                password
+                username: username,
+                password: password
             }),
         });
 
@@ -42,27 +35,25 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
         const data = await response.json();
 
         if (response.ok && data.success) {
-            messageDiv.innerHTML = '<div class="success">' + (data.message || 'Đăng nhập thành công!') + '</div>';
+            messageDiv.innerHTML = '<div class="success">' + data.message + '</div>';
 
-            // Validate redirect URL
-            if (!data.redirectUrl) {
-                throw new Error('Không nhận được URL chuyển hướng từ server');
+            // Store session info in localStorage (optional, for debugging)
+            if (data.sessionId) {
+                localStorage.setItem('sessionId', data.sessionId);
+            }
+            if (data.role) {
+                localStorage.setItem('userRole', data.role);
             }
 
-            // Redirect after 1 second
+            // Chuyển hướng sau 1 giây
             setTimeout(() => {
                 window.location.href = data.redirectUrl;
             }, 1000);
+
         } else {
-            // Handle specific error statuses
-            let errorMessage = data.message || 'Đăng nhập thất bại!';
-            if (response.status === 401) {
-                errorMessage = 'Tên đăng nhập hoặc mật khẩu không đúng!';
-            } else if (response.status === 500) {
-                errorMessage = 'Lỗi server. Vui lòng thử lại sau!';
-            }
-            messageDiv.innerHTML = '<div class="error">' + errorMessage + '</div>';
+            messageDiv.innerHTML = '<div class="error">' + (data.message || 'Đăng nhập thất bại!') + '</div>';
         }
+
     } catch (error) {
         console.error('Login error:', error);
         messageDiv.innerHTML = '<div class="error">Có lỗi xảy ra khi kết nối đến server. Vui lòng thử lại!</div>';
@@ -74,12 +65,12 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
 });
 
 // Clear message when user starts typing
-const clearMessage = () => {
-    document.getElementById('message').innerHTML = '';
-};
-
 document.getElementById('username').addEventListener('input', clearMessage);
 document.getElementById('password').addEventListener('input', clearMessage);
+
+function clearMessage() {
+    document.getElementById('message').innerHTML = '';
+}
 
 // Check for URL parameters (error messages)
 window.addEventListener('load', () => {
