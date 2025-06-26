@@ -268,40 +268,6 @@ async function fetchCustomers() {
     }
 }
 
-function displayMockCustomers() {
-    const mockCustomers = [
-        {
-            id: 1,
-            fullName: "Nguyễn Văn An",
-            phone: "0901234567",
-            email: "nguyenvanan@email.com",
-            allergies: "Không có",
-            totalPoints: 150,
-            createdDate: "2024-01-15",
-        },
-        {
-            id: 2,
-            fullName: "Trần Thị Bình",
-            phone: "0912345678",
-            email: "tranthibinh@email.com",
-            allergies: "Dị ứng penicillin",
-            totalPoints: 200,
-            createdDate: "2024-02-20",
-        },
-        {
-            id: 3,
-            fullName: "Lê Minh Cường",
-            phone: "0923456789",
-            email: "leminhcuong@email.com",
-            allergies: "Không có",
-            totalPoints: 75,
-            createdDate: "2024-03-10",
-        },
-    ]
-
-    customers = mockCustomers
-    displayCustomers(customers)
-}
 
 function displayCustomers(customerList) {
     const customerListContainer = document.getElementById("customer-list")
@@ -333,6 +299,7 @@ function displayCustomers(customerList) {
     })
 }
 
+// hiển thị chi tiết thông tin khách hàng khi mình click vao khach hàng bat kì
 function showCustomerDetails(customer) {
     currentCustomer = customer
 
@@ -349,6 +316,7 @@ function showCustomerDetails(customer) {
 
 // Event Handlers
 async function handleAddCustomer(event) {
+    
     event.preventDefault()
 
     const formData = {
