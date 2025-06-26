@@ -401,33 +401,25 @@ async function handleEditCustomer(event) {
     }
 
     try {
-        const response = await fetch(`http://localhost:8080/employee/cap-nhat-khach-hang/${currentCustomer.id}`, {
-            method: "PUT",
+        const response = await fetch("http://localhost:8080/employee/edit-customer-info", {
+            method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(formData),
         })
 
         if (response.ok) {
-            console.log("Customer updated successfully")
+            console.log("Chỉnh Sửa Thông Tin Khách Hàng Thành Công!")
             closeEditCustomerForm()
             fetchCustomers() // Refresh the customer list
             showNotification("Cập nhật thông tin thành công!", "success")
         } else {
-            throw new Error("Failed to update customer")
+            throw new Error("Lỗi Khi Cập Nhật Khách Hàng")
         }
     } catch (error) {
-        console.error("Error updating customer:", error)
-        // For demo purposes, update local array
-        const customerIndex = customers.findIndex((c) => c.id === currentCustomer.id)
-        if (customerIndex !== -1) {
-            customers[customerIndex] = { ...customers[customerIndex], ...formData }
-            displayCustomers(customers)
-            currentCustomer = customers[customerIndex]
-            showCustomerDetails(currentCustomer)
-        }
-        closeEditCustomerForm()
-        showNotification("Cập nhật thông tin thành công! (Demo mode)", "success")
+        console.error("Error updating customer: with full new namr "+{fullName}, error)
+        showNotification("Lỗi khi cập nhật thông tin khách hàng: " + error.message, "error");
     }
+    closeEditCustomerForm()
 }
 
 function handleSearch(event) {
