@@ -20,7 +20,7 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
   messageDiv.innerHTML = "<p>Đang xử lý...</p>";
 
   try {
-    const response = await fetch("http://localhost:8080/login", {
+    const response = await fetch("http://localhost:8080/api/auth/login", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
