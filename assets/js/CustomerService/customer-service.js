@@ -13,7 +13,7 @@ import {
   statsAPI,
   messageAPI,
   invoiceAPI,
-} from "./customer-service-api.js";
+} from "../customer-service-api.js";
 
 // Global variable for selected customer ID - accessible to both modules
 window.selectedCustomerId = null;
@@ -142,7 +142,10 @@ function updateUI() {
   }
 
   // Cập nhật số liệu thống kê trên dashboard
-  updateDashboardStats();
+  // Nếu không có hàm updateDashboardStats, bỏ qua lỗi này
+  if (typeof updateDashboardStats === "function") {
+    updateDashboardStats();
+  }
 
   // Start monitoring pharmacy dropdown for debugging
   try {

@@ -22,6 +22,10 @@ const reviewsPerPage = 5;
 // Use the selectedCustomerId variable from customer-service.js
 window.currentReviewId = null; // ID của đánh giá đang được xử lý
 
+// Biến để lưu trữ dữ liệu từ API
+let reviewsData = [];
+let upgradedCustomers = [];
+
 // Khởi tạo khi DOM load xong
 document.addEventListener("DOMContentLoaded", function () {
   // Khởi tạo biểu đồ
@@ -32,9 +36,49 @@ document.addEventListener("DOMContentLoaded", function () {
   // Thiết lập hiển thị ban đầu
   setupInitialDisplay();
 
+  // Đảm bảo dropdown filter nhà thuốc luôn được populate
+  const pharmacyFilter = document.getElementById("pharmacyFilter");
+  if (pharmacyFilter) {
+    populatePharmacies(pharmacyFilter);
+  }
+
   // Thiết lập global handlers
   setupGlobalHandlers();
+
+  // Hiển thị thông tin người đăng nhập lên header
+  displayCurrentUserHeader();
 });
+
+// Hiển thị thông tin người đăng nhập lên header
+async function displayCurrentUserHeader() {
+  try {
+    const user = await userAPI.getCurrentUser();
+    // Avatar
+    const avatarDiv = document.querySelector(".user-profile .avatar");
+    if (avatarDiv && user.name) {
+      const initials = user.name
+        .split(" ")
+        .map((w) => w[0])
+        .join("")
+        .substring(0, 2)
+        .toUpperCase();
+      avatarDiv.textContent = initials;
+    }
+    // Tên
+    const nameDiv = document.querySelector(
+      '.user-profile div > div[style*="font-weight"]'
+    );
+    if (nameDiv) nameDiv.textContent = user.name || "";
+    // Vai trò
+    const roleDiv = document.querySelector(
+      '.user-profile div > div[style*="font-size"]'
+    );
+    if (roleDiv) roleDiv.textContent = user.role || "";
+    // KHÔNG cập nhật các trường modal ở đây!
+  } catch (e) {
+    console.error("Không thể lấy thông tin người dùng:", e);
+  }
+}
 
 // Thiết lập hiển thị ban đầu
 function setupInitialDisplay() {
@@ -128,20 +172,30 @@ function setupEventListeners() {
     });
 
   // Pagination
-  document.getElementById("prevBtn").addEventListener("click", function () {
-    if (currentPage > 1) {
-      currentPage--;
-      loadReviews();
-    }
-  });
-
-  document.getElementById("nextBtn").addEventListener("click", function () {
-    const totalPages = Math.ceil(getFilteredReviews().length / reviewsPerPage);
-    if (currentPage < totalPages) {
-      currentPage++;
-      loadReviews();
-    }
-  });
+  const prevBtn = document.getElementById("prevBtn");
+  if (prevBtn) {
+    prevBtn.onclick = async function () {
+      const filteredReviews = await getFilteredReviews();
+      const totalPages = Math.ceil(filteredReviews.length / reviewsPerPage);
+      if (currentPage > 1) {
+        currentPage--;
+        // Nếu sau khi giảm currentPage mà vượt quá số trang hiện tại (do dữ liệu lọc thay đổi), set về trang cuối
+        if (currentPage > totalPages) currentPage = totalPages;
+        loadReviews();
+      }
+    };
+  }
+  const nextBtn = document.getElementById("nextBtn");
+  if (nextBtn) {
+    nextBtn.onclick = async function () {
+      const filteredReviews = await getFilteredReviews();
+      const totalPages = Math.ceil(filteredReviews.length / reviewsPerPage);
+      if (currentPage < totalPages) {
+        currentPage++;
+        loadReviews();
+      }
+    };
+  }
   // Hiển thị tất cả các section khi khởi tạo và chỉ làm nổi bật phần được chọn
   document.getElementById("nav-upgrade-customers").onclick = function () {
     document.getElementById("reviewsContainer").style.display = "";
@@ -328,41 +382,66 @@ function filterReviews() {
 }
 
 // Lấy đánh giá đã lọc
-function getFilteredReviews() {
+async function getFilteredReviews() {
   // Lấy các giá trị filter
-  const searchTerm = document
-    .getElementById("reviewSearch")
-    .value.toLowerCase();
+  const searchInput = document.getElementById("reviewSearch");
+  const searchTerm = searchInput && searchInput.value ? searchInput.value : "";
   const pharmacyId = document.getElementById("pharmacyFilter").value;
   const ratingFilterValue = document.getElementById("ratingFilter").value;
   // Lấy tất cả đánh giá
-  const allReviews = reviewAPI.getAll();
+  const allReviews = await reviewAPI.getAll();
+
+  // Nếu không nhập gì, trả về toàn bộ feedback (vẫn lọc theo cửa hàng và số sao)
+  if (!searchTerm.trim()) {
+    return allReviews.filter((review) => {
+      const pharmacyMatch =
+        pharmacyId === "all" ||
+        parseInt(review.pharmacy) === parseInt(pharmacyId);
+      let starMatch = true;
+      if (ratingFilterValue !== "all") {
+        starMatch = parseInt(review.rating) === parseInt(ratingFilterValue);
+      }
+      return pharmacyMatch && starMatch;
+    });
+  }
+
+  // Chuẩn hóa searchTerm
+  const normTermWord = searchTerm.trim().toLowerCase();
+  const normTermNumber = searchTerm.replace(/\D/g, "");
+  const isNumberQuery = /^\d{1,}$/.test(normTermNumber); // Cho phép tìm số từ 1 ký tự
 
   // Thực hiện lọc
   const filteredReviews = allReviews.filter((review) => {
-    // Lọc theo tên khách hàng
-    const nameMatch = review.customer.name.toLowerCase().includes(searchTerm);
+    // Lọc theo từng từ trong fullname
+    let name = "";
+    if (review.customer) {
+      name = review.customer.fullname || "";
+    }
+    // Tách tên thành từng từ, kiểm tra từng từ (cho phép tìm 1 ký tự)
+    const allNameWords = name.toLowerCase().split(/\s+/).filter(Boolean);
+    const phone =
+      review.customer && review.customer.phone ? review.customer.phone : "";
+    const normPhone = phone.replace(/\D/g, "");
+
+    let match = false;
+    if (isNumberQuery && normTermNumber.length > 0) {
+      match = normPhone.includes(normTermNumber);
+    } else if (normTermWord.length > 0) {
+      match = allNameWords.some((word) => word.includes(normTermWord));
+    }
 
     // Lọc theo cửa hàng
     const pharmacyMatch =
       pharmacyId === "all" ||
-      parseInt(review.pharmacy) === parseInt(pharmacyId); // Lọc theo số sao - đảm bảo so sánh số nguyên
+      parseInt(review.pharmacy) === parseInt(pharmacyId);
+    // Lọc theo số sao
     let starMatch = true;
     if (ratingFilterValue !== "all") {
       starMatch = parseInt(review.rating) === parseInt(ratingFilterValue);
     }
-
-    // Trả về kết quả lọc tổng hợp
-    return nameMatch && pharmacyMatch && starMatch;
+    return match && pharmacyMatch && starMatch;
   });
   return filteredReviews;
-}
-
-// Xóa bộ lọc đánh giá sao
-function clearRatingFilter() {
-  document.getElementById("ratingFilter").value = "all";
-  document.getElementById("ratingFilter").classList.remove("active-filter");
-  filterReviews();
 }
 
 // Tải dữ liệu đánh giá và hiển thị
@@ -387,7 +466,7 @@ async function loadReviews() {
       reviewsData = await reviewAPI.getAll();
     }
 
-    const filteredReviews = getFilteredReviews();
+    const filteredReviews = await getFilteredReviews();
     const startIndex = (currentPage - 1) * reviewsPerPage;
     const endIndex = Math.min(
       startIndex + reviewsPerPage,
@@ -408,12 +487,22 @@ async function loadReviews() {
 
     // Thêm dữ liệu mới
     currentReviews.forEach((review) => {
-      const row = document.createElement("tr"); // Cột khách hàng
+      const row = document.createElement("tr");
+      // Cột khách hàng
       const customerCell = document.createElement("td");
+      // Đảm bảo luôn lấy đúng tên khách hàng (fullname hoặc name)
+      let customerName = "(Không xác định)";
+      let customerPhone = "";
+      if (review.customer) {
+        customerName = review.customer.fullname;
+        customerPhone = review.customer.phone || "";
+      }
       customerCell.innerHTML = `
-        <div class="customer-info" data-customer-id="${review.customer.id}" style="cursor: pointer;">
-          <div class="customer-name">${review.customer.name}</div>
-          <div class="customer-phone">${review.customer.phone}</div>
+        <div class="customer-info" data-customer-id="${
+          review.customer && review.customer.id ? review.customer.id : ""
+        }" style="cursor: pointer;">
+          <div class="customer-name">${customerName}</div>
+          <div class="customer-phone">${customerPhone}</div>
         </div>
       `;
       customerCell.title = "Click để xem thông tin khách hàng";
@@ -421,11 +510,11 @@ async function loadReviews() {
 
       // Cột đánh giá
       const ratingCell = document.createElement("td");
+      let rating = Number(review.rating);
+      if (isNaN(rating) || rating < 1 || rating > 5) rating = 0;
       let stars = "";
       for (let i = 1; i <= 5; i++) {
-        stars += `<span class="star ${
-          i <= review.rating ? "filled" : ""
-        }">★</span>`;
+        stars += `<span class="star${i <= rating ? " filled" : ""}">★</span>`;
       }
       ratingCell.innerHTML = stars;
       row.appendChild(ratingCell);
@@ -487,15 +576,22 @@ function updatePagination(totalReviews) {
     if (i === currentPage) {
       pageButton.classList.add("active");
     }
-
     pageButton.addEventListener("click", function () {
       currentPage = i;
       loadReviews();
     });
-
     pageNumbers.appendChild(pageButton);
   }
+
+  // Enable/disable prev/next buttons
+  const prevBtn = document.getElementById("prevBtn");
+  const nextBtn = document.getElementById("nextBtn");
+  if (prevBtn) prevBtn.disabled = currentPage <= 1;
+  if (nextBtn) nextBtn.disabled = currentPage >= totalPages || totalPages === 0;
 }
+
+// Đảm bảo prevBtn và nextBtn hoạt động đúng
+// (Đã xóa đoạn gán sự kiện prevBtn/nextBtn ở đây, chỉ giữ lại trong setupEventListeners để tránh trùng lặp và lỗi phân trang)
 
 // Tải dữ liệu khách hàng thăng hạng và hiển thị
 async function loadUpgradedCustomers() {
@@ -594,13 +690,40 @@ async function loadUpgradedCustomers() {
 // ====================================
 
 // Tìm kiếm khách hàng
-function searchCustomers(query) {
+async function searchCustomers(query) {
   if (!query || query.length < 2) {
     document.getElementById("customerSuggestions").style.display = "none";
     return;
   }
 
-  const filteredCustomers = customerAPI.search(query);
+  // Lấy danh sách khách hàng từ API nếu chưa có
+  if (
+    !window.customers ||
+    !Array.isArray(window.customers) ||
+    window.customers.length === 0
+  ) {
+    window.customers = await customerAPI.getAll();
+  }
+  const customers = window.customers;
+
+  // Chuẩn hóa query: bỏ khoảng trắng, về chữ thường, loại bỏ ký tự không phải số nếu là số điện thoại
+  const normQuery = query.replace(/\s+/g, "").toLowerCase();
+  const normQueryNumber = query.replace(/\D/g, "");
+  const isNumberQuery = /^\d{4,}$/.test(normQueryNumber); // Query là số có ít nhất 4 ký tự
+
+  // Lọc theo tên hoặc số điện thoại
+  const filteredCustomers = customers.filter((customer) => {
+    const name = (customer.name || customer.fullname || "")
+      .replace(/\s+/g, "")
+      .toLowerCase();
+    const phone = (customer.phone || "").replace(/\D/g, "");
+    if (isNumberQuery) {
+      return phone.includes(normQueryNumber);
+    } else {
+      return name.includes(normQuery) || phone.includes(normQueryNumber);
+    }
+  });
+
   const suggestionBox = document.getElementById("customerSuggestions");
   suggestionBox.innerHTML = "";
 
@@ -612,8 +735,10 @@ function searchCustomers(query) {
       const item = document.createElement("div");
       item.classList.add("suggestion-item");
       item.innerHTML = `
-        <div class="customer-name">${customer.name}</div>
-        <div class="customer-phone">${customer.phone}</div>
+        <div class="customer-name">${
+          customer.name || customer.fullname || "(Không tên)"
+        }</div>
+        <div class="customer-phone">${customer.phone || ""}</div>
       `;
       item.addEventListener("click", function () {
         selectCustomer(customer);
@@ -627,10 +752,17 @@ function searchCustomers(query) {
 
 // Chọn khách hàng
 async function selectCustomer(customerId, customerName) {
-  // If we receive a customer object instead of id and name
+  // Nếu truyền vào là object customer
+  let customerPhone = "";
   if (typeof customerId === "object") {
     customerName = customerId.name;
+    customerPhone = customerId.phone || "";
     customerId = customerId.id;
+  } else {
+    // Nếu chỉ truyền id, tìm trong danh sách customers
+    const customer =
+      customers && customers.find((c) => c.id === parseInt(customerId));
+    customerPhone = customer ? customer.phone : "";
   }
 
   window.selectedCustomerId = customerId;
@@ -638,24 +770,17 @@ async function selectCustomer(customerId, customerName) {
   document.getElementById("customerSuggestions").style.display = "none";
   document.getElementById("customerSearch").value = "";
 
-  document.getElementById("selectedCustomer").style.display = "flex";
   document.getElementById("selectedCustomerName").textContent = customerName;
+  console.log("customerPhone:", customerPhone);
+  document.getElementById("selectedCustomerPhone").textContent = customerPhone;
+  document.getElementById("selectedCustomer").style.display = "";
 
-  // Find customer phone number if not provided
-  const customer = customers.find((c) => c.id === parseInt(customerId));
-  if (customer) {
-    document.getElementById("selectedCustomerPhone").textContent =
-      customer.phone;
-  } else {
-    document.getElementById("selectedCustomerPhone").textContent = "";
-  }
   // Nếu loại tin nhắn là nhắc uống thuốc, lấy thông tin hóa đơn gần nhất
   const messageType = document.getElementById("messageType").value;
   if (messageType === "reminder") {
     try {
       const invoice = await customerAPI.getLatestInvoice(customerId);
       if (invoice && invoice.takeNote) {
-        // Chèn take note vào nội dung tin nhắn
         document.getElementById(
           "messageContent"
         ).value = `Xin chào ${customerName}! Đây là lời nhắc nhở uống thuốc từ Long Châu cho đơn hàng gần nhất của bạn.\n\nHướng dẫn sử dụng thuốc: ${invoice.takeNote}\n\nVui lòng tuân thủ đúng hướng dẫn sử dụng và liên hệ với chúng tôi nếu có thắc mắc.\n\nChúc bạn mau khỏe!`;
@@ -685,12 +810,22 @@ function loadMessageTemplate(type) {
   document.getElementById("reminderNote").style.display =
     type === "reminder" ? "" : "none";
 
-  const template = messageAPI.getTemplateByType(type);
-  const content = template.content;
-  const hint = template.hint;
+  // Không gọi API, chỉ dùng template mặc định
+  let template = { content: "", hint: "" };
+  if (type === "reminder") {
+    template.content = "Đây là nội dung nhắc uống thuốc mặc định.";
+    template.hint = "Nội dung nhắc uống thuốc cho khách hàng.";
+  } else if (type === "custom") {
+    template.content = "";
+    template.hint = "Soạn nội dung tin nhắn tuỳ chỉnh cho khách hàng.";
+  } else if (type === "survey") {
+    template.content = "Bạn vui lòng đánh giá dịch vụ của Long Châu tại đây.";
+    template.hint = "Gửi khảo sát đánh giá dịch vụ.";
+  }
 
-  document.getElementById("messageContent").value = content;
-  document.getElementById("templateHint").innerText = hint;
+  document.getElementById("messageContent").value = template.content;
+  document.getElementById("templateHint").innerText = template.hint;
+
   // Nếu đã chọn khách hàng cụ thể và là tin nhắc thuốc, tự động cập nhật theo take note
   if (window.selectedCustomerId && type === "reminder") {
     const customer = customerAPI.getById(window.selectedCustomerId);
@@ -712,7 +847,6 @@ function loadMessageTemplate(type) {
 async function sendMessage() {
   const messageType = document.getElementById("messageType").value;
   const messageContent = document.getElementById("messageContent").value;
-  const sendDateTime = document.getElementById("sendDateTime").value;
   const targetType = document.querySelector(
     '.message-composer form select[onchange="toggleCustomerInput(this)"]'
   ).value;
@@ -739,10 +873,14 @@ async function sendMessage() {
     '<span class="material-icons spin">refresh</span> Đang gửi...';
   sendButton.disabled = true;
 
+  // Lấy thời gian hiện tại (giờ gửi thực tế)
+  const now = new Date();
+  const sendTime = now.toISOString(); // ISO format, backend sẽ lưu đúng chuẩn
+
   const messageData = {
     type: messageType,
     content: messageContent,
-    sendTime: sendDateTime || "Ngay lập tức",
+    sendTime: sendTime, // luôn gửi thời gian hiện tại
     target: targetType,
     customerId: window.selectedCustomerId,
     channels: channels.join(", "),
@@ -778,9 +916,19 @@ async function sendMessage() {
 }
 
 // Trả lời đánh giá
-function replyReview(reviewId) {
-  const review = reviewAPI.getById(reviewId);
-  if (!review) return;
+async function replyReview(reviewId) {
+  let review;
+  try {
+    review = await reviewAPI.getById(reviewId);
+    console.log("[replyReview] Review object:", review);
+  } catch (err) {
+    alert("Không tìm thấy dữ liệu đánh giá phù hợp!");
+    return;
+  }
+  if (!review) {
+    alert("Không tìm thấy dữ liệu đánh giá phù hợp!");
+    return;
+  }
 
   // Lưu ID đánh giá đang xử lý để cập nhật trạng thái sau
   window.currentReviewId = reviewId;
@@ -797,24 +945,35 @@ function replyReview(reviewId) {
     )
   );
 
+  // Lấy tên và số điện thoại khách hàng an toàn (ưu tiên fullname, name, customerName)
+  let customerName = null;
+  let customerPhone = null;
+  try {
+    if (review.customer && typeof review.customer === "object") {
+      customerName = review.customer.fullname;
+      customerPhone = review.customer.phone;
+    }
+  } catch (err) {
+    customerName = "Không có thông tin khách hàng";
+    customerPhone = "";
+    console.error("Lỗi lấy thông tin khách hàng từ review:", review, err);
+  }
   // Hiển thị thông tin khách hàng đã chọn
   document.getElementById("selectedCustomer").style.display = "";
-  document.getElementById("selectedCustomerName").textContent =
-    review.customer.name;
-  document.getElementById("selectedCustomerPhone").textContent =
-    review.customer.phone;
+  document.getElementById("selectedCustomerName").textContent = customerName;
+  document.getElementById("selectedCustomerPhone").textContent = customerPhone;
 
   // Điền nội dung tin nhắn phản hồi
   let replyContent = "";
   if (review.rating <= 3) {
-    replyContent = `Kính gửi ${review.customer.name},\n\nChúng tôi rất tiếc về trải nghiệm chưa tốt của bạn tại Long Châu. Chúng tôi đã ghi nhận phản hồi và sẽ cải thiện dịch vụ. Xin vui lòng liên hệ số 1800 XXXXX để được hỗ trợ thêm.\n\nTrân trọng,\nLong Châu`;
+    replyContent = `Kính gửi ${customerName},\n\nChúng tôi rất tiếc về trải nghiệm chưa tốt của bạn tại Long Châu. Chúng tôi đã ghi nhận phản hồi và sẽ cải thiện dịch vụ. Xin vui lòng liên hệ số 1800 XXXXX để được hỗ trợ thêm.\n\nTrân trọng,\nLong Châu`;
   } else {
-    replyContent = `Kính gửi ${review.customer.name},\n\nCảm ơn bạn đã đánh giá tích cực về dịch vụ của Long Châu. Chúng tôi rất vui khi được phục vụ và mong tiếp tục nhận được sự ủng hộ của bạn.\n\nTrân trọng,\nLong Châu`;
+    replyContent = `Kính gửi ${customerName},\n\nCảm ơn bạn đã đánh giá tích cực về dịch vụ của Long Châu. Chúng tôi rất vui khi được phục vụ và mong tiếp tục nhận được sự ủng hộ của bạn.\n\nTrân trọng,\nLong Châu`;
   }
 
   document.getElementById("messageContent").value = replyContent;
   // Lưu ID khách hàng
-  window.selectedCustomerId = review.customer.id;
+  window.selectedCustomerId = review.customer && review.customer.id;
 
   // Cuộn đến phần soạn tin nhắn
   document
@@ -981,15 +1140,6 @@ async function updateDashboardStats() {
   }
 }
 
-// Hiển thị thông tin cá nhân
-/**
- * Hiển thị thông tin cá nhân của người dùng và tải dữ liệu từ API
- * Hiển thị modal thông tin người dùng với dữ liệu cập nhật
- */
-/**
- * Hiển thị thông tin cá nhân của người dùng và tải dữ liệu từ API
- * Hiển thị modal thông tin người dùng với dữ liệu cập nhật
- */
 export async function showUserInfo() {
   // Hiển thị modal
   const modal = document.getElementById("userInfoModal");
@@ -997,31 +1147,34 @@ export async function showUserInfo() {
     console.error("Không tìm thấy element với ID 'userInfoModal'");
     return;
   }
-
   modal.classList.add("show");
 
-  try {
-    // Hiển thị trạng thái đang tải
-    const statItems = document.querySelectorAll(
-      ".stat-item-modal .stat-number"
-    );
-    statItems.forEach((item) => {
-      item.innerHTML =
-        '<span class="loading-indicator"><i class="material-icons spin">refresh</i></span>';
-    });
+  // Xóa thông báo lỗi cũ nếu có
+  const oldError = document.querySelector("#modalEmployeeError");
+  if (oldError) {
+    oldError.style.display = "none";
+    oldError.textContent = "";
+  }
 
+  try {
     // Lấy thông tin người dùng từ API
     const currentUser = await userAPI.getCurrentUser();
+    console.log("[showUserInfo] currentUser từ backend:", currentUser);
+    if (!currentUser || typeof currentUser !== "object")
+      throw new Error("Không có dữ liệu người dùng từ backend");
 
     // Cập nhật thông tin cơ bản
-    document.getElementById("modalEmployeeName").textContent = currentUser.name;
-    document.getElementById("modalEmployeeRole").textContent = currentUser.role;
+    document.getElementById("modalEmployeeName").textContent =
+      currentUser.name || "";
+    document.getElementById("modalEmployeeRole").textContent =
+      currentUser.role || "";
     document.getElementById("modalEmployeeEmail").textContent =
-      currentUser.email;
+      currentUser.email || "";
     document.getElementById("modalEmployeePhone").textContent =
-      currentUser.phone;
+      currentUser.phone || "";
     document.getElementById("modalEmployeeUsername").textContent =
-      currentUser.username; // Cập nhật trạng thái
+      currentUser.username || "";
+    // Cập nhật trạng thái
     const statusElement = document.getElementById("modalEmployeeStatus");
     if (currentUser.isActive) {
       statusElement.className = "status-badge active";
@@ -1032,44 +1185,17 @@ export async function showUserInfo() {
       statusElement.innerHTML =
         '<span class="status-dot"></span>Không hoạt động';
     }
-
-    // Lấy thống kê công việc hôm nay
-    const todayStats = await userAPI.getDailyStats();
-
-    // Cập nhật thống kê
-    const statElements = document.querySelectorAll(
-      ".stat-item-modal .stat-number"
-    );
-    if (statElements.length >= 3 && todayStats) {
-      statElements[0].textContent = todayStats.messagesSent || "0";
-      statElements[1].textContent = todayStats.reviewsProcessed || "0";
-      statElements[2].textContent = todayStats.customersServed || "0";
-    }
   } catch (error) {
-    console.error("Lỗi khi tải thông tin người dùng:", error);
-
-    // Hiển thị thông báo lỗi cho người dùng
-    const modalBody = document.querySelector(".modal-body");
-    if (modalBody) {
-      const errorMessage = document.createElement("div");
-      errorMessage.className = "api-error-message";
-      errorMessage.innerHTML = `
-        <span class="material-icons">error</span>
-        <span>Không thể tải thông tin người dùng. Vui lòng thử lại sau.</span>
-      `;
-      modalBody.prepend(errorMessage);
-
-      // Tự động ẩn thông báo sau 5 giây
-      setTimeout(() => {
-        if (errorMessage.parentNode) {
-          errorMessage.remove();
-        }
-      }, 5000);
+    console.error("Lỗi khi tải thông tin người dùng (showUserInfo):", error);
+    // Hiển thị thông báo lỗi rõ ràng
+    const errorDiv = document.getElementById("modalEmployeeError");
+    if (errorDiv) {
+      errorDiv.style.display = "block";
+      errorDiv.textContent =
+        "Không thể tải thông tin người dùng. Vui lòng thử lại sau.";
     }
   }
 }
-
-// Các hàm lấy thông tin người dùng và thống kê đã được chuyển sang userAPI trong customer-service-api.js
 
 // Đóng modal thông tin cá nhân
 export function closeUserInfoModal() {
@@ -1144,6 +1270,12 @@ function setupGlobalHandlers() {
   } else {
     console.error("Không tìm thấy nút đăng xuất theo ID");
   }
+
+  // Đưa hàm replyReview vào global scope để HTML onclick gọi được
+  window.replyReview = replyReview;
+
+  // Đưa hàm clearSelectedCustomer vào global scope để HTML onclick gọi được
+  window.clearSelectedCustomer = clearSelectedCustomer;
 
   // Thêm event listeners trực tiếp cho các nút đóng
   const closeModalButtons = document.querySelectorAll(

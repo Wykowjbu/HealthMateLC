@@ -86,6 +86,7 @@ async function fetchApi(endpoint, options = {}) {
         // 'Authorization': `Bearer ${getToken()}`
       },
       signal: controller.signal,
+      credentials: "include", // Always include credentials for session/cookie auth
     };
 
     // Kết hợp options mặc định với options được truyền vào
@@ -141,8 +142,35 @@ async function fetchApi(endpoint, options = {}) {
   }
 }
 
+// Helper function: withFallback
+// Tries the main asyncFn, if it fails, returns fallback data from localStorage or fallbackProcessor
+async function withFallback(asyncFn, fallbackKey, fallbackProcessor) {
+  try {
+    return await asyncFn();
+  } catch (error) {
+    console.warn(
+      `API failed for ${fallbackKey}, using fallback data if available.`,
+      error
+    );
+    // Try to get fallback data from localStorage
+    let fallbackData = null;
+    try {
+      const raw = localStorage.getItem(fallbackKey);
+      if (raw) fallbackData = JSON.parse(raw);
+    } catch (e) {
+      fallbackData = null;
+    }
+    if (fallbackData && typeof fallbackProcessor === "function") {
+      return fallbackProcessor(fallbackData);
+    }
+    if (fallbackData) return fallbackData;
+    // If no fallback, throw original error
+    throw error;
+  }
+}
+
 // ====================================
-// PHARMACY API - API nhà thuốc
+//#region PHARMACYAPI - API nhà thuốc
 // ====================================
 const pharmacyAPI = {
   // Lấy tất cả nhà thuốc
@@ -160,9 +188,10 @@ const pharmacyAPI = {
     apiCache.clear("/pharmacies");
   },
 };
+//#endregion
 
 // ====================================
-// REVIEW API - API đánh giá
+//#region  REVIEW API - API đánh giá
 // ====================================
 const reviewAPI = {
   // Lấy tất cả đánh giá
@@ -219,9 +248,10 @@ const reviewAPI = {
     }
   },
 };
+//#endregion
 
 // ====================================
-// CUSTOMER API - API khách hàng
+//#region  CUSTOMER API - API khách hàng
 // ====================================
 const customerAPI = {
   // Lấy tất cả khách hàng
@@ -301,9 +331,10 @@ const customerAPI = {
     );
   },
 };
+//#endregion
 
 // ====================================
-// RANK UPGRADE API - API thăng hạng
+//#region  RANK UPGRADE API - API thăng hạng
 // ====================================
 const rankUpgradeAPI = {
   // Lấy danh sách khách hàng thăng hạng
@@ -323,9 +354,10 @@ const rankUpgradeAPI = {
     );
   },
 };
+//#endregion
 
 // ====================================
-// CHART API - API biểu đồ
+//#region  CHART API - API biểu đồ
 // ====================================
 const chartAPI = {
   // Lấy dữ liệu thống kê mức độ hài lòng theo ngày
@@ -339,9 +371,10 @@ const chartAPI = {
     );
   },
 };
+//#endregion
 
 // ====================================
-// STATISTICS API - API thống kê
+//#region  STATISTICS API - API thống kê
 // ====================================
 const statsAPI = {
   // Lấy số lượng tin nhắn đã gửi
@@ -376,9 +409,10 @@ const statsAPI = {
     }, "stats.satisfactionRate");
   },
 };
+//#endregion
 
 // ====================================
-// MESSAGE API - API tin nhắn
+//#region  MESSAGE API - API tin nhắn
 // ====================================
 const messageAPI = {
   // Gửi tin nhắn mới
@@ -406,9 +440,10 @@ const messageAPI = {
     return data.content;
   },
 };
+//#endregion
 
 // ====================================
-// INVOICE API - API hóa đơn
+//#region  INVOICE API - API hóa đơn
 // ====================================
 const invoiceAPI = {
   // Lấy danh sách hóa đơn của khách hàng
@@ -422,162 +457,23 @@ const invoiceAPI = {
   },
 };
 
+//#endregion
 // Dữ liệu fallback khi không thể kết nối đến API
-const fallbackData = {
-  // Dữ liệu người dùng hệ thống
-  currentUser: {
-    id: 1,
-    name: "Lê Thị Mai",
-    role: "Chăm sóc khách hàng",
-    email: "mai.le@longchau.vn",
-    phone: "0905123456",
-    username: "cskh_mai",
-    isActive: true,
-    avatar: null,
-    department: "Dịch vụ khách hàng",
-  },
-
-  // Thống kê người dùng hệ thống
-  userDailyStats: {
-    messagesSent: 23,
-    reviewsProcessed: 8,
-    customersServed: 45,
-    loginTime: "08:00",
-    averageResponseTime: "3.5 phút",
-  },
-
-  // Dữ liệu đánh giá
-  reviews: [],
-
-  // Dữ liệu khách hàng
-  customers: [],
-
-  // Dữ liệu khách hàng thăng hạng
-  upgradedCustomers: [],
-
-  // Dữ liệu thống kê
-  stats: {
-    messagesSent: 247,
-    reviewsPending: 8,
-    customersServed: 1205,
-    satisfactionRate: 92,
-  },
-
-  // Dữ liệu biểu đồ
-  satisfactionData: {
-    7: {
-      labels: [
-        "Thứ 2",
-        "Thứ 3",
-        "Thứ 4",
-        "Thứ 5",
-        "Thứ 6",
-        "Thứ 7",
-        "Chủ nhật",
-      ],
-      values: [85, 90, 88, 92, 95, 89, 91],
-    },
-    30: {
-      labels: Array.from({ length: 30 }, (_, i) => `${i + 1}`),
-      values: Array.from(
-        { length: 30 },
-        () => Math.floor(Math.random() * 15) + 80
-      ),
-    },
-  },
-};
 
 // ====================================
-// USER API - API nhân viên
+//#region  USER API - API nhân viên
 // ====================================
 const userAPI = {
-  // Lấy thông tin người dùng hiện tại
+  // Lấy thông tin người dùng hiện tại từ backend
   getCurrentUser: async function () {
     return await withFallback(
-      async () => await fetchApi("/Customer/userCurrent", { useCache: true }),
-      "currentUser",
-      (fallbackUser) => {
-        // Dữ liệu mẫu nếu API không có sẵn
-        return {
-          id: 1,
-          name: "Lê Thị Mai",
-          role: "Chăm sóc khách hàng",
-          email: "mai.le@longchau.vn",
-          phone: "0905123456",
-          username: "cskh_mai",
-          isActive: true,
-          avatar: null,
-        };
-      }
+      async () => await fetchApi("/user/current", { useCache: true }),
+      "currentUser"
     );
-  },
-
-  // Lấy thống kê công việc hôm nay của người dùng
-  getDailyStats: async function () {
-    return await withFallback(
-      async () => await fetchApi("/Customer/userDailyStats"),
-      "userDailyStats",
-      (fallbackStats) => {
-        // Dữ liệu mẫu nếu API không có sẵn
-        return {
-          messagesSent: 23,
-          reviewsProcessed: 8,
-          customersServed: 45,
-          loginTime: "08:00",
-          averageResponseTime: "3.5 phút",
-        };
-      }
-    );
-  },
-  // Cập nhật thông tin người dùng - tính năng chưa được sử dụng
-  updateProfile: async function (userData) {
-    console.log("Tính năng cập nhật thông tin người dùng chưa được kích hoạt");
-    return false;
-    // Đoạn code gọi API đã được vô hiệu hóa
-    /*try {
-      return await fetchApi('/Customer/userUpdate', {
-        method: 'PUT',
-        body: JSON.stringify(userData)
-      });
-    } catch (error) {
-      console.error('Failed to update user profile:', error);
-      alert('Không thể cập nhật thông tin cá nhân. Vui lòng thử lại sau.');
-      return false;
-    }*/
-  },
-
-  // Thay đổi mật khẩu
-  changePassword: async function (passwordData) {
-    try {
-      return await fetchApi("/Customer/userChangePassword", {
-        method: "PUT",
-        body: JSON.stringify(passwordData),
-      });
-    } catch (error) {
-      console.error("Failed to change password:", error);
-      return { success: false, message: "Không thể thay đổi mật khẩu." };
-    }
   },
 };
 
-async function withFallback(
-  apiCall,
-  fallbackKey,
-  fallbackTransform = (data) => data
-) {
-  try {
-    return await apiCall();
-  } catch (error) {
-    console.error("API failure, using fallback data:", error);
-    // Tìm dữ liệu fallback theo key
-    const fallbackValue = fallbackKey
-      .split(".")
-      .reduce((obj, key) => obj?.[key], fallbackData);
-
-    // Biến đổi dữ liệu nếu cần
-    return fallbackTransform(fallbackValue);
-  }
-}
+//#endregion
 
 // ====================================
 // ERROR HANDLING HELPERS - Xử lý lỗi

@@ -3,6 +3,9 @@
   padding: 0;
   box-sizing: border-box;
 }
+:root {
+  --mainColor: linear-gradient(315deg, #1250dc 0%, #306de4 100%);
+}
 
 body {
   font-family: "Inter", sans-serif;
@@ -22,7 +25,7 @@ body {
 
 .sidebar {
   grid-area: sidebar;
-  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  background: var(--mainColor);
   color: white;
   overflow-y: auto;
 }
@@ -38,6 +41,11 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+.logo img {
+  width: 50px;
+  height: 50px;
+  border-radius: 20%;
 }
 
 .nav-menu {
@@ -209,7 +217,7 @@ body {
   justify-content: space-between;
   padding: 24px 30px;
   border-bottom: 1px solid #f1f5f9;
-  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  background: var(--mainColor);
   color: white;
   border-radius: 16px 16px 0 0;
 }
@@ -257,7 +265,7 @@ body {
   width: 100px;
   height: 100px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  background: var(--mainColor);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -490,7 +498,7 @@ body {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  background: var(--mainColor);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -692,7 +700,7 @@ body {
 }
 
 .reviews-table thead {
-  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  background: var(--mainColor);
   color: white;
   position: relative;
 }
@@ -816,8 +824,8 @@ body {
 }
 
 .page-number.active {
-  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-  border-color: #43e97b;
+  background: var(--mainColor);
+  border-color: var(--mainColor);
   color: white;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(67, 233, 123, 0.4);
@@ -951,14 +959,16 @@ body {
 }
 
 .star {
-  color: #ffd700;
-  font-size: 16px;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  color: #ccc;
+  font-size: 20px;
+  margin-right: 2px;
 }
 
-.star.empty {
-  color: #e2e8f0;
-} /* Status Badges Enhancement - Fixed */
+.star.filled {
+  color: #ffd600;
+}
+
+/* Status Badges Enhancement - Fixed */
 .status-badge {
   padding: 8px 16px;
   border-radius: 20px;
@@ -1166,7 +1176,7 @@ body {
 
 /* Submit Button Enhancement */
 .btn.btn-primary {
-  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  background: #1250dc;
   color: white;
   border: none;
   padding: 15px 30px;
@@ -1589,11 +1599,13 @@ body {
 
 /* Improve status badges */
 .status-badge.status-success {
-  background-color: #48bb78;
+  background-color: #b8fcd4;
+  color: #018748;
 }
 
 .status-badge.status-error {
-  background-color: #f56565;
+  background-color: #f2b8b8;
+  color: #880101;
 }
 
 /* Section anchors */
@@ -2090,4 +2102,35 @@ body {
 
 .api-status.disconnected .status-text {
   color: #a94442;
+}
+
+/* Nút reply (icon reply) - làm nổi bật, bo tròn, hiệu ứng hover đẹp */
+.btn-action .material-icons {
+  color: #3182ce;
+  font-size: 22px;
+  transition: transform 0.18s, color 0.18s;
+  vertical-align: middle;
+  border-radius: 50%;
+  padding: 6px;
+  background: #e6f0fa;
+  box-shadow: 0 2px 8px rgba(49, 130, 206, 0.08);
+}
+.btn-action:hover .material-icons {
+  color: #fff;
+  background: linear-gradient(135deg, #3182ce 0%, #63b3ed 100%);
+  transform: scale(1.18) rotate(-12deg);
+  box-shadow: 0 4px 16px rgba(49, 130, 206, 0.18);
+}
+
+/* Tăng padding cho nút thao tác để dễ bấm hơn */
+.btn-action {
+  padding: 6px 10px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  outline: none;
+  transition: background 0.18s;
+}
+.btn-action:focus {
+  background: #c3dafc;
 }
