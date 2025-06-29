@@ -1,624 +1,469 @@
 <!DOCTYPE html>
 <html lang="vi">
-
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Employee Dashboard - Long Châu</title>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
-            rel="stylesheet">
-        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-        <link rel="stylesheet" href="assets/css/employee.css">
-        <style>
-            * {
-                margin: 0;
-                padding: 0;
-                box-sizing: border-box;
-            }
-
-            body {
-                font-family: 'Inter', sans-serif;
-                background-color: #f5f7fa;
-                color: #333;
-            }
-
-            .dashboard {
-                display: grid;
-                grid-template-columns: 280px 1fr;
-                grid-template-rows: 70px 1fr;
-                height: 100vh;
-                grid-template-areas:
-                    "sidebar header"
-                    "sidebar main";
-            }
-
-            .sidebar {
-                grid-area: sidebar;
-                background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-                color: white;
-                overflow-y: auto;
-            }
-
-            .sidebar-header {
-                padding: 20px;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            }
-
-            .logo {
-                font-size: 24px;
-                font-weight: 700;
-                display: flex;
-                align-items: center;
-                gap: 10px;
-            }
-
-            .nav-menu {
-                padding: 20px 0;
-            }
-
-            .nav-group {
-                margin-bottom: 30px;
-            }
-
-            .nav-group-title {
-                padding: 0 20px 10px;
-                font-size: 12px;
-                text-transform: uppercase;
-                opacity: 0.7;
-                font-weight: 600;
-            }
-
-            .nav-item {
-                padding: 12px 20px;
-                cursor: pointer;
-                transition: all 0.3s ease;
-                display: flex;
-                align-items: center;
-                gap: 12px;
-            }
-
-            .nav-item:hover {
-                background: rgba(255, 255, 255, 0.1);
-            }
-
-            .nav-item.active {
-                background: rgba(255, 255, 255, 0.2);
-                border-right: 3px solid white;
-            }
-
-            .header {
-                grid-area: header;
-                background: white;
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                padding: 0 30px;
-                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-                z-index: 100;
-            }
-
-            .header-title {
-                font-size: 24px;
-                font-weight: 600;
-                color: #2d3748;
-            }
-
-            .header-actions {
-                display: flex;
-                align-items: center;
-                gap: 20px;
-            }
-
-            .check-in-btn {
-                background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-                color: white;
-                border: none;
-                padding: 10px 20px;
-                border-radius: 8px;
-                font-weight: 600;
-                cursor: pointer;
-                transition: all 0.3s ease;
-            }
-
-            .check-in-btn:hover {
-                transform: translateY(-1px);
-                box-shadow: 0 4px 15px rgba(67, 233, 123, 0.4);
-            }
-
-            .user-profile {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                cursor: pointer;
-                padding: 8px 16px;
-                border-radius: 8px;
-                transition: background 0.3s ease;
-            }
-
-            .user-profile:hover {
-                background: #f7fafc;
-            }
-
-            .avatar {
-                width: 40px;
-                height: 40px;
-                border-radius: 50%;
-                background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                color: white;
-                font-weight: 600;
-            }
-
-            .main-content {
-                grid-area: main;
-                padding: 30px;
-                overflow-y: auto;
-            }
-
-            .stats-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: 20px;
-                margin-bottom: 30px;
-            }
-
-            .stat-card {
-                background: white;
-                padding: 20px;
-                border-radius: 12px;
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-                transition: transform 0.3s ease;
-            }
-
-            .stat-card:hover {
-                transform: translateY(-2px);
-            }
-
-            .stat-header {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                margin-bottom: 15px;
-            }
-
-            .stat-icon {
-                width: 45px;
-                height: 45px;
-                border-radius: 10px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                color: white;
-            }
-
-            .stat-icon.orders {
-                background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            }
-
-            .stat-icon.customers {
-                background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-            }
-
-            .stat-icon.revenue {
-                background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-            }
-
-            .stat-icon.time {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            }
-
-            .stat-value {
-                font-size: 28px;
-                font-weight: 700;
-                color: #2d3748;
-                margin-bottom: 5px;
-            }
-
-            .stat-label {
-                color: #718096;
-                font-size: 13px;
-            }
-        </style>
-    </head>
-
-    <body>
-        <div class="dashboard">
-            <aside class="sidebar">
-                <div class="sidebar-header">
-                    <div class="logo">
-                        <span class="material-icons">person</span>
-                        Long Châu Employee
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Dashboard - Long Châu</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/employee.css">
+</head>
+<body>
+    <div class="dashboard">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <span class="material-icons">person</span>
+                    Long Châu Employee
+                </div>
+            </div>
+            <nav class="nav-menu">
+                <div class="nav-group">
+                    <div class="nav-group-title">Khách hàng</div>
+                    <div class="nav-item" id="nav-create-customer">
+                        <span class="material-icons">group_add</span>
+                        Tạo mới khách hàng
+                    </div>
+                    <div class="nav-item active" id="nav-customer-list">
+                        <span class="material-icons">group</span>
+                        Danh sách khách hàng
                     </div>
                 </div>
-                <nav class="nav-menu">
-                    <div class="nav-group">
-                        <div class="nav-group-title">Khách hàng</div>
-                        <div class="nav-item" class="tao-moi-khach-hang" onclick="openAddCustomerForm()">
-                            <span class="material-icons">group_add</span>
-                            Tạo mới khách hàng
-                        </div>
-                        <div class="nav-item activeactive" class="danh-sach-khach-hang" onclick="openCustomerList()">
-                            <span class="material-icons">group_add</span>
-                            Danh sách khách hàng
-                        </div>
 
+                <div class="nav-group">
+                    <div class="nav-group-title">Đơn hàng</div>
+                    <div class="nav-item" id="nav-create-order">
+                        <span class="material-icons">receipt_long</span>
+                        Tạo đơn thuốc
                     </div>
+                    <div class="nav-item" id="nav-order-list">
+                        <span class="material-icons">list_alt</span>
+                        Danh sách đơn hàng
+                    </div>
+                </div>
 
-                    <div class="nav-group">
-                        <div class="nav-group-title">Đơn hàng</div>
-                        <div class="nav-item" class="tao-don-thuoc">
-                            <span class="material-icons">receipt_long</span>
-                            Tạo đơn thuốc
-                        </div>
+                <div class="nav-group">
+                    <div class="nav-group-title">Cá nhân</div>
+                    <div class="nav-item" id="nav-schedule">
+                        <span class="material-icons">schedule</span>
+                        Lịch làm việc
+                    </div>
+                    <div class="nav-item" id="nav-medicine-info">
+                        <span class="material-icons">medication</span>
+                        Thông tin thuốc
+                    </div>
+                </div>
+            </nav>
+        </aside>
 
-                        <div class="nav-item" class="danh-sach-don-hang">
-                            <span class="material-icons">keyboard_return</span>
-                            Danh sách đơn hàng
+        <header class="header">
+            <h1 class="header-title">Quầy bán hàng</h1>
+            <div class="header-actions">
+                <button class="check-in-btn">
+                    <span class="material-icons">access_time</span>
+                    Check-in
+                </button>
+                <div class="user-profile">
+                    <div class="avatar">NV</div>
+                    <div>
+                        <div style="font-weight: 500;">Nguyễn Văn An</div>
+                        <div style="font-size: 12px; color: #718096;">Nhân viên bán hàng</div>
+                    </div>
+                    <span class="material-icons">expand_more</span>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <!-- Statistics Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon orders">
+                            <span class="material-icons">receipt</span>
                         </div>
                     </div>
+                    <div class="stat-value">24</div>
+                    <div class="stat-label">Đơn hôm nay</div>
+                </div>
 
-                    <div class="nav-group">
-                        <div class="nav-group-title">Cá nhân</div>
-                        <div class="nav-item" class="lich-lam-viec">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon customers">
+                            <span class="material-icons">people</span>
+                        </div>
+                    </div>
+                    <div class="stat-value">18</div>
+                    <div class="stat-label">Khách hàng mới</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon revenue">
+                            <span class="material-icons">attach_money</span>
+                        </div>
+                    </div>
+                    <div class="stat-value">2.4M</div>
+                    <div class="stat-label">Doanh số hôm nay</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon time">
                             <span class="material-icons">schedule</span>
-                            Lịch làm việc
-                        </div>
-                        <div class="nav-item" class="thong-tin-thuoc">
-                            <span class="material-icons">medication</span>
-                            Thông tin thuốc
                         </div>
                     </div>
-                </nav>
-            </aside>
-
-            <header class="header">
-                <h1 class="header-title">Quầy bán hàng</h1>
-                <div class="header-actions">
-                    <button class="check-in-btn">
-                        <span class="material-icons">access_time</span>
-                        Check-in
-                    </button>
-                    <div class="user-profile">
-                        <div class="avatar">NV</div>
-                        <div>
-                            <div style="font-weight: 500;">Nguyễn Văn An</div>
-                            <div style="font-size: 12px; color: #718096;">Nhân viên bán hàng</div>
-                        </div>
-                        <span class="material-icons">expand_more</span>
-                    </div>
+                    <div class="stat-value">8h</div>
+                    <div class="stat-label">Giờ làm việc</div>
                 </div>
-            </header>
+            </div>
 
-            <main class="main-content">
-                <!-- start grid -->
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-header">
-                            <div class="stat-icon orders">
-                                <span class="material-icons">receipt</span>
-                            </div>
-                        </div>
-                        <div class="stat-value">24</div>
-                        <div class="stat-label">Đơn hôm nay</div>
-                    </div>
-
-                    <div class="stat-card">
-                        <div class="stat-header">
-                            <div class="stat-icon customers">
-                                <span class="material-icons">people</span>
-                            </div>
-                        </div>
-                        <div class="stat-value">18</div>
-                        <div class="stat-label">Khách hàng mới</div>
-                    </div>
-
-                    <div class="stat-card">
-                        <div class="stat-header">
-                            <div class="stat-icon revenue">
-                                <span class="material-icons">attach_money</span>
-                            </div>
-                        </div>
-                        <div class="stat-value">2.4M</div>
-                        <div class="stat-label">Doanh số hôm nay</div>
-                    </div>
-
-                    <div class="stat-card">
-                        <div class="stat-header">
-                            <div class="stat-icon time">
-                                <span class="material-icons">schedule</span>
-                            </div>
-                        </div>
-                        <div class="stat-value">8h</div>
-                        <div class="stat-label">Giờ làm việc</div>
-                    </div>
-                </div>
-
-                <!--  danh sach khach hang va tao moi khach hang -->
-                <div class="customer-container">
-                    <!-- danh sach khach hang  -->
-                    <div class="customers-list-page" id="customersList">
-                        <div class="customers-list-header">
-                            <h3 class="form-title" style="margin-bottom: 20px;">Danh sách khách hàng</h3>
+            <!-- Customer Management Section -->
+            <div class="customer-container">
+                <!-- Customer List -->
+                <div class="customers-list-page" id="customersList">
+                    <div class="customers-list-header">
+                        <h3 class="form-title">Danh sách khách hàng</h3>
+                        <div class="search-container">
                             <input type="text" id="searchCustomer" placeholder="Tìm kiếm khách hàng">
-                            <button class="add-customer-btn" onclick="openAddCustomerForm()">Thêm Mới Khách
-                                Hàng</button>
+                            <button class="add-customer-btn" onclick="openAddCustomerForm()">
+                                <span class="material-icons">add</span>
+                                Thêm Mới Khách Hàng
+                            </button>
                         </div>
-
-                        <div id="customer-list" "></div>
-
                     </div>
+                    <div id="customer-list" class="customer-list"></div>
+                </div>
 
-                    <!-- form-tao-moi-khach-hang -->
-                    <div class=" create-customer-form" id="createCustomerForm">
-                            <div class="create-customer-form-content">
-                                <h3 class="form-title">Thêm khách hàng mới</h3>
-                                <label for="name">Họ và tên</label>
-                                <input type="text" id="fullName" placeholder="Nhập họ và tên...">
+                <!-- Create Customer Form -->
+                <div class="create-customer-form" id="createCustomerForm">
+                    <div class="create-customer-form-content">
+                        <div class="form-header">
+                            <h3 class="form-title">Thêm khách hàng mới</h3>
+                            <button class="close-btn" onclick="closeAddCustomerForm()">
+                                <span class="material-icons">close</span>
+                            </button>
+                        </div>
+                        
+                        <form id="customerForm">
+                            <div class="form-group">
+                                <label for="fullName">Họ và tên</label>
+                                <input type="text" id="fullName" placeholder="Nhập họ và tên..." required>
+                            </div>
+                            
+                            <div class="form-group">
                                 <label for="phone">Số điện thoại</label>
-                                <input type="text" id="phone" placeholder="Nhập số điện thoại...">
+                                <input type="tel" id="phone" placeholder="Nhập số điện thoại..." required>
+                            </div>
+                            
+                            <div class="form-group">
                                 <label for="email">Email</label>
                                 <input type="email" id="email" placeholder="Nhập email...">
-                                <label for="allergies">Ghi Chú </label>
-                                <input type="text" id="allergies" placeholder="Các thành phần dị ứng...">
-
-
-                                <div class="btn-container">
-                                    <button class="cancel-btn" onclick="closeAddCustomerForm()">Hủy</button>
-                                    <button class="submit" onclick="addNewCustomer();">Thêm</button>
-                                </div>
                             </div>
-                        </div>
-
-                        <!-- Customer Detail View (Mới) -->
-                        <div class="customer-detail-view" id="customerDetailView">
-                            <div class="customer-detail-content">
-                                <button class="close-btn" onclick="closeCustomerDetails()">
-                                    <i class="fas fa-times"></i> <!-- Icon đóng của Font Awesome -->
-                                </button>
-                                <h3>Chi tiết khách hàng</h3>
-
-                                <div class="detail-item">
-                                    <span>Họ và tên:</span>
-                                    <p id="detailFullName"></p>
-                                </div>
-                                <div class="detail-item">
-                                    <span>Điện thoại:</span>
-                                    <p id="detailPhone"></p>
-                                </div>
-                                <div class="detail-item">
-                                    <span>Email:</span>
-                                    <p id="detailEmail"></p>
-                                </div>
-                                <div class="detail-item">
-                                    <span>Tiền sử bệnh lý:</span>
-                                    <p id="detailMedicalHistory"></p>
-                                </div>
-                                <div class="detail-item">
-                                    <span>Dị ứng:</span>
-                                    <p id="detailAllergies"></p>
-                                </div>
-                                <div class="detail-item">
-                                    <span>Điểm tích lũy:</span>
-                                    <p id="detailTotalPoints"></p>
-                                </div>
-                                <div class="detail-item">
-                                    <span>Ngày tạo:</span>
-                                    <p id="detailCreatedDate"></p>
-                                </div>
-                                <div class="customer-detail-actions">
-                                    <button class="edit-customer-info-btn" onclick="openEditCustomerInfoForm()">Chỉnh
-                                        Sửa Thông Tin</button>
-                                    <button class="history-order-btn" onclick="historyOrderByCustomer()">Xem Lịch Sử Đơn
-                                        Hàng</button>
-                                </div>
-
-                            </div>
-                        </div>
-                        <!-- edit infomation khach hang -->
-                        <div class="edit-customer-info" id="editCustomerInfo">
-                            <div class="edit-customer-form">
-                                <button class="close-btn" onclick="closeEditCustomerForm()">
-                                    dong
-                                </button>
-                                <h3>Chỉnh sửa thông tin khách hàng</h3>
-
-                                <label for="editFullName">Họ và tên</label>
-                                <input type="text" id="editFullName" placeholder="Nhập họ và tên...">
-
-                                <label for="editPhone">Số điện thoại</label>
-                                <input type="tel" id="editPhone" placeholder="Nhập số điện thoại...">
-
-                                <label for="editEmail">Email</label>
-                                <input type="email" id="editEmail" placeholder="Nhập email...">
-
-                                <label for="editMedicalHistory">Tiền sử bệnh lý</label>
-                                <textarea id="editMedicalHistory" rows="3"
-                                    placeholder="Nhập tiền sử bệnh lý..."></textarea>
-
-                                <label for="editAllergies">Dị ứng</label>
-                                <textarea id="editAllergies" rows="3" placeholder="Nhập các loại dị ứng..."></textarea>
-
-                                <label for="editTotalPoints">Điểm tích lũy</label>
-                                <input type="number" id="editTotalPoints" min="0">
-
-                                <div class="edit-form-btn-container">
-                                    <button class="cancel-btn" onclick="closeEditCustomerForm()">Hủy</button>
-                                    <button class="save-btn" onclick="saveCustomerChanges()">Lưu</button>
-                                </div>
-                            </div>
-                        </div>
-
-
-
-                    </div>
-                    <!-- Tao don thuoc moi -->
-                    <div class="form-container" style="display: none;">
-                        <h3 class="form-title">
-                            <span class="material-icons">receipt_long</span>
-                            Tạo đơn thuốc
-                        </h3>
-                        <form>
+                            
                             <div class="form-group">
-                                <label class="form-label">Số điện thoại khách hàng</label>
-                                <input type="tel" class="form-input" placeholder="0901234567">
+                                <label for="allergies">Ghi chú</label>
+                                <textarea id="allergies" placeholder="Các thành phần dị ứng..." rows="3"></textarea>
                             </div>
 
-                            <div class="form-group">
-                                <label class="form-label">Tên khách hàng</label>
-                                <input type="text" class="form-input" placeholder="Nguyễn Văn A" readonly>
+                            <div class="btn-container">
+                                <button type="button" class="cancel-btn" onclick="closeAddCustomerForm()">Hủy</button>
+                                <button type="submit" class="submit-btn">Thêm</button>
                             </div>
-
-                            <div class="form-group">
-                                <label class="form-label">Chọn thuốc</label>
-                                <select class="form-select">
-                                    <option>Paracetamol 500mg</option>
-                                    <option>Amoxicillin 250mg</option>
-                                    <option>Vitamin C 1000mg</option>
-                                    <option>Aspirin 100mg</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">Số lượng</label>
-                                <input type="number" class="form-input" placeholder="1" min="1">
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">Ghi chú</label>
-                                <textarea class="form-input" rows="3"
-                                    placeholder="Uống sau ăn, ngày 3 lần..."></textarea>
-                            </div>
-
-                            <button type="submit" class="btn btn-primary">
-                                <span class="material-icons">add_shopping_cart</span>
-                                Thêm vào đơn
-                            </button>
                         </form>
                     </div>
+                </div>
 
-                    <div class="schedule-container" style="display: none;">
-                        <h3 class="form-title">
-                            <span class="material-icons">today</span>
-                            Lịch làm việc hôm nay
-                        </h3>
-                        <div class="schedule-today">
-                            <div class="schedule-info">
-                                <div class="schedule-time">8:00 - 16:00</div>
-                                <div class="schedule-details">
-                                    <div style="font-weight: 500;">Ca sáng</div>
-                                    <div style="font-size: 12px; color: #718096;">Thứ 2, 12/05/2025</div>
-                                </div>
+                <!-- Customer Detail View -->
+                <div class="customer-detail-view" id="customerDetailView">
+                    <div class="customer-detail-content">
+                        <div class="detail-header">
+                            <h3>Chi tiết khách hàng</h3>
+                            <button class="close-btn" onclick="closeCustomerDetails()">
+                                <span class="material-icons">close</span>
+                            </button>
+                        </div>
+
+                        <div class="detail-body">
+                            <div class="detail-item">
+                                <span class="detail-label">Họ và tên:</span>
+                                <p id="detailFullName"></p>
                             </div>
-                            <div class="status-working">Đang làm việc</div>
+                            <div class="detail-item">
+                                <span class="detail-label">Điện thoại:</span>
+                                <p id="detailPhone"></p>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Email:</span>
+                                <p id="detailEmail"></p>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Ghi chú:</span>
+                                <p id="detailAllergies"></p>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Điểm tích lũy:</span>
+                                <p id="detailTotalPoints"></p>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Ngày tạo:</span>
+                                <p id="detailCreatedDate"></p>
+                            </div>
+                        </div>
+
+                        <div class="customer-detail-actions">
+                            <button class="edit-customer-info-btn" onclick="openEditCustomerInfoForm()">
+                                <span class="material-icons">edit</span>
+                                Chỉnh Sửa Thông Tin
+                            </button>
+                            <button class="history-order-btn" onclick="historyOrderByCustomer()">
+                                <span class="material-icons">history</span>
+                                Xem Lịch Sử Đơn Hàng
+                            </button>
+                            <button class="edit-customer-info-btn" onclick="testMainEdit()">
+                              <span class="material-icons">bug_report</span>
+                              Test Edit (Debug)
+                            </button>
                         </div>
                     </div>
+                </div>
 
+                <!-- Main Edit Customer Section -->
+                <div class="main-edit-customer-section" id="mainEditCustomerSection">
+                    <div class="main-edit-container">
+                        <div class="edit-header">
+                            <h2 class="edit-title">
+                                <span class="material-icons">edit</span>
+                                Chỉnh sửa thông tin khách hàng
+                            </h2>
+                            <button class="close-main-edit-btn" onclick="closeMainEditCustomer()">
+                                <span class="material-icons">close</span>
+                            </button>
+                        </div>
 
+                        <div class="edit-content">
+                            <div class="customer-preview">
+                                <div class="preview-avatar" id="previewAvatar">KH</div>
+                                <div class="preview-info">
+                                    <h3 id="previewName">Tên khách hàng</h3>
+                                    <p id="previewPhone">Số điện thoại</p>
+                                </div>
+                            </div>
 
-            </main>
-        </div>
+                            <form id="mainEditCustomerForm" class="main-edit-form">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="mainEditFullName">
+                                            <span class="material-icons">person</span>
+                                            Họ và tên *
+                                        </label>
+                                        <input type="text" id="mainEditFullName" name="fullName" required>
+                                        <span class="error-message" id="fullNameError"></span>
+                                    </div>
 
-        <script>
-            // goi cac ham
-            document.addEventListener('DOMContentLoaded', fetchCustomers);
+                                    <div class="form-group">
+                                        <label for="mainEditPhone">
+                                            <span class="material-icons">phone</span>
+                                            Số điện thoại *
+                                        </label>
+                                        <input type="tel" id="mainEditPhone" name="phone" required>
+                                        <span class="error-message" id="phoneError"></span>
+                                    </div>
+                                </div>
 
-            function openAddCustomerForm() {
-                document.getElementById('customerDetailView').classList.remove('active');
-                document.getElementById('customersList').classList.add('shrink');
-                document.getElementById('createCustomerForm').classList.add('active');
-            }
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="mainEditEmail">
+                                            <span class="material-icons">email</span>
+                                            Email
+                                        </label>
+                                        <input type="email" id="mainEditEmail" name="email">
+                                        <span class="error-message" id="emailError"></span>
+                                    </div>
 
-            function closeAddCustomerForm() {
-                document.getElementById('customersList').classList.remove('shrink');
-                document.getElementById('createCustomerForm').classList.remove('active');
-                // Xóa dữ liệu form
-                document.getElementById('fullName').value = '';
-                document.getElementById('email').value = '';
-                document.getElementById('phone').value = '';
-            }
+                                    <div class="form-group">
+                                        <label for="mainEditBirthDate">
+                                            <span class="material-icons">cake</span>
+                                            Ngày sinh
+                                        </label>
+                                        <input type="date" id="mainEditBirthDate" name="birthDate">
+                                    </div>
+                                </div>
 
-            function openCustomerDetails() {
-                document.getElementById('createCustomerForm').classList.remove('active');
-                document.getElementById('customersList').classList.add('shrink');
-                document.getElementById('customerDetailView').classList.add('active');
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="mainEditGender">
+                                            <span class="material-icons">wc</span>
+                                            Giới tính
+                                        </label>
+                                        <select id="mainEditGender" name="gender">
+                                            <option value="">Chọn giới tính</option>
+                                            <option value="male">Nam</option>
+                                            <option value="female">Nữ</option>
+                                            <option value="other">Khác</option>
+                                        </select>
+                                    </div>
 
-            }
+                                    <div class="form-group">
+                                        <label for="mainEditTotalPoints">
+                                            <span class="material-icons">stars</span>
+                                            Điểm tích lũy
+                                        </label>
+                                        <input type="number" id="mainEditTotalPoints" name="totalPoints" min="0">
+                                    </div>
+                                </div>
 
-            function closeCustomerDetails() {
-                document.getElementById('customerDetailView').classList.remove('active')
-            }
-            function openEditCustomerInfoForm() {
-                
-                document.getElementById('editCustomerInfo').classList.add('active');
-                document.getElementById('customersList').classList.add('hide');
-                document.getElementById('editCustomerInfo').classList.add('active');
+                                <div class="form-group full-width">
+                                    <label for="mainEditAddress">
+                                        <span class="material-icons">location_on</span>
+                                        Địa chỉ
+                                    </label>
+                                    <textarea id="mainEditAddress" name="address" rows="2" placeholder="Nhập địa chỉ..."></textarea>
+                                </div>
 
-            }
+                                <div class="form-group full-width">
+                                    <label for="mainEditMedicalHistory">
+                                        <span class="material-icons">medical_services</span>
+                                        Tiền sử bệnh lý
+                                    </label>
+                                    <textarea id="mainEditMedicalHistory" name="medicalHistory" rows="3" placeholder="Nhập tiền sử bệnh lý..."></textarea>
+                                </div>
 
-            function openCustomerList() {
-                document.getElementById('customersList').classList.remove('hide');
-                document.getElementById('customersList').classList.remove('shrink');
-                document.getElementById('createCustomerForm').classList.remove('active');
-                document.getElementById('editCustomerInfo').classList.remove('active');
-                document.getElementById('customerDetailView').classList.remove('active');
-            }
+                                <div class="form-group full-width">
+                                    <label for="mainEditAllergies">
+                                        <span class="material-icons">warning</span>
+                                        Dị ứng
+                                    </label>
+                                    <textarea id="mainEditAllergies" name="allergies" rows="3" placeholder="Nhập các loại dị ứng..."></textarea>
+                                </div>
 
-
-
-
-
-            //  ham lay list customer tu data
-            async function fetchCustomers() {
-                try {
-                    console.log("Fetching customers...");
-                    const response = await fetch('http://localhost:8080/employee/danh-sach-khach-hang', {
-                        method: 'GET',
-                        headers: { 'Content-Type': 'application/json' }
-                    });
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! Status: ${response.status}`);
-                    }
-                    const customers = await response.json();
-                    console.log("Received customers:", customers);
-                    displayCustomers(customers);
-                } catch (error) {
-                    console.error('Error fetching customers:', error);
-                }
-            }
-            //  ham hien thi list customer
-            function displayCustomers(customers) {
-                const customerList = document.getElementById('customer-list');
-                customerList.innerHTML = '';
-                customers.forEach(customer => {
-                    const customerItem = document.createElement('div');
-                    customerItem.className = 'customer-item';
-                    const initials = customer.fullName.split(' ')
-                        .map(word => word.charAt(0))
-                        .slice(-2)
-                        .join('')
-                        .toUpperCase();
-                    customerItem.innerHTML = `
-                    <div class="customer-avatar">${initials}</div>
-                    <div class="customer-info" id="customerInfo" onclick="openCustomerDetails()">
-                        <h4>${customer.fullName}</h4>
-                        <p>${customer.phone || 'N/A'} • Point : ${customer.totalPoints}</p>
+                                <div class="form-actions">
+                                    <button type="button" class="cancel-btn" onclick="closeMainEditCustomer()">
+                                        <span class="material-icons">cancel</span>
+                                        Hủy
+                                    </button>
+                                    <button type="submit" class="save-btn" id="saveCustomerBtn">
+                                        <span class="material-icons">save</span>
+                                        <span class="btn-text">Lưu thay đổi</span>
+                                        <span class="loading-spinner" style="display: none;">
+                                            <span class="material-icons spinning">refresh</span>
+                                        </span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-                `;
-                    customerList.appendChild(customerItem);
-                });
-            }
+                </div>
 
-            function formatDate(dateString) {
-                if (!dateString) return 'N/A';
-                const date = new Date(dateString);
-                return date.toLocaleDateString('vi-VN');
-            }
+                <!-- Edit Customer Form -->
+                <div class="edit-customer-info" id="editCustomerInfo">
+                    <div class="edit-customer-form">
+                        <div class="form-header">
+                            <h3>Chỉnh sửa thông tin khách hàng</h3>
+                            <button class="close-btn" onclick="closeEditCustomerForm()">
+                                <span class="material-icons">close</span>
+                            </button>
+                        </div>
 
+                        <form id="editCustomerForm">
+                            <div class="form-group">
+                                <label for="editFullName">Họ và tên</label>
+                                <input type="text" id="editFullName" placeholder="Nhập họ và tên..." required>
+                            </div>
 
+                            <div class="form-group">
+                                <label for="editPhone">Số điện thoại</label>
+                                <input type="tel" id="editPhone" placeholder="Nhập số điện thoại..." required>
+                            </div>
 
-        </script>
-    </body>
+                            <div class="form-group">
+                                <label for="editEmail">Email</label>
+                                <input type="email" id="editEmail" placeholder="Nhập email...">
+                            </div>
 
+                            <div class="form-group">
+                                <label for="editAllergies">Ghi chú</label>
+                                <textarea id="editAllergies" rows="3" placeholder="Nhập ghi chú..."></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="editTotalPoints">Điểm tích lũy</label>
+                                <input type="number" id="editTotalPoints" min="0">
+                            </div>
+
+                            <div class="edit-form-btn-container">
+                                <button type="button" class="cancel-btn" onclick="closeEditCustomerForm()">Hủy</button>
+                                <button type="submit" class="save-btn">Lưu</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Create Order Form -->
+            <div class="form-container" id="createOrderForm" style="display: none;">
+                <h3 class="form-title">
+                    <span class="material-icons">receipt_long</span>
+                    Tạo đơn thuốc
+                </h3>
+                <form>
+                    <div class="form-group">
+                        <label class="form-label">Số điện thoại khách hàng</label>
+                        <input type="tel" class="form-input" placeholder="0901234567">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Tên khách hàng</label>
+                        <input type="text" class="form-input" placeholder="Nguyễn Văn A" readonly>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Chọn thuốc</label>
+                        <select class="form-select">
+                            <option>Paracetamol 500mg</option>
+                            <option>Amoxicillin 250mg</option>
+                            <option>Vitamin C 1000mg</option>
+                            <option>Aspirin 100mg</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Số lượng</label>
+                        <input type="number" class="form-input" placeholder="1" min="1">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Ghi chú</label>
+                        <textarea class="form-input" rows="3" placeholder="Uống sau ăn, ngày 3 lần..."></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <span class="material-icons">add_shopping_cart</span>
+                        Thêm vào đơn
+                    </button>
+                </form>
+            </div>
+
+            <!-- Schedule Container -->
+            <div class="schedule-container" id="scheduleContainer" style="display: none;">
+                <h3 class="form-title">
+                    <span class="material-icons">today</span>
+                    Lịch làm việc hôm nay
+                </h3>
+                <div class="schedule-today">
+                    <div class="schedule-info">
+                        <div class="schedule-time">8:00 - 16:00</div>
+                        <div class="schedule-details">
+                            <div style="font-weight: 500;">Ca sáng</div>
+                            <div style="font-size: 12px; color: #718096;">Thứ 2, 12/05/2025</div>
+                        </div>
+                    </div>
+                    <div class="status-working">Đang làm việc</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="assets/js/employee.js"></script>
+</body>
 </html>

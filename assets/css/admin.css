@@ -851,3 +851,43 @@ body {
     flex-direction: column;
   }
 }
+.pagination {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 24px 0 0 0;
+}
+
+.pagination-btn {
+  padding: 8px 16px;
+  border: 1px solid #e2e8f0;
+  background: #f7fafc;
+  color: #2d3748;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s, color 0.2s;
+}
+
+.pagination-btn.active,
+.pagination-btn:hover {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  border-color: #667eea;
+}
+#panel-list-products .panel-content {
+  display: flex;
+  flex-direction: column;
+  min-height: 700px; /* Tăng lên nếu muốn panel cao hơn */
+}
+
+.table-wrapper {
+  flex: 1 1 auto;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+#product-list-pagination {
+  margin-top: 24px;
+  align-self: center;
+}

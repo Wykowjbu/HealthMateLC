@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Manager Dashboard - Long Châu</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
-  <link rel="stylesheet" href="../assets/css/manager/manager.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/manager.css">
 </head>
 <body>
 <div class="dashboard">
@@ -20,52 +20,50 @@
     <nav class="nav-menu">
       <div class="nav-group">
         <div class="nav-group-title">Báo cáo</div>
-        <div class="nav-item active">
-          <a href="/HealthMateLC/manager/manager.html">
+        <div class="nav-item" data-section="dashboard">
+          <a href="#" onclick="navigate('dashboard')">
             <span class="material-icons">analytics</span>
             Báo cáo doanh thu
           </a>
         </div>
       </div>
-
       <div class="nav-group">
         <div class="nav-group-title">Quản lý nhân viên</div>
-        <div class="nav-item">
-          <a href="/HealthMateLC/manager/work_schedule.html">
+        <div class="nav-item" data-section="work_schedule">
+          <a href="#" onclick="navigate('work_schedule')">
             <span class="material-icons">schedule</span>
             Lịch làm việc
           </a>
         </div>
-        <div class="nav-item">
-          <a href="/HealthMateLC/manager/edit_schedule.html">
+        <div class="nav-item" data-section="edit_schedule">
+          <a href="#" onclick="navigate('edit_schedule')">
             <span class="material-icons">edit_calendar</span>
             Chỉnh sửa lịch
           </a>
         </div>
       </div>
-
       <div class="nav-group">
         <div class="nav-group-title">Quản lý hóa đơn</div>
-        <div class="nav-item">
-          <a href="/HealthMateLC/manager/view_invoices.html">
+        <div class="nav-item" data-section="view_invoices">
+          <a href="#" onclick="navigate('view_invoices')">
             <span class="material-icons">receipt</span>
             Xem hóa đơn
           </a>
         </div>
-        <div class="nav-item">
-          <a href="/HealthMateLC/manager/edit_invoice.html">
+        <div class="nav-item" data-section="edit_invoice">
+          <a href="#" onclick="navigate('edit_invoice')">
             <span class="material-icons">edit</span>
             Chỉnh sửa hóa đơn
           </a>
         </div>
-        <div class="nav-item">
-          <a href="/HealthMateLC/manager/delete_invoice.html">
+        <div class="nav-item" data-section="delete_invoice">
+          <a href="#" onclick="navigate('delete_invoice')">
             <span class="material-icons">delete</span>
             Xóa hóa đơn
           </a>
         </div>
-        <div class="nav-item">
-          <a href="/HealthMateLC/manager/export_vat.html">
+        <div class="nav-item" data-section="export_vat">
+          <a href="#" onclick="navigate('export_vat')">
             <span class="material-icons">print</span>
             Xuất VAT
           </a>
@@ -73,9 +71,8 @@
       </div>
     </nav>
   </aside>
-
-  <header class="header">
-    <h1 class="header-title">Chi nhánh Quận 1 - Nguyễn Huệ</h1>
+  <header class="header" onclick="handleUserProfile()">
+    <h1 class="header-title" id="branch">Chưa gán chi nhánh</h1>
     <div class="header-actions">
       <button class="btn btn-primary" onclick="handleCreateSchedule()">
         <span class="material-icons">add</span>
@@ -84,386 +81,420 @@
       <div class="user-profile">
         <div class="avatar">QL</div>
         <div>
-          <div id="userFullName" style="font-weight: 500">Nguyễn Thị Lan</div>
+          <div id="userFullName" style="font-weight: 500">Loading...</div>
           <div id="userPharmacyName" style="font-size: 12px; color: #718096">Quản lý chi nhánh</div>
         </div>
         <span class="material-icons">expand_more</span>
+        <div class="user-dropdown" id="userDropdown">
+          <div class="dropdown-item" onclick="showUserInfo()">
+            <span class="material-icons">person</span>
+            <span>Thông tin cá nhân</span>
+          </div>
+          <div class="dropdown-item" onclick="logout()">
+            <span class="material-icons">logout</span>
+            <span>Đăng xuất</span>
+          </div>
+        </div>
       </div>
     </div>
-  </header>
-
+</header>
   <main class="main-content">
-    <div class="stats-grid">
-      <div class="stat-card" onclick="handleStatCard('revenue')">
-        <div class="stat-header">
-          <div class="stat-icon revenue">
-            <span class="material-icons">trending_up</span>
+    <div id="content-area">
+      <!-- Dashboard Content -->
+      <div class="content-section" id="dashboard-section">
+        <div class="stats-grid">
+          <div class="stat-card" onclick="handleStatCard('revenue')">
+            <div class="stat-header">
+              <div class="stat-icon revenue">
+                <span class="material-icons">trending_up</span>
+              </div>
+            </div>
+            <div class="stat-value">45.2M</div>
+            <div class="stat-label">Doanh thu tháng này</div>
+          </div>
+          <div class="stat-card" onclick="handleStatCard('orders')">
+            <div class="stat-header">
+              <div class="stat-icon orders">
+                <span class="material-icons">shopping_cart</span>
+              </div>
+            </div>
+            <div class="stat-value">1,847</div>
+            <div class="stat-label">Đơn hàng tháng này</div>
+          </div>
+          <div class="stat-card" onclick="handleStatCard('customers')">
+            <div class="stat-header">
+              <div class="stat-icon customers">
+                <span class="material-icons">group</span>
+              </div>
+            </div>
+            <div class="stat-value">892</div>
+            <div class="stat-label">Khách hàng mới</div>
+          </div>
+          <div class="stat-card" onclick="handleStatCard('rating')">
+            <div class="stat-header">
+              <div class="stat-icon rating">
+                <span class="material-icons">star</span>
+              </div>
+            </div>
+            <div class="stat-value">4.8</div>
+            <div class="stat-label">Đánh giá trung bình</div>
           </div>
         </div>
-        <div class="stat-value">45.2M</div>
-        <div class="stat-label">Doanh thu tháng này</div>
-      </div>
-
-      <div class="stat-card" onclick="handleStatCard('orders')">
-        <div class="stat-header">
-          <div class="stat-icon orders">
-            <span class="material-icons">shopping_cart</span>
+        <div class="content-grid">
+          <div class="chart-container">
+            <div class="chart-header">
+              <h3 class="chart-title">Doanh thu chi nhánh</h3>
+              <div class="chart-actions">
+                <select onchange="handleChartPeriod(this.value)" style="padding: 8px; border: 1px solid #e2e8f0; border-radius: 6px;">
+                  <option value="7">7 ngày qua</option>
+                  <option value="30">30 ngày qua</option>
+                  <option value="90">3 tháng qua</option>
+                </select>
+              </div>
+            </div>
+            <div class="chart-placeholder">📈 Biểu đồ doanh thu chi nhánh</div>
+          </div>
+          <div class="reviews-container">
+            <div class="reviews-header">
+              <h3 class="chart-title">Đánh giá mới nhất</h3>
+            </div>
+            <div class="review-item" onclick="handleReviewClick('review1')">
+              <div class="review-avatar">NV</div>
+              <div class="review-content">
+                <div class="review-header">
+                  <span class="review-name">Nguyễn Văn An</span>
+                  <div class="review-rating">
+                    <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span>
+                  </div>
+                </div>
+                <p class="review-text">Nhân viên tư vấn rất nhiệt tình, thuốc đầy đủ và giá cả hợp lý.</p>
+              </div>
+            </div>
+            <div class="review-item" onclick="handleReviewClick('review2')">
+              <div class="review-avatar">LT</div>
+              <div class="review-content">
+                <div class="review-header">
+                  <span class="review-name">Lê Thị Bình</span>
+                  <div class="review-rating">
+                    <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">☆</span>
+                  </div>
+                </div>
+                <p class="review-text">Cửa hàng sạch sẽ, thuốc chất lượng tốt. Sẽ quay lại lần sau.</p>
+              </div>
+            </div>
+            <div class="review-item" onclick="handleReviewClick('review3')">
+              <div class="review-avatar">TM</div>
+              <div class="review-content">
+                <div class="review-header">
+                  <span class="review-name">Trần Minh Châu</span>
+                  <div class="review-rating">
+                    <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span>
+                  </div>
+                </div>
+                <p class="review-text">Dịch vụ tuyệt vời, giao hàng nhanh chóng.</p>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="stat-value">1,847</div>
-        <div class="stat-label">Đơn hàng tháng này</div>
       </div>
-
-      <div class="stat-card" onclick="handleStatCard('customers')">
-        <div class="stat-header">
-          <div class="stat-icon customers">
-            <span class="material-icons">group</span>
+      <!-- Work Schedule Content -->
+      <div class="content-section" id="work_schedule-section" style="display: none;">
+        <div class="chart-container" style="margin-bottom: 30px;">
+          <h3 class="chart-title" style="margin-bottom: 20px;">Lịch làm việc tuần này</h3>
+          <div class="schedule-grid">
+            <div class="schedule-day">
+              <div class="day-name">Thứ 2</div>
+              <div class="day-date">07/06/2025</div>
+              <div class="employee-shift">Trần Thị Dược Sĩ (08:00-17:00)</div>
+              <div class="employee-shift">Phạm Thị Thu Ngân (07:30-16:30)</div>
+            </div>
+            <div class="schedule-day">
+              <div class="day-name">Thứ 3</div>
+              <div class="day-date">08/06/2025</div>
+              <div class="employee-shift">Trần Thị Dược Sĩ (08:00-17:00)</div>
+              <div class="employee-shift">Phạm Thị Thu Ngân (07:30-16:30)</div>
+            </div>
+            <div class="schedule-day">
+              <div class="day-name">Thứ 4</div>
+              <div class="day-date">09/06/2025</div>
+              <div class="employee-shift">Trần Thị Dược Sĩ (08:00-17:00)</div>
+              <div class="employee-shift">Phạm Thị Thu Ngân (07:30-16:30)</div>
+            </div>
+            <div class="schedule-day">
+              <div class="day-name">Thứ 5</div>
+              <div class="day-date">10/06/2025</div>
+              <div class="employee-shift">Trần Thị Dược Sĩ (08:00-17:00)</div>
+              <div class="employee-shift">Phạm Thị Thu Ngân (07:30-16:30)</div>
+            </div>
+            <div class="schedule-day">
+              <div class="day-name">Thứ 6</div>
+              <div class="day-date">11/06/2025</div>
+              <div class="employee-shift">Trần Thị Dược Sĩ (08:00-17:00)</div>
+              <div class="employee-shift">Phạm Thị Thu Ngân (07:30-16:30)</div>
+            </div>
+            <div class="schedule-day">
+              <div class="day-name">Thứ 7</div>
+              <div class="day-date">12/06/2025</div>
+              <div class="employee-shift">Trần Thị Dược Sĩ (08:00-17:00)</div>
+              <div class="employee-shift">Phạm Thị Thu Ngân (07:30-16:30)</div>
+            </div>
+            <div class="schedule-day">
+              <div class="day-name">Chủ nhật</div>
+              <div class="day-date">13/06/2025</div>
+              <div class="employee-shift">Trần Thị Dược Sĩ (08:00-17:00)</div>
+              <div class="employee-shift">Phạm Thị Thu Ngân (07:30-16:30)</div>
+            </div>
           </div>
         </div>
-        <div class="stat-value">892</div>
-        <div class="stat-label">Khách hàng mới</div>
       </div>
-
-      <div class="stat-card" onclick="handleStatCard('rating')">
-        <div class="stat-header">
-          <div class="stat-icon rating">
-            <span class="material-icons">star</span>
-          </div>
-        </div>
-        <div class="stat-value">4.8</div>
-        <div class="stat-label">Đánh giá trung bình</div>
-      </div>
-    </div>
-
-    <div class="content-grid">
-      <div class="chart-container">
-        <div class="chart-header">
-          <h3 class="chart-title">Doanh thu chi nhánh</h3>
-          <div class="chart-actions">
-            <select onchange="handleChartPeriod(this.value)" style="padding: 8px; border: 1px solid #e2e8f0; border-radius: 6px;">
-              <option value="7">7 ngày qua</option>
-              <option value="30">30 ngày qua</option>
-              <option value="90">3 tháng qua</option>
+      <!-- Edit Schedule Content -->
+      <div class="content-section" id="edit_schedule-section" style="display: none;">
+        <div class="form-container">
+          <h3 class="chart-title" style="margin-bottom: 20px;">Chỉnh sửa lịch làm việc</h3>
+          <div class="form-group">
+            <label for="employee">Nhân viên</label>
+            <select id="employee">
+              <option value="2">Trần Thị Dược Sĩ</option>
+              <option value="4">Phạm Thị Thu Ngân</option>
             </select>
           </div>
-        </div>
-        <div class="chart-placeholder">📈 Biểu đồ doanh thu chi nhánh</div>
-      </div>
-
-      <div class="reviews-container">
-        <div class="reviews-header">
-          <h3 class="chart-title">Đánh giá mới nhất</h3>
-        </div>
-        <div class="review-item" onclick="handleReviewClick('review1')">
-          <div class="review-avatar">NV</div>
-          <div class="review-content">
-            <div class="review-header">
-              <span class="review-name">Nguyễn Văn An</span>
-              <div class="review-rating">
-                <span class="star">★</span>
-                <span class="star">★</span>
-                <span class="star">★</span>
-                <span class="star">★</span>
-                <span class="star">★</span>
-              </div>
-            </div>
-            <p class="review-text">
-              Nhân viên tư vấn rất nhiệt tình, thuốc đầy đủ và giá cả hợp lý.
-            </p>
+          <div class="form-group">
+            <label for="workDate">Ngày làm việc</label>
+            <input type="date" id="workDate" value="2025-06-07">
           </div>
-        </div>
-        <div class="review-item" onclick="handleReviewClick('review2')">
-          <div class="review-avatar">LT</div>
-          <div class="review-content">
-            <div class="review-header">
-              <span class="review-name">Lê Thị Bình</span>
-              <div class="review-rating">
-                <span class="star">★</span>
-                <span class="star">★</span>
-                <span class="star">★</span>
-                <span class="star">★</span>
-                <span class="star">☆</span>
-              </div>
-            </div>
-            <p class="review-text">
-              Cửa hàng sạch sẽ, thuốc chất lượng tốt. Sẽ quay lại lần sau.
-            </p>
+          <div class="form-group">
+            <label for="startTime">Giờ bắt đầu</label>
+            <input type="time" id="startTime" value="08:00">
           </div>
-        </div>
-        <div class="review-item" onclick="handleReviewClick('review3')">
-          <div class="review-avatar">TM</div>
-          <div class="review-content">
-            <div class="review-header">
-              <span class="review-name">Trần Minh Châu</span>
-              <div class="review-rating">
-                <span class="star">★</span>
-                <span class="star">★</span>
-                <span class="star">★</span>
-                <span class="star">★</span>
-                <span class="star">★</span>
-              </div>
-            </div>
-            <p class="review-text">
-              Dịch vụ tuyệt vời, giao hàng nhanh chóng.
-            </p>
+          <div class="form-group">
+            <label for="endTime">Giờ kết thúc</label>
+            <input type="time" id="endTime" value="17:00">
           </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="chart-container" style="margin-bottom: 30px">
-      <div class="schedule-header">
-        <h3 class="chart-title">Lịch làm việc tuần này</h3>
-        <div class="schedule-actions">
-          <button class="btn" onclick="handleAddSchedule()">
-            <span class="material-icons">add</span>
-            Thêm lịch
+          <button class="btn btn-primary" onclick="saveSchedule()">
+            <span class="material-icons">save</span>
+            Lưu lịch
           </button>
         </div>
       </div>
-      <div class="schedule-grid">
-        <div class="schedule-day" onclick="handleScheduleDay('2025-05-12')">
-          <div class="day-name">Thứ 2</div>
-          <div class="day-date">12</div>
-          <div class="employee-shift">An (8-16h)</div>
-          <div class="employee-shift">Bình (16-24h)</div>
-        </div>
-        <div class="schedule-day" onclick="handleScheduleDay('2025-05-13')">
-          <div class="day-name">Thứ 3</div>
-          <div class="day-date">13</div>
-          <div class="employee-shift">Châu (8-16h)</div>
-          <div class="employee-shift">Dũng (16-24h)</div>
-        </div>
-        <div class="schedule-day" onclick="handleScheduleDay('2025-05-14')">
-          <div class="day-name">Thứ 4</div>
-          <div class="day-date">14</div>
-          <div class="employee-shift">Emy (8-16h)</div>
-          <div class="employee-shift">An (16-24h)</div>
-        </div>
-        <div class="schedule-day" onclick="handleScheduleDay('2025-05-15')">
-          <div class="day-name">Thứ 5</div>
-          <div class="day-date">15</div>
-          <div class="employee-shift">Bình (8-16h)</div>
-          <div class="employee-shift">Châu (16-24h)</div>
-        </div>
-        <div class="schedule-day" onclick="handleScheduleDay('2025-05-16')">
-          <div class="day-name">Thứ 6</div>
-          <div class="day-date">16</div>
-          <div class="employee-shift">Dũng (8-16h)</div>
-          <div class="employee-shift">Emy (16-24h)</div>
-        </div>
-        <div class="schedule-day" onclick="handleScheduleDay('2025-05-17')">
-          <div class="day-name">Thứ 7</div>
-          <div class="day-date">17</div>
-          <div class="employee-shift">An (8-16h)</div>
-          <div class="employee-shift">Bình (16-24h)</div>
-        </div>
-        <div class="schedule-day" onclick="handleScheduleDay('2025-05-18')">
-          <div class="day-name">Chủ nhật</div>
-          <div class="day-date">18</div>
-          <div class="employee-shift">Châu (8-16h)</div>
-          <div class="employee-shift">Dũng (16-24h)</div>
+      <!-- View Invoices Content -->
+      <div class="content-section" id="view_invoices-section" style="display: none;">
+        <div class="invoice-table">
+          <div class="table-header">
+            <h3 class="chart-title">Hóa đơn gần đây</h3>
+          </div>
+          <table class="table">
+            <thead>
+            <tr>
+              <th>Mã HĐ</th>
+              <th>Khách hàng</th>
+              <th>Ngày</th>
+              <th>Tổng tiền</th>
+              <th>Trạng thái</th>
+              <th>Thao tác</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+              <td>#1</td>
+              <td>Nguyễn Thị Hoa</td>
+              <td>11/06/2025</td>
+              <td>25,000đ</td>
+              <td><span class="status-badge status-completed">Hoàn thành</span></td>
+              <td>
+                <button class="btn" onclick="navigate('edit_invoice')" style="background: #e2e8f0; color: #4a5568; padding: 4px 8px;">
+                  <span class="material-icons" style="font-size: 16px;">edit</span>
+                </button>
+                <button class="btn" onclick="navigate('delete_invoice')" style="background: #fed7d7; color: #742a2a; padding: 4px 8px;">
+                  <span class="material-icons" style="font-size: 16px;">delete</span>
+                </button>
+              </td>
+            </tr>
+            <tr>
+              <td>#2</td>
+              <td>Trần Văn Nam</td>
+              <td>11/06/2025</td>
+              <td>10,000đ</td>
+              <td><span class="status-badge status-completed">Hoàn thành</span></td>
+              <td>
+                <button class="btn" onclick="navigate('edit_invoice')" style="background: #e2e8f0; color: #4a5568; padding: 4px 8px;">
+                  <span class="material-icons" style="font-size: 16px;">edit</span>
+                </button>
+                <button class="btn" onclick="navigate('delete_invoice')" style="background: #fed7d7; color: #742a2a; padding: 4px 8px;">
+                  <span class="material-icons" style="font-size: 16px;">delete</span>
+                </button>
+              </td>
+            </tr>
+            <tr>
+              <td>#3</td>
+              <td>Lê Thị Lan</td>
+              <td>11/06/2025</td>
+              <td>24,000đ</td>
+              <td><span class="status-badge status-completed">Hoàn thành</span></td>
+              <td>
+                <button class="btn" onclick="navigate('edit_invoice')" style="background: #e2e8f0; color: #4a5568; padding: 4px 8px;">
+                  <span class="material-icons" style="font-size: 16px;">edit</span>
+                </button>
+                <button class="btn" onclick="navigate('delete_invoice')" style="background: #fed7d7; color: #742a2a; padding: 4px 8px;">
+                  <span class="material-icons" style="font-size: 16px;">delete</span>
+                </button>
+              </td>
+            </tr>
+            </tbody>
+          </table>
         </div>
       </div>
-    </div>
-
-    <div class="invoice-table">
-      <div class="table-header">
-        <h3 class="chart-title">Hóa đơn gần đây</h3>
-        <div class="table-actions">
-          <input type="text" placeholder="Tìm kiếm hóa đơn..." onkeyup="handleSearchInvoices(this.value)">
-          <select onchange="handleFilterInvoices(this.value)">
-            <option value="">Tất cả trạng thái</option>
-            <option value="COMPLETED">Hoàn thành</option>
-            <option value="PENDING">Chờ thanh toán</option>
-          </select>
+      <!-- Edit Invoice Content -->
+      <div class="content-section" id="edit_invoice-section" style="display: none;">
+        <div class="form-container">
+          <h3 class="chart-title" style="margin-bottom: 20px;">Chỉnh sửa hóa đơn #1</h3>
+          <div class="form-group">
+            <label for="customer">Khách hàng</label>
+            <select id="customer">
+              <option value="1" selected>Nguyễn Thị Hoa</option>
+              <option value="2">Trần Văn Nam</option>
+              <option value="3">Lê Thị Lan</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="invoiceDate">Ngày hóa đơn</label>
+            <input type="date" id="invoiceDate" value="2025-06-11">
+          </div>
+          <div class="form-group">
+            <label for="payment">Phương thức thanh toán</label>
+            <select id="payment">
+              <option value="Cash" selected>Tiền mặt</option>
+              <option value="Card">Thẻ</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="status">Trạng thái</label>
+            <select id="status">
+              <option value="paid" selected>Hoàn thành</option>
+              <option value="cancelled">Hủy</option>
+            </select>
+          </div>
+          <h4 style="margin-bottom: 10px;">Chi tiết hóa đơn</h4>
+          <table class="table">
+            <thead>
+            <tr>
+              <th>Sản phẩm</th>
+              <th>Số lượng</th>
+              <th>Đơn giá</th>
+              <th>Thành tiền</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+              <td>Paracetamol 500mg</td>
+              <td><input type="number" value="3" style="width: 60px;"></td>
+              <td>5,000đ</td>
+              <td>15,000đ</td>
+            </tr>
+            <tr>
+              <td>Vitamin C 1000mg</td>
+              <td><input type="number" value="1" style="width: 60px;"></td>
+              <td>10,000đ</td>
+              <td>10,000đ</td>
+            </tr>
+            </tbody>
+          </table>
+          <div class="form-group">
+            <label for="totalAmount">Tổng tiền</label>
+            <input type="text" id="totalAmount" value="25,000đ" readonly>
+          </div>
+          <button class="btn btn-primary" onclick="saveInvoice()">
+            <span class="material-icons">save</span>
+            Lưu hóa đơn
+          </button>
         </div>
       </div>
-      <table class="table">
-        <thead>
-        <tr>
-          <th>Mã HĐ</th>
-          <th>Khách hàng</th>
-          <th>Ngày</th>
-          <th>Tổng tiền</th>
-          <th>Trạng thái</th>
-          <th>Thao tác</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr>
-          <td>#HD001</td>
-          <td>Nguyễn Văn An</td>
-          <td>12/05/2025</td>
-          <td>450,000đ</td>
-          <td>
-            <select onchange="handleStatusChange('HD001', this.value)">
-              <option value="COMPLETED" selected>Hoàn thành</option>
-              <option value="PENDING">Chờ thanh toán</option>
-              <option value="CANCELLED">Đã hủy</option>
+      <!-- Delete Invoice Content -->
+      <div class="content-section" id="delete_invoice-section" style="display: none;">
+        <div class="form-container">
+          <h3 class="chart-title" style="margin-bottom: 20px;">Xóa hóa đơn #1</h3>
+          <p style="margin-bottom: 20px;">Bạn có chắc chắn muốn xóa hóa đơn này? Hành động này không thể hoàn tác.</p>
+          <div class="form-group">
+            <label>Mã hóa đơn</label>
+            <input type="text" value="#1" readonly>
+          </div>
+          <div class="form-group">
+            <label>Khách hàng</label>
+            <input type="text" value="Nguyễn Thị Hoa" readonly>
+          </div>
+          <div class="form-group">
+            <label>Tổng tiền</label>
+            <input type="text" value="25,000đ" readonly>
+          </div>
+          <div class="form-group">
+            <label>Ngày hóa đơn</label>
+            <input type="text" value="11/06/2025" readonly>
+          </div>
+          <button class="btn btn-danger" onclick="deleteInvoice()">
+            <span class="material-icons">delete</span>
+            Xóa hóa đơn
+          </button>
+        </div>
+      </div>
+      <!-- Export VAT Content -->
+      <div class="content-section" id="export_vat-section" style="display: none;">
+        <div class="form-container">
+          <h3 class="chart-title" style="margin-bottom: 20px;">Xuất hóa đơn VAT</h3>
+          <div class="form-group">
+            <label for="invoice">Chọn hóa đơn</label>
+            <select id="invoice">
+              <option value="1" selected>#1 - Nguyễn Thị Hoa (25,000đ)</option>
+              <option value="2">#2 - Trần Văn Nam (10,000đ)</option>
+              <option value="3">#3 - Lê Thị Lan (24,000đ)</option>
             </select>
-          </td>
-          <td>
-            <button class="btn" onclick="handleInvoiceAction('HD001', 'view')" style="background: #e2e8f0; color: #4a5568; padding: 4px 8px;">
-              <span class="material-icons" style="font-size: 16px">visibility</span>
-            </button>
-            <button class="btn" onclick="handleInvoiceAction('HD001', 'edit')" style="background: #e2e8f0; color: #4a5568; padding: 4px 8px;">
-              <span class="material-icons" style="font-size: 16px">edit</span>
-            </button>
-            <button class="btn" onclick="handleInvoiceAction('HD001', 'delete')" style="background: #e2e8f0; color: #4a5568; padding: 4px 8px;">
-              <span class="material-icons" style="font-size: 16px">delete</span>
-            </button>
-          </td>
-        </tr>
-        <tr>
-          <td>#HD002</td>
-          <td>Lê Thị Bình</td>
-          <td>12/05/2025</td>
-          <td>320,000đ</td>
-          <td>
-            <select onchange="handleStatusChange('HD002', this.value)">
-              <option value="COMPLETED">Hoàn thành</option>
-              <option value="PENDING" selected>Chờ thanh toán</option>
-              <option value="CANCELLED">Đã hủy</option>
-            </select>
-          </td>
-          <td>
-            <button class="btn" onclick="handleInvoiceAction('HD002', 'view')" style="background: #e2e8f0; color: #4a5568; padding: 4px 8px;">
-              <span class="material-icons" style="font-size: 16px">visibility</span>
-            </button>
-            <button class="btn" onclick="handleInvoiceAction('HD002', 'edit')" style="background: #e2e8f0; color: #4a5568; padding: 4px 8px;">
-              <span class="material-icons" style="font-size: 16px">edit</span>
-            </button>
-            <button class="btn" onclick="handleInvoiceAction('HD002', 'delete')" style="background: #e2e8f0; color: #4a5568; padding: 4px 8px;">
-              <span class="material-icons" style="font-size: 16px">delete</span>
-            </button>
-          </td>
-        </tr>
-        <tr>
-          <td>#HD003</td>
-          <td>Trần Minh Châu</td>
-          <td>11/05/2025</td>
-          <td>180,000đ</td>
-          <td>
-            <select onchange="handleStatusChange('HD003', this.value)">
-              <option value="COMPLETED" selected>Hoàn thành</option>
-              <option value="PENDING">Chờ thanh toán</option>
-              <option value="CANCELLED">Đã hủy</option>
-            </select>
-          </td>
-          <td>
-            <button class="btn" onclick="handleInvoiceAction('HD003', 'view')" style="background: #e2e8f0; color: #4a5568; padding: 4px 8px;">
-              <span class="material-icons" style="font-size: 16px">visibility</span>
-            </button>
-            <button class="btn" onclick="handleInvoiceAction('HD003', 'edit')" style="background: #e2e8f0; color: #4a5568; padding: 4px 8px;">
-              <span class="material-icons" style="font-size: 16px">edit</span>
-            </button>
-            <button class="btn" onclick="handleInvoiceAction('HD003', 'delete')" style="background: #e2e8f0; color: #4a5568; padding: 4px 8px;">
-              <span class="material-icons" style="font-size: 16px">delete</span>
-            </button>
-          </td>
-        </tr>
-        </tbody>
-      </table>
+          </div>
+          <div class="form-group">
+            <label for="taxCode">Mã số thuế</label>
+            <input type="text" id="taxCode" placeholder="Nhập mã số thuế">
+          </div>
+          <div class="form-group">
+            <label for="companyName">Tên công ty</label>
+            <input type="text" id="companyName" placeholder="Nhập tên công ty">
+          </div>
+          <div class="form-group">
+            <label for="companyAddress">Địa chỉ công ty</label>
+            <input type="text" id="companyAddress" placeholder="Nhập địa chỉ công ty">
+          </div>
+          <h4 style="margin-bottom: 10px;">Chi tiết hóa đơn</h4>
+          <table class="table">
+            <thead>
+            <tr>
+              <th>Sản phẩm</th>
+              <th>Số lượng</th>
+              <th>Đơn giá</th>
+              <th>Thành tiền</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+              <td>Paracetamol 500mg</td>
+              <td>3</td>
+              <td>5,000đ</td>
+              <td>15,000đ</td>
+            </tr>
+            <tr>
+              <td>Vitamin C 1000mg</td>
+              <td>1</td>
+              <td>10,000đ</td>
+              <td>10,000đ</td>
+            </tr>
+            </tbody>
+          </table>
+          <div class="form-group">
+            <label for="totalAmount">Tổng tiền</label>
+            <input type="text" id="totalAmount" value="25,000đ" readonly>
+          </div>
+          <button class="btn btn-primary" onclick="exportVAT()">
+            <span class="material-icons">print</span>
+            Xuất VAT
+          </button>
+        </div>
+      </div>
     </div>
   </main>
 </div>
-
-<script>
-  // Các hàm xử lý sự kiện
-async function handleUserProfile() {
-    console.log('Đang hiển thị thông tin user...');
-    try {
-        const response = await fetch('http://localhost:8080/manager/profile?detail=true', {
-            method: 'GET',
-            credentials: 'include', // IMPORTANT: This ensures session cookies are sent
-            headers: {
-                'Accept': 'application/json',
-                // Remove X-Session-ID header - rely on cookies instead
-            }
-        });
-
-        if (!response.ok) {
-            // Nếu có lỗi HTTP, ném lỗi với status
-            if (response.status === 401) {
-                // Unauthorized - redirect to login
-                alert('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
-                window.location.href = '/login.html'; // Adjust path as needed
-                return;
-            }
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        console.log('Dữ liệu user profile:', data);
-
-        // Cập nhật UI với dữ liệu người dùng nhận được từ backend
-        const userFullNameElement = document.getElementById('userFullName');
-        const userPharmacyNameElement = document.getElementById('userPharmacyName');
-
-        if (userFullNameElement && data.fullName) {
-            userFullNameElement.textContent = data.fullName;
-        }
-        if (userPharmacyNameElement && data.pharmacyName) {
-            userPharmacyNameElement.textContent = data.pharmacyName;
-        } else if (userPharmacyNameElement && data.pharmacyAddress) {
-            // Nếu không có pharmacyName nhưng có pharmacyAddress, hiển thị địa chỉ chi nhánh
-            userPharmacyNameElement.textContent = data.pharmacyAddress;
-        }
-
-        console.log('Thông tin người dùng đã được tải và hiển thị.');
-
-    } catch (error) {
-        console.error('Lỗi khi lấy thông tin user profile:', error);
-        alert('Không thể tải thông tin người dùng. Vui lòng thử lại. Lỗi: ' + error.message);
-    }
-}
-
-// Gọi hàm handleUserProfile() khi trang tải xong
-document.addEventListener('DOMContentLoaded', handleUserProfile);
-
-function handleCreateSchedule() {
-    console.log('Tạo lịch làm việc');
-}
-  function handleCreateSchedule() {
-      console.log('Tạo lịch làm việc');
-  }
-
-  function handleStatCard(type) {
-      console.log('Click vào stat card:', type);
-  }
-
-  function handleChartPeriod(value) {
-      console.log('Thay đổi khoảng thời gian:', value);
-  }
-
-  function handleReviewClick(reviewId) {
-      console.log('Click vào review:', reviewId);
-  }
-
-  function handleScheduleDay(date) {
-      console.log('Click vào ngày:', date);
-  }
-
-  function handleAddSchedule() {
-      console.log('Thêm lịch làm việc');
-  }
-
-  function handleInvoiceAction(invoiceId, action) {
-      console.log('Action với hóa đơn:', invoiceId, action);
-  }
-
-  function handleStatusChange(invoiceId, status) {
-      console.log('Thay đổi trạng thái:', invoiceId, status);
-  }
-
-  function handleSearchInvoices(value) {
-      console.log('Tìm kiếm hóa đơn:', value);
-  }
-
-  function handleFilterInvoices(value) {
-      console.log('Lọc hóa đơn theo trạng thái:', value);
-  }
-</script>
-</body>
-</html>
+<script src="assets/js/manager.js"></script>
