@@ -2,6 +2,9 @@
 let navItems = document.querySelectorAll(".nav-item");
 let panelItems = document.querySelectorAll(".panel");
 let listPharmacy = [];
+let allProducts = [];
+let currentPage = 1;
+const pageSize = 6;
 
 // Initialize the admin dashboard
 document.addEventListener("DOMContentLoaded", function () {
@@ -67,8 +70,8 @@ function renderContent(type) {
     case "add-account":
       renderAddAccount();
       break;
-    case "create-category":
-      renderCreateCategory();
+     case "list-products":
+      renderListProducts();
       break;
     case "add-product":
       renderAddProduct();
@@ -311,14 +314,88 @@ function renderAddAccount() {
   loadRoles();
 }
 
-function renderCreateCategory() {
-  console.log("Create Category panel loaded");
+function renderListProducts() {
+  fetch('http://localhost:8080/admin/list-products', {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  })
+    .then(response => response.json())
+    .then(products => {
+      allProducts = products || [];
+      currentPage = 1;
+      renderProductTable();
+      renderPagination();
+    })
+    .catch(error => {
+      console.error("Error loading products:", error);
+      const tbody = document.querySelector("#product-list-table tbody");
+      if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="color:red;text-align:center;">Không thể tải danh sách sản phẩm</td></tr>';
+    });
+}
+
+function renderProductTable() {
+  const table = document.getElementById("product-list-table");
+  const emptyDiv = document.getElementById("product-list-empty");
+  if (!table) return;
+  const tbody = table.querySelector("tbody");
+  if (!allProducts || allProducts.length === 0) {
+    tbody.innerHTML = "";
+    if (emptyDiv) emptyDiv.style.display = "block";
+    return;
+  }
+  if (emptyDiv) emptyDiv.style.display = "none";
+  // Lấy sản phẩm cho trang hiện tại
+  const start = (currentPage - 1) * pageSize;
+  const end = start + pageSize;
+  const pageProducts = allProducts.slice(start, end);
+
+  let html = "";
+  pageProducts.forEach((p, idx) => {
+    html += `
+      <tr>
+        <td>${start + idx + 1}</td>
+        <td>${p.productName}</td>
+        <td>${p.productType}</td>
+        <td>${p.unit}</td>
+        <td>${Number(p.price).toLocaleString('vi-VN')}</td>
+        <td>${p.description || ""}</td>
+      </tr>
+    `;
+  });
+  tbody.innerHTML = html;
+}
+
+function renderPagination() {
+  const container = document.getElementById("product-list-pagination");
+  if (!container) return;
+  const totalPages = Math.ceil(allProducts.length / pageSize);
+  console.log("Tổng số sản phẩm:", allProducts.length, "Số trang:", totalPages);
+  if (totalPages <= 1) {
+    container.innerHTML = "";
+    return;
+  }
+  let html = "";
+  for (let i = 1; i <= totalPages; i++) {
+    html += `<button class="pagination-btn${i === currentPage ? " active" : ""}" data-page="${i}">${i}</button>`;
+  }
+  container.innerHTML = html;
+  // Gán sự kiện click
+  container.querySelectorAll(".pagination-btn").forEach(btn => {
+    btn.addEventListener("click", function() {
+      currentPage = parseInt(this.getAttribute("data-page"));
+      renderProductTable();
+      renderPagination();
+    });
+  });
 }
 
 function renderAddProduct() {
   console.log("Add Product panel loaded");
   // Load category options for the form
   loadCategoryOptions();
+  initializeCustomInputs();
 }
 
 function renderCreateStore() {
@@ -491,8 +568,116 @@ function handleCreateCategory(e) {
 
 function handleAddProduct(e) {
   e.preventDefault();
-  // TODO: Implement add product logic
-  console.log("Add product form submitted");
+
+  // Get form elements
+  const productNameInput = document.getElementById("product-name");
+  const productTypeSelect = document.getElementById("product-type");
+  const productTypeCustom = document.getElementById("product-type-custom");
+  const productUnitSelect = document.getElementById("product-unit");
+  const productUnitCustom = document.getElementById("product-unit-custom");
+  const productPriceInput = document.getElementById("product-price");
+  const productDescriptionInput = document.getElementById("product-description");
+
+  // Basic frontend validation
+  const productName = productNameInput.value.trim();
+  if (!productName) {
+    alert("Vui lòng nhập tên sản phẩm");
+    productNameInput.focus();
+    return;
+  }
+
+  // Get product type
+  let productType = productTypeSelect.value;
+  if (productType === "other") {
+    productType = productTypeCustom.value.trim();
+    if (!productType) {
+      alert("Vui lòng nhập loại sản phẩm khi chọn 'Khác'");
+      productTypeCustom.focus();
+      return;
+    }
+  } else if (!productType) {
+    alert("Vui lòng chọn loại sản phẩm");
+    productTypeSelect.focus();
+    return;
+  }
+
+  // Get product unit
+  let productUnit = productUnitSelect.value;
+  if (productUnit === "other") {
+    productUnit = productUnitCustom.value.trim();
+    if (!productUnit) {
+      alert("Vui lòng nhập đơn vị khi chọn 'Khác'");
+      productUnitCustom.focus();
+      return;
+    }
+  } else if (!productUnit) {
+    alert("Vui lòng chọn đơn vị");
+    productUnitSelect.focus();
+    return;
+  }
+
+  // Get price
+  const price = parseFloat(productPriceInput.value);
+  if (!price || price <= 0) {
+    alert("Vui lòng nhập giá bán hợp lệ (phải lớn hơn 0)");
+    productPriceInput.focus();
+    return;
+  }
+
+  // Get description (optional)
+  const description = productDescriptionInput.value.trim();
+
+  const formData = {
+    productName: productName,
+    productType: productType,
+    unit: productUnit,
+    description: description,
+    price: price.toFixed(2) // Send as string with 2 decimal places for BigDecimal
+  };
+
+  // Show loading state
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+  const originalText = submitBtn.textContent;
+  submitBtn.textContent = "Đang thêm...";
+  submitBtn.disabled = true;
+
+  fetch(`http://localhost:8080/admin/add-product`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(formData),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.message) {
+        if (data.message.includes("thành công")) {
+          alert("✅ " + data.message);
+          // Reset form
+          e.target.reset();
+          // Hide custom inputs
+          if (productTypeCustom) {
+            productTypeCustom.style.display = "none";
+            productTypeCustom.required = false;
+          }
+          if (productUnitCustom) {
+            productUnitCustom.style.display = "none";
+            productUnitCustom.required = false;
+          }
+        } else {
+          alert("❌ " + data.message);
+        }
+      }
+    })
+    .catch((error) => {
+      console.error("Error creating product:", error);
+      alert("❌ Có lỗi xảy ra khi thêm sản phẩm. Vui lòng thử lại.");
+    })
+    .finally(() => {
+      // Restore button state
+      submitBtn.textContent = originalText;
+      submitBtn.disabled = false;
+    });
 }
 
 function handleCreateStore(e) {
@@ -546,4 +731,50 @@ function getRoleDisplayName(role) {
     "customer-service": "Chăm sóc khách hàng"
   };
   return roleNames[role] || role;
+}
+
+// Initialize custom input handlers for product type and unit
+function initializeCustomInputs() {
+  const productTypeSelect = document.getElementById("product-type");
+  const productTypeCustom = document.getElementById("product-type-custom");
+  const productUnitSelect = document.getElementById("product-unit");
+  const productUnitCustom = document.getElementById("product-unit-custom");
+
+  // Handle product type custom input
+  if (productTypeSelect && productTypeCustom) {
+    productTypeSelect.addEventListener("change", function() {
+      if (this.value === "other") {
+        productTypeCustom.style.display = "block";
+        productTypeCustom.classList.add("show");
+        productTypeCustom.required = true;
+        productTypeCustom.focus();
+      } else {
+        productTypeCustom.classList.remove("show");
+        setTimeout(() => {
+          productTypeCustom.style.display = "none";
+          productTypeCustom.required = false;
+        }, 300);
+        productTypeCustom.value = "";
+      }
+    });
+  }
+
+  // Handle product unit custom input
+  if (productUnitSelect && productUnitCustom) {
+    productUnitSelect.addEventListener("change", function() {
+      if (this.value === "other") {
+        productUnitCustom.style.display = "block";
+        productUnitCustom.classList.add("show");
+        productUnitCustom.required = true;
+        productUnitCustom.focus();
+      } else {
+        productUnitCustom.classList.remove("show");
+        setTimeout(() => {
+          productUnitCustom.style.display = "none";
+          productUnitCustom.required = false;
+        }, 300);
+        productUnitCustom.value = "";
+      }
+    });
+  }
 }

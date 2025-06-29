@@ -42,9 +42,9 @@
 
           <div class="nav-group">
             <div class="nav-group-title">Quản lý kho thuốc</div>
-            <div class="nav-item" data-type="create-category">
-              <span class="material-icons">category</span>
-              Tạo danh mục thuốc
+            <div class="nav-item" data-type="list-products">
+              <span class="material-icons">list_alt</span>
+              Danh sách sản phẩm
             </div>
             <div class="nav-item" data-type="add-product">
               <span class="material-icons">add_box</span>
@@ -230,32 +230,32 @@
             </div>
           </div>
         </div>
-
-        <!-- Panel Tạo danh mục thuốc -->
-        <div class="panel" id="panel-create-category">
+        <!-- Panel Danh sách sản phẩm -->
+        <div class="panel" id="panel-list-products">
           <div class="panel-container">
             <div class="panel-header">
-              <h2>Tạo danh mục thuốc</h2>
+              <h2>Danh sách sản phẩm</h2>
             </div>
             <div class="panel-content">
-              <form class="panel-form">
-                <div class="form-group">
-                  <label for="category-name">Tên danh mục</label>
-                  <input type="text" id="category-name" class="form-input" required />
-                </div>
-                <div class="form-group">
-                  <label for="category-description">Mô tả</label>
-                  <textarea id="category-description" class="form-textarea" rows="4"></textarea>
-                </div>
-                <div class="form-group">
-                  <label for="category-image">Hình ảnh danh mục</label>
-                  <input type="file" id="category-image" class="form-input" accept="image/*" />
-                </div>
-                <div class="form-actions">
-                  <button type="submit" class="btn btn-primary">Tạo danh mục</button>
-                  <button type="button" class="btn btn-secondary">Hủy</button>
-                </div>
-              </form>
+              <div class="table-wrapper">
+                <table class="data-table" id="product-list-table">
+                  <thead>
+                  <tr>
+                    <th>STT</th>
+                    <th>Tên sản phẩm</th>
+                    <th>Loại</th>
+                    <th>Đơn vị</th>
+                    <th>Giá bán (VNĐ)</th>
+                    <th>Mô tả</th>
+                  </tr>
+                  </thead>
+                  <tbody>
+                  <!-- JS sẽ render các dòng sản phẩm vào đây -->
+                  </tbody>
+                </table>
+                <div id="product-list-empty" style="display:none;text-align:center;color:#718096;">Chưa có sản phẩm nào</div>
+              </div>
+              <div id="product-list-pagination" class="pagination"></div>
             </div>
           </div>
         </div>
@@ -274,29 +274,41 @@
                     <input type="text" id="product-name" class="form-input" required />
                   </div>
                   <div class="form-group">
-                    <label for="product-category">Danh mục</label>
-                    <select id="product-category" class="form-select">
-                      <option value="">Chọn danh mục</option>
+                    <label for="product-type">Loại sản phẩm</label>
+                    <select id="product-type" class="form-select" required>
+                      <option value="">Chọn loại sản phẩm</option>
+                      <option value="Thuốc">Thuốc</option>
+                      <option value="Thực phẩm chức năng">Thực phẩm chức năng</option>
+                      <option value="Mỹ phẩm">Mỹ phẩm</option>
+                      <option value="Dụng cụ y tế">Dụng cụ y tế</option>
+                      <option value="other">Khác</option>
                     </select>
+                    <input type="text" id="product-type-custom" class="form-input custom-input" placeholder="Nhập loại sản phẩm khác" style="display: none; margin-top: 5px;" />
                   </div>
                 </div>
                 <div class="form-row">
                   <div class="form-group">
-                    <label for="product-price">Giá bán (VNĐ)</label>
-                    <input type="number" id="product-price" class="form-input" required />
+                    <label for="product-unit">Đơn vị</label>
+                    <select id="product-unit" class="form-select" required>
+                      <option value="">Chọn đơn vị</option>
+                      <option value="Hộp">Hộp</option>
+                      <option value="Viên">Viên</option>
+                      <option value="Chai">Chai</option>
+                      <option value="Túi">Túi</option>
+                      <option value="Cái">Cái</option>
+                      <option value="Gói">Gói</option>
+                      <option value="other">Khác</option>
+                    </select>
+                    <input type="text" id="product-unit-custom" class="form-input custom-input" placeholder="Nhập đơn vị khác" style="display: none; margin-top: 5px;" />
                   </div>
                   <div class="form-group">
-                    <label for="product-quantity">Số lượng</label>
-                    <input type="number" id="product-quantity" class="form-input" required />
+                    <label for="product-price">Giá bán (VNĐ)</label>
+                    <input type="number" id="product-price" class="form-input" required />
                   </div>
                 </div>
                 <div class="form-group">
                   <label for="product-description">Mô tả sản phẩm</label>
                   <textarea id="product-description" class="form-textarea" rows="4"></textarea>
-                </div>
-                <div class="form-group">
-                  <label for="product-image">Hình ảnh sản phẩm</label>
-                  <input type="file" id="product-image" class="form-input" accept="image/*" multiple />
                 </div>
                 <div class="form-actions">
                   <button type="submit" class="btn btn-primary">Thêm sản phẩm</button>
