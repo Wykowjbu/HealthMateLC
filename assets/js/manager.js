@@ -143,24 +143,18 @@ async function showUserInfo() {
 
 async function logout() {
     console.log('Đang đăng xuất...');
-    try {
-        const response = await fetch('http://localhost:8080/logout', {
-            method: 'POST',
-            credentials: 'include'
-        });
 
-        if (response.ok) {
-            const data = await response.json();
-            console.log('Logout response:', data);
-           // alert(data.message || 'Đăng xuất thành công!');
-            window.location.href = data.redirectUrl || '/HealthMateLC/index.html';
-        } else {
-            throw new Error('Đăng xuất thất bại. Vui lòng thử lại.');
-        }
-    } catch (error) {
-        console.error('Lỗi khi đăng xuất:', error);
-        alert('Đã xảy ra lỗi khi đăng xuất: ' + error.message);
-        window.location.href = '/HealthMateLC/index.html';
+    const response = await fetch('http://localhost:8080/logout', {
+        method: 'POST',
+        credentials: 'include'
+    });
+
+    const data = await response.json();
+    console.log('Logout response:', data);
+
+    // Controller trả về JSON, JS phải tự redirect
+    if (data.success) {
+        window.location.href = data.redirectUrl || '/HealthMateLC/index.html';
     }
 }
 

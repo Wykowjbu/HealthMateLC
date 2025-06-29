@@ -158,11 +158,11 @@ function renderPharmacyList(pharmacyData, userData) {
       <div class="store-info">
         <h4>${pharmacy.pharmacyName}</h4>
         <p>
-          <span class="material-icons">location_on</span> 
+          <span class="material-icons">location_on</span>
           ${pharmacy.address}
         </p>
         <p>
-          <span class="material-icons">phone</span> 
+          <span class="material-icons">phone</span>
           ${pharmacy.phone}
         </p>
       </div>
@@ -227,6 +227,7 @@ function showUsersForPharmacy(users) {
         user.role === "manager" ? "manager" : "employee"
       }">
         ${user.role === "manager" ? "Quản lý" : "Nhân viên"}
+        ">
       </div>
     `;
 
@@ -301,10 +302,13 @@ function performSearch() {
 }
 
 // Placeholder functions for other panels
+// Render add account panel
 function renderAddAccount() {
   console.log("Add Account panel loaded");
   // Load pharmacy options for the form
   loadPharmacyOptions();
+  // Load roles for the form
+  loadRoles();
 }
 
 function renderCreateCategory() {
@@ -434,10 +438,49 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 // Form handlers
+// Form handlers
 function handleAddAccount(e) {
   e.preventDefault();
-  // TODO: Implement add account logic
-  console.log("Add account form submitted");
+
+  const formData = {
+    username: document.getElementById("username").value,
+    password: document.getElementById("password").value,
+    fullName: document.getElementById("fullname").value,
+    phone: document.getElementById("phone").value,
+    email: document.getElementById("email").value,
+    role: document.getElementById("role").value,
+    pharmacyId: document.getElementById("pharmacy").value || null
+  };
+
+  // Validate required fields
+  if (!formData.username || !formData.password || !formData.fullName || !formData.role) {
+    alert("Vui lòng điền đầy đủ thông tin bắt buộc");
+    return;
+  }
+
+  fetch(`http://localhost:8080/admin/add-account`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(formData),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.message) {
+        alert(data.message);
+        if (data.message.includes("thành công")) {
+          // Reset form
+          e.target.reset();
+          // Reload accounts data
+          renderListAccounts();
+        }
+      }
+    })
+    .catch((error) => {
+      console.error("Error creating account:", error);
+      alert("Có lỗi xảy ra khi tạo tài khoản");
+    });
 }
 
 function handleCreateCategory(e) {
@@ -456,4 +499,49 @@ function handleCreateStore(e) {
   e.preventDefault();
   // TODO: Implement create store logic
   console.log("Create store form submitted");
+}
+
+function loadRoles() {
+  // Load roles from backend
+  const roleSelect = document.getElementById("role");
+  if (roleSelect) {
+    fetch(`http://localhost:8080/admin/list-roles`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then((response) => response.json())
+      .then((roles) => {
+        roleSelect.innerHTML = '<option value="">Chọn vai trò</option>';
+        roles.forEach((role) => {
+          const option = document.createElement("option");
+          option.value = role;
+          option.textContent = getRoleDisplayName(role);
+          roleSelect.appendChild(option);
+        });
+      })
+      .catch((error) => {
+        console.error("Error loading roles:", error);
+        // Fallback to hardcoded roles
+        const fallbackRoles = ["admin", "manager", "employee", "customer-service"];
+        roleSelect.innerHTML = '<option value="">Chọn vai trò</option>';
+        fallbackRoles.forEach((role) => {
+          const option = document.createElement("option");
+          option.value = role;
+          option.textContent = getRoleDisplayName(role);
+          roleSelect.appendChild(option);
+        });
+      });
+  }
+}
+
+function getRoleDisplayName(role) {
+  const roleNames = {
+    "admin": "Quản trị viên",
+    "manager": "Quản lý",
+    "employee": "Nhân viên",
+    "customer-service": "Chăm sóc khách hàng"
+  };
+  return roleNames[role] || role;
 }
