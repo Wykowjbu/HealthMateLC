@@ -209,10 +209,9 @@
                   </div>
                   <div class="form-group">
                     <label for="role">Vai trò</label>
-                    <select id="role" class="form-select">
-                      <option value="employee">Nhân viên</option>
-                      <option value="manager">Quản lý</option>
-                      <option value="admin">Quản trị viên</option>
+                    <select id="role" class="form-select" required>
+                      <option value="">Chọn vai trò</option>
+                      <!-- Danh sách vai trò sẽ được load từ admin.js -->
                     </select>
                   </div>
                 </div>
@@ -220,6 +219,7 @@
                   <label for="pharmacy">Nhà thuốc</label>
                   <select id="pharmacy" class="form-select">
                     <option value="">Chọn nhà thuốc</option>
+                    <!-- Danh sách nhà thuốc sẽ được load từ admin.js -->
                   </select>
                 </div>
                 <div class="form-actions">

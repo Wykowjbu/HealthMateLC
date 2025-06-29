@@ -92,7 +92,7 @@ body {
   padding: 0 30px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   z-index: 100;
-  overflow: visible; /* Đảm bảo dropdown không bị cắt */
+  overflow: visible;
 }
 
 .header-title {
@@ -143,7 +143,7 @@ body {
   border-radius: 8px;
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
   min-width: 200px;
-  z-index: 2000; /* Tăng z-index để ưu tiên hiển thị */
+  z-index: 2000;
   opacity: 0;
   visibility: hidden;
   transform: translateY(-10px);
@@ -482,6 +482,70 @@ body {
   box-shadow: 0 4px 15px rgba(254, 215, 215, 0.4);
 }
 
+/* CSS cho modal trong showUserInfo() - Bắt đầu */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 3000; /* Cao hơn header và dropdown */
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+  background-color: white;
+  margin: 5% auto;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  width: 90%;
+  max-width: 500px;
+  position: relative;
+}
+
+.close {
+  color: #718096;
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  font-size: 24px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.close:hover,
+.close:focus {
+  color: #f5576c;
+  text-decoration: none;
+}
+
+.modal-content h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.modal-content p {
+  margin: 10px 0;
+  color: #4a5568;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modal-content strong {
+  color: #2d3748;
+  min-width: 120px; /* Đảm bảo tiêu đề thẳng hàng */
+}
+/* CSS cho modal trong showUserInfo() - Kết thúc */
+
 @media (max-width: 768px) {
   .dashboard {
     grid-template-columns: 1fr;
@@ -500,5 +564,11 @@ body {
 
   .schedule-grid {
     grid-template-columns: repeat(3, 1fr);
+  }
+
+  /* Điều chỉnh modal cho màn hình nhỏ */
+  .modal-content {
+    margin: 10% auto;
+    width: 95%;
   }
 }
