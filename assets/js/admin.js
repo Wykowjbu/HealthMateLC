@@ -514,7 +514,9 @@ function loadRoles() {
       .then((response) => response.json())
       .then((roles) => {
         roleSelect.innerHTML = '<option value="">Chọn vai trò</option>';
-        roles.forEach((role) => {
+        // Filter out admin role
+        const filteredRoles = roles.filter(role => role !== "admin");
+        filteredRoles.forEach((role) => {
           const option = document.createElement("option");
           option.value = role;
           option.textContent = getRoleDisplayName(role);
@@ -523,8 +525,8 @@ function loadRoles() {
       })
       .catch((error) => {
         console.error("Error loading roles:", error);
-        // Fallback to hardcoded roles
-        const fallbackRoles = ["admin", "manager", "employee", "customer-service"];
+        // Fallback to hardcoded roles (excluding admin)
+        const fallbackRoles = ["manager", "employee", "customer-service"];
         roleSelect.innerHTML = '<option value="">Chọn vai trò</option>';
         fallbackRoles.forEach((role) => {
           const option = document.createElement("option");
@@ -538,7 +540,7 @@ function loadRoles() {
 
 function getRoleDisplayName(role) {
   const roleNames = {
-    "admin": "Quản trị viên",
+    //"admin": "Quản trị viên",
     "manager": "Quản lý",
     "employee": "Nhân viên",
     "customer-service": "Chăm sóc khách hàng"
