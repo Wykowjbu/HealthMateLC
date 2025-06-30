@@ -79,12 +79,8 @@
       </aside>
 
       <header class="header">
-        <h1 class="header-title">Danh Sách Tài Khoản</h1>
+        <h1 class="header-title"></h1>
         <div class="header-actions">
-          <button class="btn btn-primary">
-            <span class="material-icons">add</span>
-            Tạo mới
-          </button>
           <div class="user-profile">
             <div class="avatar">AD</div>
             <div>
@@ -165,10 +161,17 @@
 
             <div class="content-container">
               <div class="content-header">
-                <h3 class="content-title">Nhân viên</h3>
+                <h3 class="content-title">Tài khoản</h3>
               </div>
-              <div class="content-list list-users">
-                Chọn nhà thuốc để xem nhân viên
+              <div class="user-container">
+                <div class="list-users-wrapper">
+                  <div class="content-list list-users">
+                    Chọn nhà thuốc để xem danh sách tài khoản
+                  </div>
+                </div>
+                <div class="user-details-wrapper">
+                  <!-- User details will be loaded here -->
+                </div>
               </div>
             </div>
           </div>
@@ -185,17 +188,32 @@
                 <div class="form-row">
                   <div class="form-group">
                     <label for="username">Tên đăng nhập</label>
-                    <input type="text" id="username" class="form-input" required />
+                    <input
+                      type="text"
+                      id="username"
+                      class="form-input"
+                      required
+                    />
                   </div>
                   <div class="form-group">
                     <label for="fullname">Họ và tên</label>
-                    <input type="text" id="fullname" class="form-input" required />
+                    <input
+                      type="text"
+                      id="fullname"
+                      class="form-input"
+                      required
+                    />
                   </div>
                 </div>
                 <div class="form-row">
                   <div class="form-group">
                     <label for="email">Email</label>
-                    <input type="email" id="email" class="form-input" required />
+                    <input
+                      type="email"
+                      id="email"
+                      class="form-input"
+                      required
+                    />
                   </div>
                   <div class="form-group">
                     <label for="phone">Số điện thoại</label>
@@ -205,7 +223,12 @@
                 <div class="form-row">
                   <div class="form-group">
                     <label for="password">Mật khẩu</label>
-                    <input type="password" id="password" class="form-input" required />
+                    <input
+                      type="password"
+                      id="password"
+                      class="form-input"
+                      required
+                    />
                   </div>
                   <div class="form-group">
                     <label for="role">Vai trò</label>
@@ -223,7 +246,9 @@
                   </select>
                 </div>
                 <div class="form-actions">
-                  <button type="submit" class="btn btn-primary">Tạo tài khoản</button>
+                  <button type="submit" class="btn btn-primary">
+                    Tạo tài khoản
+                  </button>
                   <button type="button" class="btn btn-secondary">Hủy</button>
                 </div>
               </form>
@@ -241,18 +266,34 @@
               <form class="panel-form">
                 <div class="form-group">
                   <label for="category-name">Tên danh mục</label>
-                  <input type="text" id="category-name" class="form-input" required />
+                  <input
+                    type="text"
+                    id="category-name"
+                    class="form-input"
+                    required
+                  />
                 </div>
                 <div class="form-group">
                   <label for="category-description">Mô tả</label>
-                  <textarea id="category-description" class="form-textarea" rows="4"></textarea>
+                  <textarea
+                    id="category-description"
+                    class="form-textarea"
+                    rows="4"
+                  ></textarea>
                 </div>
                 <div class="form-group">
                   <label for="category-image">Hình ảnh danh mục</label>
-                  <input type="file" id="category-image" class="form-input" accept="image/*" />
+                  <input
+                    type="file"
+                    id="category-image"
+                    class="form-input"
+                    accept="image/*"
+                  />
                 </div>
                 <div class="form-actions">
-                  <button type="submit" class="btn btn-primary">Tạo danh mục</button>
+                  <button type="submit" class="btn btn-primary">
+                    Tạo danh mục
+                  </button>
                   <button type="button" class="btn btn-secondary">Hủy</button>
                 </div>
               </form>
@@ -271,7 +312,12 @@
                 <div class="form-row">
                   <div class="form-group">
                     <label for="product-name">Tên sản phẩm</label>
-                    <input type="text" id="product-name" class="form-input" required />
+                    <input
+                      type="text"
+                      id="product-name"
+                      class="form-input"
+                      required
+                    />
                   </div>
                   <div class="form-group">
                     <label for="product-category">Danh mục</label>
@@ -283,23 +329,45 @@
                 <div class="form-row">
                   <div class="form-group">
                     <label for="product-price">Giá bán (VNĐ)</label>
-                    <input type="number" id="product-price" class="form-input" required />
+                    <input
+                      type="number"
+                      id="product-price"
+                      class="form-input"
+                      required
+                    />
                   </div>
                   <div class="form-group">
                     <label for="product-quantity">Số lượng</label>
-                    <input type="number" id="product-quantity" class="form-input" required />
+                    <input
+                      type="number"
+                      id="product-quantity"
+                      class="form-input"
+                      required
+                    />
                   </div>
                 </div>
                 <div class="form-group">
                   <label for="product-description">Mô tả sản phẩm</label>
-                  <textarea id="product-description" class="form-textarea" rows="4"></textarea>
+                  <textarea
+                    id="product-description"
+                    class="form-textarea"
+                    rows="4"
+                  ></textarea>
                 </div>
                 <div class="form-group">
                   <label for="product-image">Hình ảnh sản phẩm</label>
-                  <input type="file" id="product-image" class="form-input" accept="image/*" multiple />
+                  <input
+                    type="file"
+                    id="product-image"
+                    class="form-input"
+                    accept="image/*"
+                    multiple
+                  />
                 </div>
                 <div class="form-actions">
-                  <button type="submit" class="btn btn-primary">Thêm sản phẩm</button>
+                  <button type="submit" class="btn btn-primary">
+                    Thêm sản phẩm
+                  </button>
                   <button type="button" class="btn btn-secondary">Hủy</button>
                 </div>
               </form>
@@ -317,16 +385,31 @@
               <form class="panel-form">
                 <div class="form-group">
                   <label for="store-name">Tên nhà thuốc</label>
-                  <input type="text" id="store-name" class="form-input" required />
+                  <input
+                    type="text"
+                    id="store-name"
+                    class="form-input"
+                    required
+                  />
                 </div>
                 <div class="form-group">
                   <label for="store-address">Địa chỉ</label>
-                  <input type="text" id="store-address" class="form-input" required />
+                  <input
+                    type="text"
+                    id="store-address"
+                    class="form-input"
+                    required
+                  />
                 </div>
                 <div class="form-row">
                   <div class="form-group">
                     <label for="store-phone">Số điện thoại</label>
-                    <input type="tel" id="store-phone" class="form-input" required />
+                    <input
+                      type="tel"
+                      id="store-phone"
+                      class="form-input"
+                      required
+                    />
                   </div>
                   <div class="form-group">
                     <label for="store-email">Email</label>
@@ -349,7 +432,9 @@
                   </div>
                 </div>
                 <div class="form-actions">
-                  <button type="submit" class="btn btn-primary">Tạo nhà thuốc</button>
+                  <button type="submit" class="btn btn-primary">
+                    Tạo nhà thuốc
+                  </button>
                   <button type="button" class="btn btn-secondary">Hủy</button>
                 </div>
               </form>
@@ -413,24 +498,45 @@
               <form class="panel-form">
                 <div class="form-group">
                   <label for="edit-store-name">Tên nhà thuốc</label>
-                  <input type="text" id="edit-store-name" class="form-input" required />
+                  <input
+                    type="text"
+                    id="edit-store-name"
+                    class="form-input"
+                    required
+                  />
                 </div>
                 <div class="form-group">
                   <label for="edit-store-address">Địa chỉ</label>
-                  <input type="text" id="edit-store-address" class="form-input" required />
+                  <input
+                    type="text"
+                    id="edit-store-address"
+                    class="form-input"
+                    required
+                  />
                 </div>
                 <div class="form-row">
                   <div class="form-group">
                     <label for="edit-store-phone">Số điện thoại</label>
-                    <input type="tel" id="edit-store-phone" class="form-input" required />
+                    <input
+                      type="tel"
+                      id="edit-store-phone"
+                      class="form-input"
+                      required
+                    />
                   </div>
                   <div class="form-group">
                     <label for="edit-store-email">Email</label>
-                    <input type="email" id="edit-store-email" class="form-input" />
+                    <input
+                      type="email"
+                      id="edit-store-email"
+                      class="form-input"
+                    />
                   </div>
                 </div>
                 <div class="form-actions">
-                  <button type="submit" class="btn btn-primary">Cập nhật</button>
+                  <button type="submit" class="btn btn-primary">
+                    Cập nhật
+                  </button>
                   <button type="button" class="btn btn-secondary">Hủy</button>
                 </div>
               </form>
@@ -509,6 +615,130 @@
           </div>
         </div>
       </main>
+    </div>
+    <!-- Modal Edit User -->
+    <div id="editUserModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Sửa thông tin tài khoản</h2>
+          <span class="close-modal">&times;</span>
+        </div>
+        <div class="modal-body">
+          <form id="editUserForm" class="panel-form">
+            <input type="hidden" id="edit-user-id" />
+            <div class="form-row">
+              <div class="form-group">
+                <label for="edit-username">Tên đăng nhập</label>
+                <input
+                  type="text"
+                  id="edit-username"
+                  class="form-input"
+                  disabled
+                />
+              </div>
+              <div class="form-group">
+                <label for="edit-fullname">Họ và tên</label>
+                <input type="text" id="edit-fullname" class="form-input" />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="edit-email">Email</label>
+                <input type="email" id="edit-email" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label for="edit-phone">Số điện thoại</label>
+                <input type="tel" id="edit-phone" class="form-input" />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="edit-role">Vai trò</label>
+                <select id="edit-role" class="form-select">
+                  <option value="employee">Nhân viên</option>
+                  <option value="manager">Quản lý</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="edit-status">Trạng thái</label>
+                <select id="edit-status" class="form-select">
+                  <option value="active">Hoạt động</option>
+                  <option value="inactive">Vô hiệu hóa</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">
+                Lưu thay đổi
+              </button>
+              <button type="button" class="btn btn-secondary close-modal-btn">
+                Hủy
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Reset Password -->
+    <div id="resetPasswordModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Đặt lại mật khẩu</h2>
+          <span class="close-modal">&times;</span>
+        </div>
+        <div class="modal-body">
+          <form id="resetPasswordForm" class="panel-form">
+            <input type="hidden" id="reset-user-id" />
+            <div class="form-group">
+              <label for="user-display">Tài khoản</label>
+              <input
+                type="text"
+                id="user-display"
+                class="form-input"
+                disabled
+              />
+            </div>
+            <div class="form-group">
+              <label for="new-password">Mật khẩu mới</label>
+              <div class="password-input-wrapper">
+                <input type="password" id="new-password" class="form-input" required />
+                <button type="button" class="password-toggle" onclick="togglePasswordVisibility('new-password')">
+                  <span class="material-icons">visibility</span>
+                </button>
+              </div>
+              <div id="password-strength" class="password-strength">
+                <div class="strength-meter">
+                  <div class="strength-bar"></div>
+                </div>
+                <div class="strength-text"></div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="confirm-password">Xác nhận mật khẩu</label>
+              <div class="password-input-wrapper">
+                <input
+                  type="password"
+                  id="confirm-password"
+                  class="form-input"
+                  required
+                />
+                <button type="button" class="password-toggle" onclick="togglePasswordVisibility('confirm-password')">
+                  <span class="material-icons">visibility</span>
+                </button>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">
+                Đặt lại mật khẩu
+              </button>
+              <button type="button" class="btn btn-secondary close-modal-btn">
+                Hủy
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
     <script src="assets/js/admin.js"></script>
   </body>
