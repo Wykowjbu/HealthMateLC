@@ -49,6 +49,10 @@ document.addEventListener("DOMContentLoaded", function () {
   displayCurrentUserHeader();
 });
 
+// ====================================
+//#region INIT & GLOBAL UI HANDLERS
+// ====================================
+
 // Hiển thị thông tin người đăng nhập lên header
 async function displayCurrentUserHeader() {
   try {
@@ -79,6 +83,226 @@ async function displayCurrentUserHeader() {
     console.error("Không thể lấy thông tin người dùng:", e);
   }
 }
+
+// Lọc biểu đồ theo thời gian
+document.getElementById("chartFilter").addEventListener("change", function () {
+  updateSatisfactionChart(this.value);
+});
+
+// Pagination
+const prevBtn = document.getElementById("prevBtn");
+if (prevBtn) {
+  prevBtn.onclick = async function () {
+    const filteredReviews = await getFilteredReviews();
+    const totalPages = Math.ceil(filteredReviews.length / reviewsPerPage);
+    if (currentPage > 1) {
+      currentPage--;
+      // Nếu sau khi giảm currentPage mà vượt quá số trang hiện tại (do dữ liệu lọc thay đổi), set về trang cuối
+      if (currentPage > totalPages) currentPage = totalPages;
+      loadReviews();
+    }
+  };
+}
+const nextBtn = document.getElementById("nextBtn");
+if (nextBtn) {
+  nextBtn.onclick = async function () {
+    const filteredReviews = await getFilteredReviews();
+    const totalPages = Math.ceil(filteredReviews.length / reviewsPerPage);
+    if (currentPage < totalPages) {
+      currentPage++;
+      loadReviews();
+    }
+  };
+}
+// Hiển thị tất cả các section khi khởi tạo và chỉ làm nổi bật phần được chọn
+document.getElementById("nav-upgrade-customers").onclick = function () {
+  document.getElementById("reviewsContainer").style.display = "";
+  document.getElementById("upgradedCustomersContainer").style.display = "";
+
+  // Làm nổi bật tab đang chọn
+  document.querySelector(".nav-item.active").classList.remove("active");
+  this.classList.add("active");
+
+  // Cuộn đến phần khách hàng thăng hạng
+  document
+    .getElementById("upgradedCustomersContainer")
+    .scrollIntoView({ behavior: "smooth" });
+};
+
+// Quay lại xem đánh giá
+document.querySelector(".nav-item.active").onclick = function () {
+  document.getElementById("reviewsContainer").style.display = "";
+  document.getElementById("upgradedCustomersContainer").style.display = "";
+
+  // Làm nổi bật tab đang chọn
+  document.querySelector(".nav-item.active").classList.remove("active");
+  this.classList.add("active");
+
+  // Cuộn đến phần đánh giá
+  document
+    .getElementById("reviewsContainer")
+    .scrollIntoView({ behavior: "smooth" });
+};
+
+// Đăng ký sự kiện cho nút soạn tin nhắn
+const messageComposerBtn = document.querySelector(
+  '[data-action="focusMessageComposer"]'
+);
+if (messageComposerBtn) {
+  messageComposerBtn.addEventListener("click", function () {
+    document
+      .querySelector(".message-composer")
+      .scrollIntoView({ behavior: "smooth" });
+  });
+}
+
+// Đăng ký sự kiện cho nút gửi khảo sát
+const sendSurveyBtn = document.querySelector('[data-action="sendSurvey"]');
+if (sendSurveyBtn) {
+  sendSurveyBtn.addEventListener("click", function () {
+    document.getElementById("messageType").value = "survey";
+    loadMessageTemplate("survey");
+    document
+      .querySelector(".message-composer")
+      .scrollIntoView({ behavior: "smooth" });
+  });
+}
+
+// Đăng ký sự kiện cho nút gửi tin riêng tư
+const individualMsgBtn = document.querySelector(
+  '[data-action="showIndividualMessage"]'
+);
+if (individualMsgBtn) {
+  individualMsgBtn.addEventListener("click", function () {
+    document.getElementById("messageType").value = "custom";
+    loadMessageTemplate("custom");
+    document.querySelector(
+      '.message-composer form select[onchange="toggleCustomerInput(this)"]'
+    ).value = "individual";
+    toggleCustomerInput(
+      document.querySelector(
+        '.message-composer form select[onchange="toggleCustomerInput(this)"]'
+      )
+    );
+    document
+      .querySelector(".message-composer")
+      .scrollIntoView({ behavior: "smooth" });
+  });
+}
+// Đăng ký sự kiện cho nút cuộn đến biểu đồ
+const chartBtn = document.querySelector('[data-action="scrollToChart"]');
+if (chartBtn) {
+  chartBtn.addEventListener("click", function () {
+    document
+      .querySelector(".chart-container")
+      .scrollIntoView({ behavior: "smooth" });
+  });
+}
+
+// Đăng ký sự kiện cho nút trả lời đánh giá
+const replyModalBtn = document.querySelector('[data-action="showReplyModal"]');
+if (replyModalBtn) {
+  replyModalBtn.addEventListener("click", function () {
+    document.getElementById("replyModal").style.display = "flex";
+  });
+}
+
+// Đăng ký sự kiện cho tất cả các nút đóng modal
+const closeButtons = document.querySelectorAll(".modal-close, .btn-secondary");
+closeButtons.forEach((button) => {
+  button.addEventListener("click", function () {
+    // Tìm modal gần nhất và đóng nó
+    const modal = this.closest(".modal");
+    if (modal) {
+      modal.style.display = "none";
+    }
+  });
+});
+
+//#endregion
+
+// ====================================
+//#region USER INFO & LOGOUT
+// ====================================
+
+// Hiển thị thông tin người dùng
+export async function showUserInfo() {
+  // Hiển thị modal
+  const modal = document.getElementById("userInfoModal");
+  if (!modal) {
+    console.error("Không tìm thấy element với ID 'userInfoModal'");
+    return;
+  }
+  modal.classList.add("show");
+
+  // Xóa thông báo lỗi cũ nếu có
+  const oldError = document.querySelector("#modalEmployeeError");
+  if (oldError) {
+    oldError.style.display = "none";
+    oldError.textContent = "";
+  }
+
+  try {
+    // Lấy thông tin người dùng từ API
+    const currentUser = await userAPI.getCurrentUser();
+    console.log("[showUserInfo] currentUser từ backend:", currentUser);
+    if (!currentUser || typeof currentUser !== "object")
+      throw new Error("Không có dữ liệu người dùng từ backend");
+
+    // Cập nhật thông tin cơ bản
+    document.getElementById("modalEmployeeName").textContent =
+      currentUser.name || "";
+    document.getElementById("modalEmployeeRole").textContent =
+      currentUser.role || "";
+    document.getElementById("modalEmployeeEmail").textContent =
+      currentUser.email || "";
+    document.getElementById("modalEmployeePhone").textContent =
+      currentUser.phone || "";
+    document.getElementById("modalEmployeeUsername").textContent =
+      currentUser.username || "";
+    // Cập nhật trạng thái
+    const statusElement = document.getElementById("modalEmployeeStatus");
+    if (currentUser.isActive) {
+      statusElement.className = "status-badge active";
+      statusElement.innerHTML =
+        '<span class="status-dot"></span>Đang hoạt động';
+    } else {
+      statusElement.className = "status-badge inactive";
+      statusElement.innerHTML =
+        '<span class="status-dot"></span>Không hoạt động';
+    }
+  } catch (error) {
+    console.error("Lỗi khi tải thông tin người dùng (showUserInfo):", error);
+    // Hiển thị thông báo lỗi rõ ràng
+    const errorDiv = document.getElementById("modalEmployeeError");
+    if (errorDiv) {
+      errorDiv.style.display = "block";
+      errorDiv.textContent =
+        "Không thể tải thông tin người dùng. Vui lòng thử lại sau.";
+    }
+  }
+}
+
+// Đóng modal thông tin cá nhân
+export function closeUserInfoModal() {
+  const modal = document.getElementById("userInfoModal");
+  if (!modal) {
+    console.error("Không tìm thấy element với ID 'userInfoModal'");
+    return;
+  }
+  modal.classList.remove("show");
+}
+
+// Đăng xuất
+export function logout() {
+  if (confirm("Bạn có chắc muốn đăng xuất?")) {
+    window.location.href = "index.html"; // Chuyển về trang đăng nhập
+  }
+}
+
+// ====================================
+//#region INITIAL DISPLAY & EVENT LISTENERS
+// ====================================
 
 // Thiết lập hiển thị ban đầu
 function setupInitialDisplay() {
@@ -113,6 +337,11 @@ function setupEventListeners() {
   // Lọc đánh giá theo số sao
   const ratingFilter = document.getElementById("ratingFilter");
   ratingFilter.addEventListener("change", filterReviews); // Hiển thị dropdown người dùng
+
+  // Lọc đánh giá theo trạng thái xử lý
+  const statusFilter = document.getElementById("statusFilter");
+  statusFilter.addEventListener("change", filterReviews);
+
   document
     .querySelector(".user-profile")
     .addEventListener("click", function (e) {
@@ -306,6 +535,43 @@ function setupEventListeners() {
   });
 }
 
+// Đưa các hàm vào global scope để có thể gọi từ HTML nếu cần
+function setupGlobalHandlers() {
+  window.showUserInfo = showUserInfo;
+  window.logout = logout;
+  window.closeUserInfoModal = closeUserInfoModal;
+  window.replyReview = replyReview; // Nếu cần các hàm khác cũng có thể thêm vào window ở đây
+
+  // Đăng ký sự kiện cho nút thông tin cá nhân trong dropdown
+  const userInfoBtn = document.getElementById("btnUserInfo");
+  if (userInfoBtn) {
+    userInfoBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      document.getElementById("userDropdown").classList.remove("show");
+      setTimeout(() => {
+        showUserInfo();
+      }, 100);
+    });
+  }
+
+  // Đăng ký sự kiện cho nút đăng xuất trong dropdown
+  const logoutBtn = document.getElementById("btnLogout");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      logout();
+    });
+  }
+}
+
+//#endregion
+
+// ====================================
+//#region PHARMACY FILTER & DROPDOWN
+// ====================================
+
 // Toggle hiển thị input tìm kiếm khách hàng
 function toggleCustomerInput(selectElement) {
   const customerInputGroup = document.getElementById("customerInputGroup");
@@ -360,15 +626,21 @@ async function populatePharmacies(selectElement) {
   });
 }
 
-// Lọc đánh giá theo từ khóa, cửa hàng và số sao
+//#endregion
+
+// ====================================
+//#region REVIEWS (LOAD, FILTER, PAGINATION)
+// ====================================
+
+// Lọc đánh giá theo từ khóa, cửa hàng, số sao và trạng thái xử lý
 function filterReviews() {
   const ratingFilterValue = document.getElementById("ratingFilter").value;
+  const statusFilterValue = document.getElementById("statusFilter").value;
 
   // Hiển thị biểu thị trực quan cho bộ lọc đang hoạt động
   const filterElement = document.getElementById("ratingFilter");
   if (ratingFilterValue !== "all") {
     filterElement.classList.add("active-filter");
-    // Ẩn cần hiển thị bộ lọc đang hoạt động theo yêu cầu
     document.getElementById("activeFilters").style.display = "none";
   } else {
     filterElement.classList.remove("active-filter");
@@ -388,6 +660,7 @@ async function getFilteredReviews() {
   const searchTerm = searchInput && searchInput.value ? searchInput.value : "";
   const pharmacyId = document.getElementById("pharmacyFilter").value;
   const ratingFilterValue = document.getElementById("ratingFilter").value;
+  const statusFilterValue = document.getElementById("statusFilter").value;
   // Lấy tất cả đánh giá
   const allReviews = await reviewAPI.getAll();
 
@@ -401,7 +674,17 @@ async function getFilteredReviews() {
       if (ratingFilterValue !== "all") {
         starMatch = parseInt(review.rating) === parseInt(ratingFilterValue);
       }
-      return pharmacyMatch && starMatch;
+      let statusMatch = true;
+      if (statusFilterValue !== "all") {
+        if (statusFilterValue === "processed") {
+          statusMatch =
+            review.status === "APPROVED" || review.status === "Đã xử lý";
+        } else if (statusFilterValue === "unprocessed") {
+          statusMatch =
+            review.status === "REJECTED" || review.status === "Chưa xử lý";
+        }
+      }
+      return pharmacyMatch && starMatch && statusMatch;
     });
   }
 
@@ -439,7 +722,18 @@ async function getFilteredReviews() {
     if (ratingFilterValue !== "all") {
       starMatch = parseInt(review.rating) === parseInt(ratingFilterValue);
     }
-    return match && pharmacyMatch && starMatch;
+    // Lọc theo trạng thái xử lý
+    let statusMatch = true;
+    if (statusFilterValue !== "all") {
+      if (statusFilterValue === "processed") {
+        statusMatch =
+          review.status === "APPROVED" || review.status === "Đã xử lý";
+      } else if (statusFilterValue === "unprocessed") {
+        statusMatch =
+          review.status === "REJECTED" || review.status === "Chưa xử lý";
+      }
+    }
+    return match && pharmacyMatch && starMatch && statusMatch;
   });
   return filteredReviews;
 }
@@ -527,13 +821,23 @@ async function loadReviews() {
       // Cột thời gian
       const timeCell = document.createElement("td");
       timeCell.textContent = review.date;
-      row.appendChild(timeCell); // Cột trạng thái (đơn giản hóa chỉ còn "Đã xử lý" và "Chưa xử lý")
+      row.appendChild(timeCell);
+
+      // Cột trạng thái
       const statusCell = document.createElement("td");
-      const statusClass =
-        review.status === "Đã xử lý" ? "status-success" : "status-error";
-      statusCell.innerHTML = `<span class="status-badge ${statusClass}">${
-        review.status === "Đã xử lý" ? "Đã xử lý" : "Chưa xử lý"
-      }</span>`;
+      let statusText = review.status || "Không rõ";
+      console.log("statusText:", statusText);
+      let statusClass = "status-badge ";
+      if (statusText === "APPROVED") {
+        statusText = "Đã xử lý";
+        statusClass += "status-success";
+      } else if (statusText === "REJECTED") {
+        statusText = "Chưa xử lý";
+        statusClass += "status-error";
+      } else {
+        statusClass += "status-error";
+      }
+      statusCell.innerHTML = `<span class="${statusClass}">${statusText}</span>`;
       row.appendChild(statusCell);
 
       // Cột thao tác
@@ -590,8 +894,11 @@ function updatePagination(totalReviews) {
   if (nextBtn) nextBtn.disabled = currentPage >= totalPages || totalPages === 0;
 }
 
-// Đảm bảo prevBtn và nextBtn hoạt động đúng
-// (Đã xóa đoạn gán sự kiện prevBtn/nextBtn ở đây, chỉ giữ lại trong setupEventListeners để tránh trùng lặp và lỗi phân trang)
+//#endregion
+
+// ====================================
+//#region UPGRADED CUSTOMERS
+// ====================================
 
 // Tải dữ liệu khách hàng thăng hạng và hiển thị
 async function loadUpgradedCustomers() {
@@ -685,8 +992,10 @@ async function loadUpgradedCustomers() {
   }
 }
 
+//#endregion
+
 // ====================================
-// XỬ LÝ TÌM KIẾM KHÁCH HÀNG
+//#region CUSTOMER SEARCH & SELECTION
 // ====================================
 
 // Tìm kiếm khách hàng
@@ -750,47 +1059,6 @@ async function searchCustomers(query) {
   suggestionBox.style.display = "block";
 }
 
-// Chọn khách hàng
-async function selectCustomer(customerId, customerName) {
-  // Nếu truyền vào là object customer
-  let customerPhone = "";
-  if (typeof customerId === "object") {
-    customerName = customerId.name;
-    customerPhone = customerId.phone || "";
-    customerId = customerId.id;
-  } else {
-    // Nếu chỉ truyền id, tìm trong danh sách customers
-    const customer =
-      customers && customers.find((c) => c.id === parseInt(customerId));
-    customerPhone = customer ? customer.phone : "";
-  }
-
-  window.selectedCustomerId = customerId;
-
-  document.getElementById("customerSuggestions").style.display = "none";
-  document.getElementById("customerSearch").value = "";
-
-  document.getElementById("selectedCustomerName").textContent = customerName;
-  console.log("customerPhone:", customerPhone);
-  document.getElementById("selectedCustomerPhone").textContent = customerPhone;
-  document.getElementById("selectedCustomer").style.display = "";
-
-  // Nếu loại tin nhắn là nhắc uống thuốc, lấy thông tin hóa đơn gần nhất
-  const messageType = document.getElementById("messageType").value;
-  if (messageType === "reminder") {
-    try {
-      const invoice = await customerAPI.getLatestInvoice(customerId);
-      if (invoice && invoice.takeNote) {
-        document.getElementById(
-          "messageContent"
-        ).value = `Xin chào ${customerName}! Đây là lời nhắc nhở uống thuốc từ Long Châu cho đơn hàng gần nhất của bạn.\n\nHướng dẫn sử dụng thuốc: ${invoice.takeNote}\n\nVui lòng tuân thủ đúng hướng dẫn sử dụng và liên hệ với chúng tôi nếu có thắc mắc.\n\nChúc bạn mau khỏe!`;
-      }
-    } catch (error) {
-      console.error("Error fetching invoice data:", error);
-    }
-  }
-}
-
 // Xóa khách hàng đã chọn
 function clearSelectedCustomer() {
   window.selectedCustomerId = null;
@@ -800,9 +1068,13 @@ function clearSelectedCustomer() {
   // Reset nội dung tin nhắn về template mặc định
   loadMessageTemplate(document.getElementById("messageType").value);
 }
+// Đưa hàm vào global scope để gọi từ HTML
+window.clearSelectedCustomer = clearSelectedCustomer;
+
+//#endregion
 
 // ====================================
-// XỬ LÝ TIN NHẮN VÀ THÔNG BÁO
+//#region MESSAGING & NOTIFICATIONS
 // ====================================
 
 // Tải template tin nhắn dựa theo loại
@@ -843,7 +1115,7 @@ function loadMessageTemplate(type) {
   }
 }
 
-// Gửi tin nhắn
+// Gửi tin nhắn hoặc email
 async function sendMessage() {
   const messageType = document.getElementById("messageType").value;
   const messageContent = document.getElementById("messageContent").value;
@@ -887,27 +1159,49 @@ async function sendMessage() {
   };
 
   try {
-    // Gửi thông qua API
-    const result = await messageAPI.send(messageData);
+    // Nếu chọn kênh email, gửi qua API email
+    if (channels.includes("email")) {
+      // Lấy thông tin khách hàng để lấy email
+      let customer = null;
+      if (window.selectedCustomerId) {
+        customer = await customerAPI.getById(window.selectedCustomerId);
+      }
+      if (!customer || !customer.email) {
+        alert("Không tìm thấy email khách hàng để gửi!");
+        return;
+      }
+      // Gửi email qua API
+      await messageAPI.sendEmail({
+        to: customer.email,
+        subject: "Thông báo từ Long Châu", // Có thể cho phép nhập subject nếu muốn
+        content: messageContent,
+        customerId: window.selectedCustomerId,
+      });
+    } else {
+      // Gửi thông qua API thông thường (SMS, app, v.v.)
+      await messageAPI.send(messageData);
+    }
 
     // Nếu đang trả lời đánh giá, cập nhật trạng thái đánh giá thành "Đã xử lý"
     if (window.currentReviewId) {
       await reviewAPI.updateStatus(window.currentReviewId, "Đã xử lý");
       window.currentReviewId = null;
-
       // Tải lại danh sách đánh giá để hiển thị trạng thái mới
       await loadReviews();
     }
 
     // Hiển thị thông báo thành công
     alert("Đã gửi tin nhắn thành công!");
-
     // Xóa nội dung tin nhắn sau khi gửi thành công
     document.getElementById("messageContent").value = "";
   } catch (error) {
     console.error("Error sending message:", error);
     // Hiển thị lỗi nếu có
-    alert("Có lỗi xảy ra khi gửi tin nhắn. Vui lòng thử lại.");
+    alert(
+      error && error.message
+        ? `Có lỗi xảy ra khi gửi: ${error.message}`
+        : "Có lỗi xảy ra khi gửi tin nhắn. Vui lòng thử lại."
+    );
   } finally {
     // Khôi phục trạng thái ban đầu của nút gửi
     sendButton.innerHTML = originalButtonText;
@@ -920,7 +1214,6 @@ async function replyReview(reviewId) {
   let review;
   try {
     review = await reviewAPI.getById(reviewId);
-    console.log("[replyReview] Review object:", review);
   } catch (err) {
     alert("Không tìm thấy dữ liệu đánh giá phù hợp!");
     return;
@@ -948,10 +1241,12 @@ async function replyReview(reviewId) {
   // Lấy tên và số điện thoại khách hàng an toàn (ưu tiên fullname, name, customerName)
   let customerName = null;
   let customerPhone = null;
+  let customerEmail = null;
   try {
     if (review.customer && typeof review.customer === "object") {
       customerName = review.customer.fullname;
       customerPhone = review.customer.phone;
+      customerEmail = review.customer.email || "";
     }
   } catch (err) {
     customerName = "Không có thông tin khách hàng";
@@ -962,6 +1257,7 @@ async function replyReview(reviewId) {
   document.getElementById("selectedCustomer").style.display = "";
   document.getElementById("selectedCustomerName").textContent = customerName;
   document.getElementById("selectedCustomerPhone").textContent = customerPhone;
+  document.getElementById("selectedCustomerEmail").textContent = customerEmail;
 
   // Điền nội dung tin nhắn phản hồi
   let replyContent = "";
@@ -985,7 +1281,6 @@ async function replyReview(reviewId) {
 function sendCongratulation(customerId) {
   const customer = rankUpgradeAPI.getById(customerId);
   if (!customer) return;
-
   // Tự động điền thông tin
   document.getElementById("messageType").value = "custom";
   loadMessageTemplate("custom");
@@ -1015,6 +1310,12 @@ function sendCongratulation(customerId) {
     .querySelector(".message-composer")
     .scrollIntoView({ behavior: "smooth" });
 }
+
+//#endregion
+
+// ====================================
+//#region CHARTS & DASHBOARD
+// ====================================
 
 // Khởi tạo biểu đồ
 let satisfactionChart;
@@ -1138,155 +1439,4 @@ async function updateDashboardStats() {
       card.innerHTML = '<span class="error-text">--</span>';
     });
   }
-}
-
-export async function showUserInfo() {
-  // Hiển thị modal
-  const modal = document.getElementById("userInfoModal");
-  if (!modal) {
-    console.error("Không tìm thấy element với ID 'userInfoModal'");
-    return;
-  }
-  modal.classList.add("show");
-
-  // Xóa thông báo lỗi cũ nếu có
-  const oldError = document.querySelector("#modalEmployeeError");
-  if (oldError) {
-    oldError.style.display = "none";
-    oldError.textContent = "";
-  }
-
-  try {
-    // Lấy thông tin người dùng từ API
-    const currentUser = await userAPI.getCurrentUser();
-    console.log("[showUserInfo] currentUser từ backend:", currentUser);
-    if (!currentUser || typeof currentUser !== "object")
-      throw new Error("Không có dữ liệu người dùng từ backend");
-
-    // Cập nhật thông tin cơ bản
-    document.getElementById("modalEmployeeName").textContent =
-      currentUser.name || "";
-    document.getElementById("modalEmployeeRole").textContent =
-      currentUser.role || "";
-    document.getElementById("modalEmployeeEmail").textContent =
-      currentUser.email || "";
-    document.getElementById("modalEmployeePhone").textContent =
-      currentUser.phone || "";
-    document.getElementById("modalEmployeeUsername").textContent =
-      currentUser.username || "";
-    // Cập nhật trạng thái
-    const statusElement = document.getElementById("modalEmployeeStatus");
-    if (currentUser.isActive) {
-      statusElement.className = "status-badge active";
-      statusElement.innerHTML =
-        '<span class="status-dot"></span>Đang hoạt động';
-    } else {
-      statusElement.className = "status-badge inactive";
-      statusElement.innerHTML =
-        '<span class="status-dot"></span>Không hoạt động';
-    }
-  } catch (error) {
-    console.error("Lỗi khi tải thông tin người dùng (showUserInfo):", error);
-    // Hiển thị thông báo lỗi rõ ràng
-    const errorDiv = document.getElementById("modalEmployeeError");
-    if (errorDiv) {
-      errorDiv.style.display = "block";
-      errorDiv.textContent =
-        "Không thể tải thông tin người dùng. Vui lòng thử lại sau.";
-    }
-  }
-}
-
-// Đóng modal thông tin cá nhân
-export function closeUserInfoModal() {
-  const modal = document.getElementById("userInfoModal");
-  if (!modal) {
-    console.error("Không tìm thấy element với ID 'userInfoModal'");
-    return;
-  }
-  modal.classList.remove("show");
-}
-
-// Đăng xuất
-export function logout() {
-  if (confirm("Bạn có chắc muốn đăng xuất?")) {
-    window.location.href = "index.html"; // Chuyển về trang đăng nhập
-  }
-}
-
-// Event listener for customer information clicks
-
-// Event listener for customer information clicks
-document.addEventListener("click", function (e) {
-  if (e.target.closest("[data-customer-id]")) {
-    // Customer element clicked - handler already in place elsewhere
-  }
-});
-
-/**
- * Thiết lập các global handlers để tương tác với HTML onclick attributes
- */
-function setupGlobalHandlers() {
-  // Đưa các hàm vào global scope để có thể gọi từ HTML
-  window.showUserInfo = () => {
-    showUserInfo();
-    return false; // Prevent default action
-  };
-
-  window.logout = () => {
-    logout();
-    return false; // Prevent default action
-  };
-
-  window.closeUserInfoModal = () => {
-    closeUserInfoModal();
-    return false; // Prevent default action
-  };
-
-  // 1. User Info Button trong dropdown (sử dụng ID cụ thể)
-  const userInfoBtn = document.getElementById("btnUserInfo");
-  if (userInfoBtn) {
-    userInfoBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      // Ẩn dropdown trước
-      document.getElementById("userDropdown").classList.remove("show");
-      // Sau đó hiển thị modal với độ trễ nhỏ
-      setTimeout(() => {
-        showUserInfo();
-      }, 100);
-    });
-  } else {
-    console.error("Không tìm thấy nút thông tin người dùng theo ID");
-  }
-
-  const logoutBtn = document.getElementById("btnLogout");
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      logout();
-    });
-  } else {
-    console.error("Không tìm thấy nút đăng xuất theo ID");
-  }
-
-  // Đưa hàm replyReview vào global scope để HTML onclick gọi được
-  window.replyReview = replyReview;
-
-  // Đưa hàm clearSelectedCustomer vào global scope để HTML onclick gọi được
-  window.clearSelectedCustomer = clearSelectedCustomer;
-
-  // Thêm event listeners trực tiếp cho các nút đóng
-  const closeModalButtons = document.querySelectorAll(
-    ".modal-close, .btn-secondary"
-  );
-  closeModalButtons.forEach((button) => {
-    if (button.getAttribute("onclick")?.includes("closeUserInfoModal")) {
-      button.addEventListener("click", (e) => {
-        e.preventDefault();
-        closeUserInfoModal();
-      });
-    }
-  });
 }

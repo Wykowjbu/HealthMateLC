@@ -415,11 +415,19 @@ const statsAPI = {
 //#region  MESSAGE API - API tin nhắn
 // ====================================
 const messageAPI = {
-  // Gửi tin nhắn mới
+  // Gửi tin nhắn nội bộ (nếu dùng)
   send: async function (messageData) {
     return await fetchApi("/messages", {
       method: "POST",
       body: JSON.stringify(messageData),
+    });
+  },
+
+  // Gửi email cho khách hàng
+  sendEmail: async function (to, subject, content) {
+    return await fetchApi("/send-email", {
+      method: "POST",
+      body: JSON.stringify({ to, subject, content }),
     });
   },
 

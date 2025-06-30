@@ -970,6 +970,7 @@ body {
 
 /* Status Badges Enhancement - Fixed */
 .status-badge {
+  width: 110px;
   padding: 8px 16px;
   border-radius: 20px;
   font-size: 12px;
@@ -2133,4 +2134,14 @@ body {
 }
 .btn-action:focus {
   background: #c3dafc;
+}
+
+.customer-email {
+  color: #1250dc;
+  font-weight: 600;
+  font-size: 14px;
+  display: inline-block;
+  margin-top: 2px;
+  letter-spacing: 0.2px;
+  word-break: break-all;
 }
