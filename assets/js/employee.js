@@ -8,6 +8,10 @@ let selectedCustomerForOrder = null;
 let orderItems = [];
 let orderTotal = 0;
 
+// Product Management Variables
+let products = [];
+let filteredProducts = [];
+
 // Initialize the application
 document.addEventListener("DOMContentLoaded", () => {
     initializeApp()
@@ -15,6 +19,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function initializeApp() {
     fetchCustomers()
+    fetchProducts() // Thêm fetch products
     setupEventListeners()
     setupNavigation()
     setupMainEditForm() // Thêm dòng này
@@ -146,6 +151,14 @@ function showCreateOrderForm() {
     
     // Reset form and ensure all elements are visible
     resetOrderForm()
+    
+    // Display products when form opens
+    if (products.length > 0) {
+        displayProducts(products)
+    } else {
+        // If products not loaded yet, fetch them
+        fetchProducts()
+    }
 }
 
 function showSchedule() {
@@ -897,47 +910,291 @@ function removeSelectedCustomer() {
     showCustomerSearchElements();
 }
 
-// Add Medicine to Order
-function addMedicineToOrder(medicineId, medicineName, price) {
-    // Check if medicine already exists in order
-    const existingItem = orderItems.find(item => item.id === medicineId);
+// Product Management Functions
+async function fetchProducts() {
+    try {
+        console.log("Fetching products...")
+        const response = await fetch("http://localhost:8080/employee/danh-sach-san-pham", {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+        })
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`)
+        }
+
+        products = await response.json()
+        filteredProducts = [...products] // Copy all products initially
+        console.log("Received products:", products)
+        displayProducts(products)
+    } catch (error) {
+        console.error("Error fetching products:", error)
+        console.log("Using sample products as fallback")
+        displaySampleProducts()
+        showNotification("Đang sử dụng dữ liệu mẫu - Không thể kết nối API", "info")
+    }
+}
+
+function displayProducts(productList) {
+    const productListContainer = document.getElementById("medicineSearchResults")
+    if (!productListContainer) {
+        console.error("Medicine search results container not found!")
+        return
+    }
+
+    // Clear existing static content but keep structure
+    productListContainer.innerHTML = ""
+
+    if (productList.length === 0) {
+        productListContainer.innerHTML = `
+            <div class="no-products" style="text-align: center; padding: 20px; color: #718096;">
+                <span class="material-icons">inventory_2</span>
+                <p>Không có sản phẩm nào</p>
+            </div>
+        `
+        return
+    }
+
+    productList.forEach((product) => {
+        const productItem = document.createElement("div")
+        productItem.className = "medicine-item"
+        
+        productItem.innerHTML = `
+            <div class="medicine-info">
+                <h6>${product.productName}</h6>
+                <p>${product.description || product.productType}</p>
+                <span class="medicine-price">${formatCurrency(product.price)}</span>
+            </div>
+            <button class="add-medicine-btn" onclick="addProductToOrder(${product.productId}, '${product.productName}', ${product.price})">
+                <span class="material-icons">add</span>
+            </button>
+        `
+
+        productListContainer.appendChild(productItem)
+    })
+}
+
+function searchProducts(searchTerm) {
+    console.log("Searching products with term:", searchTerm);
+    console.log("Current products array:", products);
+    
+    if (!searchTerm) {
+        filteredProducts = [...products]
+    } else {
+        filteredProducts = products.filter(product => 
+            product.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            product.productType.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (product.description && product.description.toLowerCase().includes(searchTerm.toLowerCase()))
+        )
+    }
+    console.log("Filtered products:", filteredProducts);
+    displayProducts(filteredProducts)
+}
+
+function filterProductsByType(productType) {
+    if (!productType || productType === 'all') {
+        filteredProducts = [...products]
+    } else {
+        filteredProducts = products.filter(product => 
+            product.productType.toLowerCase() === productType.toLowerCase()
+        )
+    }
+    displayProducts(filteredProducts)
+}
+
+function addProductToOrder(productId, productName, price) {
+    // Check if product already exists in order
+    const existingItem = orderItems.find(item => item.id === productId)
     
     if (existingItem) {
-        existingItem.quantity += 1;
-        existingItem.total = existingItem.quantity * existingItem.price;
+        existingItem.quantity += 1
+        existingItem.total = existingItem.quantity * existingItem.price
     } else {
         orderItems.push({
-            id: medicineId,
-            name: medicineName,
+            id: productId,
+            name: productName,
             price: price,
             quantity: 1,
             total: price
-        });
+        })
     }
     
-    updateOrderSummary();
-    showNotification(`Đã thêm ${medicineName} vào đơn hàng`, "success");
+    updateOrderSummary()
+    showNotification(`Đã thêm ${productName} vào đơn hàng`, "success")
 }
 
-// Remove Medicine from Order
-function removeMedicineFromOrder(medicineId) {
-    orderItems = orderItems.filter(item => item.id !== medicineId);
+// Close Create Order Form
+function closeCreateOrderForm() {
+    document.getElementById("createOrderForm").style.display = "none";
+    resetOrderForm();
+    
+    // Show customer section by default
+    showCustomerSection();
+}
+
+// Reset Order Form
+function resetOrderForm() {
+    selectedCustomerForOrder = null;
+    orderItems = [];
+    orderTotal = 0;
+    
+    // Clear form fields
+    document.getElementById("orderCustomerSearch").value = "";
+    document.getElementById("medicineSearch").value = "";
+    document.getElementById("noCustomerCheckbox").checked = false;
+    
+    // Hide selected customer
+    document.getElementById("selectedCustomer").style.display = "none";
+    document.getElementById("customerSearchResults").style.display = "none";
+    
+    // Show customer search elements
+    showCustomerSearchElements();
+    
+    // Reset order summary
     updateOrderSummary();
 }
 
-// Update Medicine Quantity
-function updateMedicineQuantity(medicineId, newQuantity) {
-    if (newQuantity <= 0) {
-        removeMedicineFromOrder(medicineId);
+// Search Customers for Order
+function searchCustomersForOrder(searchTerm) {
+    if (!searchTerm || searchTerm.length < 2) {
+        document.getElementById("customerSearchResults").style.display = "none";
         return;
     }
     
-    const item = orderItems.find(item => item.id === medicineId);
+    // Filter customers based on search term
+    const filteredCustomers = customers.filter(customer => 
+        customer.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        customer.phone.includes(searchTerm)
+    );
+    
+    displayCustomerSearchResults(filteredCustomers);
+}
+
+// Display Customer Search Results
+function displayCustomerSearchResults(customerList) {
+    const resultsContainer = document.getElementById("customerSearchResults");
+    
+    if (customerList.length === 0) {
+        resultsContainer.innerHTML = `
+            <div style="padding: 20px; text-align: center; color: #718096;">
+                <span class="material-icons">search_off</span>
+                <p>Không tìm thấy khách hàng</p>
+            </div>
+        `;
+        resultsContainer.style.display = "block";
+        return;
+    }
+    
+    resultsContainer.innerHTML = customerList.map(customer => {
+        const initials = customer.fullName
+            .split(" ")
+            .map(word => word.charAt(0))
+            .slice(-2)
+            .join("")
+            .toUpperCase();
+            
+        return `
+            <div class="customer-result-item" onclick="selectCustomerForOrder(${customer.id}, '${customer.fullName}', '${customer.phone}', ${customer.totalPoints || 0})">
+                <div class="customer-avatar">${initials}</div>
+                <div class="customer-info">
+                    <h6>${customer.fullName}</h6>
+                    <p>${customer.phone} • Điểm: ${customer.totalPoints || 0}</p>
+                </div>
+            </div>
+        `;
+    }).join("");
+    
+    resultsContainer.style.display = "block";
+}
+
+// Select Customer for Order
+function selectCustomerForOrder(customerId, fullName, phone, totalPoints) {
+    selectedCustomerForOrder = {
+        id: customerId,
+        fullName: fullName,
+        phone: phone,
+        totalPoints: totalPoints
+    };
+    
+    // Update selected customer display
+    const initials = fullName
+        .split(" ")
+        .map(word => word.charAt(0))
+        .slice(-2)
+        .join("")
+        .toUpperCase();
+    
+    document.getElementById("selectedCustomerAvatar").textContent = initials;
+    document.getElementById("selectedCustomerName").textContent = fullName;
+    document.getElementById("selectedCustomerPhone").textContent = phone;
+    document.getElementById("selectedCustomerPoints").textContent = `Điểm: ${totalPoints || 0}`;
+    
+    // Show selected customer and hide search results
+    document.getElementById("selectedCustomer").style.display = "flex";
+    document.getElementById("customerSearchResults").style.display = "none";
+    document.getElementById("orderCustomerSearch").value = "";
+    document.getElementById("noCustomerCheckbox").checked = false;
+    
+    // Hide customer search elements
+    hideCustomerSearchElements();
+}
+
+// Hide Customer Search Elements when a customer is selected
+function hideCustomerSearchElements() {
+    const customerSearchContainer = document.querySelector(".customer-search-container");
+    const noCustomerOption = document.querySelector(".no-customer-option");
+    
+    if (customerSearchContainer) {
+        customerSearchContainer.style.display = "none";
+    }
+    if (noCustomerOption) {
+        noCustomerOption.style.display = "none";
+    }
+}
+
+// Show Customer Search Elements when customer is removed
+function showCustomerSearchElements() {
+    const customerSearchContainer = document.querySelector(".customer-search-container");
+    const noCustomerOption = document.querySelector(".no-customer-option");
+    
+    if (customerSearchContainer) {
+        customerSearchContainer.style.display = "flex";
+    }
+    if (noCustomerOption) {
+        noCustomerOption.style.display = "block";
+    }
+}
+
+// Remove Selected Customer
+function removeSelectedCustomer() {
+    selectedCustomerForOrder = null;
+    document.getElementById("selectedCustomer").style.display = "none";
+    document.getElementById("orderCustomerSearch").value = "";
+    document.getElementById("noCustomerCheckbox").checked = false;
+    
+    // Show customer search elements again
+    showCustomerSearchElements();
+}
+
+// Update Medicine Quantity (renamed to Product)
+function updateProductQuantity(productId, newQuantity) {
+    if (newQuantity <= 0) {
+        removeProductFromOrder(productId);
+        return;
+    }
+    
+    const item = orderItems.find(item => item.id === productId);
     if (item) {
         item.quantity = newQuantity;
         item.total = item.quantity * item.price;
         updateOrderSummary();
     }
+}
+
+// Remove Product from Order (renamed from Medicine)
+function removeProductFromOrder(productId) {
+    orderItems = orderItems.filter(item => item.id !== productId);
+    updateOrderSummary();
 }
 
 // Update Order Summary
@@ -960,15 +1217,15 @@ function updateOrderSummary() {
                     <p>${formatCurrency(item.price)} x ${item.quantity}</p>
                 </div>
                 <div class="order-item-controls">
-                    <button class="quantity-btn" onclick="updateMedicineQuantity(${item.id}, ${item.quantity - 1})">
+                    <button class="quantity-btn" onclick="updateProductQuantity(${item.id}, ${item.quantity - 1})">
                         <span class="material-icons" style="font-size: 14px;">remove</span>
                     </button>
                     <input type="number" class="quantity-input" value="${item.quantity}" 
-                           onchange="updateMedicineQuantity(${item.id}, parseInt(this.value) || 0)" min="1">
-                    <button class="quantity-btn" onclick="updateMedicineQuantity(${item.id}, ${item.quantity + 1})">
+                           onchange="updateProductQuantity(${item.id}, parseInt(this.value) || 0)" min="1">
+                    <button class="quantity-btn" onclick="updateProductQuantity(${item.id}, ${item.quantity + 1})">
                         <span class="material-icons" style="font-size: 14px;">add</span>
                     </button>
-                    <button class="remove-item-btn" onclick="removeMedicineFromOrder(${item.id})">
+                    <button class="remove-item-btn" onclick="removeProductFromOrder(${item.id})">
                         <span class="material-icons" style="font-size: 14px;">delete</span>
                     </button>
                 </div>
@@ -1153,6 +1410,26 @@ function setupOrderFormEventListeners() {
         });
     }
     
+    // Product search
+    const productSearchInput = document.getElementById("medicineSearch");
+    if (productSearchInput) {
+        productSearchInput.addEventListener("input", (e) => {
+            console.log("Product search input detected:", e.target.value);
+            searchProducts(e.target.value);
+        });
+        console.log("Product search event listener added successfully");
+    } else {
+        console.error("Product search input (medicineSearch) not found!");
+    }
+    
+    // Product type filter
+    const productTypeFilter = document.getElementById("productTypeFilter");
+    if (productTypeFilter) {
+        productTypeFilter.addEventListener("change", (e) => {
+            filterProductsByType(e.target.value);
+        });
+    }
+    
     // No customer checkbox
     const noCustomerCheckbox = document.getElementById("noCustomerCheckbox");
     if (noCustomerCheckbox) {
@@ -1178,6 +1455,49 @@ function setupOrderFormEventListeners() {
     if (quickAddForm) {
         quickAddForm.addEventListener("submit", handleQuickAddCustomer);
     }
+}
+
+// Refresh products display when needed
+function refreshProductsDisplay() {
+    if (products.length > 0) {
+        filteredProducts = [...products];
+        displayProducts(filteredProducts);
+    }
+}
+
+// Function to display sample products if API is not available
+function displaySampleProducts() {
+    const sampleProducts = [
+        {
+            productId: 1,
+            productName: "Paracetamol 500mg",
+            productType: "Thuốc",
+            unit: "Viên",
+            description: "Giảm đau, hạ sốt",
+            price: 2500
+        },
+        {
+            productId: 2,
+            productName: "Amoxicillin 250mg",
+            productType: "Thuốc",
+            unit: "Viên", 
+            description: "Kháng sinh",
+            price: 3500
+        },
+        {
+            productId: 3,
+            productName: "Vitamin C 1000mg",
+            productType: "Thuốc",
+            unit: "Viên",
+            description: "Bổ sung vitamin",
+            price: 1500
+        }
+    ];
+    
+    products = sampleProducts;
+    filteredProducts = [...products];
+    displayProducts(filteredProducts);
+    console.log("Displaying sample products as fallback");
 }
 
 
