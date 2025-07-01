@@ -18,7 +18,6 @@
       initializeNavigation();
       initializeUserDropdown();
       loadInitialData();
-      initializeCancelButtons();
     });
 
     // Form submission handlers
@@ -700,44 +699,58 @@
     // ============================================================================
 
     // Form handlers
-   function handleAddAccount(e) {
-     e.preventDefault();
-     const formData = {
-       username: document.getElementById("username").value,
-       password: document.getElementById("password").value,
-       fullName: document.getElementById("fullname").value,
-       phone: document.getElementById("phone").value,
-       email: document.getElementById("email").value,
-       role: document.getElementById("role").value,
-       pharmacyId: document.getElementById("pharmacy").value
-     };
-     if (!formData.username || !formData.password || !formData.fullName || !formData.role) {
-       showToast("Vui lòng điền đầy đủ thông tin bắt buộc");
-       return;
-     }
-     fetch(`http://localhost:8080/admin/add-account`, {
-       method: "POST",
-       headers: {
-         "Content-Type": "application/json",
-       },
-       body: JSON.stringify(formData),
-     })
-       .then((response) => response.json())
-       .then((data) => {
-         if (data.message) {
-           showToast(data.message);
-           if (data.message.includes("thành công")) {
-             e.target.reset();
-             renderListAccounts();
-           }
-         }
-       })
-       .catch((error) => {
-         console.error("Error creating account:", error);
-         showToast("Có lỗi xảy ra khi tạo tài khoản");
-       });
-   }
+  function handleAddAccount(e) {
+    e.preventDefault();
 
+    // Lấy dữ liệu từ form
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value.trim();
+    const fullName = document.getElementById("fullname").value.trim();
+    const phone = document.getElementById("phone").value.trim();
+    const email = document.getElementById("email").value.trim();
+    const role = document.getElementById("role").value;
+    const pharmacyId = Number(document.getElementById("pharmacy").value);
+
+    // Validate dữ liệu bắt buộc
+    if (!username || !password || !fullName || !role || !pharmacyId) {
+      showToast("Vui lòng điền đầy đủ thông tin bắt buộc");
+      return;
+    }
+
+    // Gộp thành object đúng format backend yêu cầu
+    const formData = {
+      username: username,
+      password: password,
+      role: role,
+      isActive: true,
+      fullName: fullName,
+      phone: phone,
+      email: email,
+      pharmacyId: pharmacyId
+    };
+
+    fetch(`http://localhost:8080/admin/add-account`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(formData),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.message) {
+          showToast(data.message);
+          if (data.message.includes("thành công")) {
+            e.target.reset();
+            renderListAccounts();
+          }
+        }
+      })
+      .catch((error) => {
+        console.error("Error creating account:", error);
+        showToast("Có lỗi xảy ra khi tạo tài khoản");
+      });
+  }
     function handleCreateCategory(e) {
       e.preventDefault();
       console.log("Create category form submitted");
