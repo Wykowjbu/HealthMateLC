@@ -508,7 +508,7 @@ body {
   padding: 30px;
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  max-width: 800px;
+  max-width: 1200px;   /* Tăng từ 800px lên 1200px */
   margin: 0 auto;
   width: 100%;
 }
@@ -677,20 +677,22 @@ body {
   width: 100%;
   border-collapse: collapse;
   background: white;
+  table-layout: auto; /* Đảm bảo các cột tự giãn */
 }
 
 .data-table th,
 .data-table td {
-  padding: 15px;
+  padding: 18px 20px;   /* Tăng padding cho rộng rãi */
   text-align: left;
   border-bottom: 1px solid #e2e8f0;
+  font-size: 15px;      /* Tăng font-size */
 }
 
 .data-table th {
   background: #f7fafc;
   font-weight: 600;
   color: #2d3748;
-  font-size: 14px;
+  font-size: 15px;      /* Tăng font-size */
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -851,13 +853,83 @@ body {
     flex-direction: column;
   }
 }
-.pagination {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  margin: 24px 0 0 0;
-}
+ .pagination {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin: 0 0 16px 0;
+  }
 
+  .pagination-btn {
+    padding: 8px 16px;
+    border: 1px solid #e2e8f0;
+    background: #f7fafc;
+    color: #2d3748;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s, color 0.2s;
+  }
+
+  .pagination-btn.active,
+  .pagination-btn:hover {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    border-color: #667eea;
+  }
+  #panel-list-products .panel-content {
+    display: flex;
+    flex-direction: column;
+    min-height: 500px;
+    height: 100%;
+  }
+
+  #panel-list-products .table-wrapper {
+    flex: 1 1 auto;
+    min-height: 300px; /* Đảm bảo bảng luôn đủ cao để đẩy pagination xuống */
+    max-height: 500px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+  }
+
+  #product-list-pagination {
+    align-self: center;
+    margin-top: auto;
+    margin-bottom: 16px;
+    flex-shrink: 0;
+  }
+  #panel-list-stores .panel-content {
+    display: flex;
+    flex-direction: column;
+    min-height: 600px;
+    height: 100%;
+  }
+  #panel-list-stores .table-wrapper {
+    flex: 1 1 auto;
+        min-height: 300px; /* Đảm bảo bảng luôn đủ cao để đẩy pagination xuống */
+        max-height: 500px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+  }
+
+  #store-list-pagination.pagination {
+    align-self: center;
+    flex-shrink: 0;
+    margin-top: 0;
+    margin-bottom: 16px;
+  }
+
+  #product-list-pagination {
+    align-self: center;
+    margin-top: auto;
+    margin-bottom: 16px;
+  }
+
+/* Pagination button style giữ nguyên */
 .pagination-btn {
   padding: 8px 16px;
   border: 1px solid #e2e8f0;
@@ -875,19 +947,117 @@ body {
   color: #fff;
   border-color: #667eea;
 }
-#panel-list-products .panel-content {
+
+.toast-container {
+  position: absolute;
+  top: 80px; /* hoặc 90px, tuỳ chiều cao header */
+  right: 40px;
+  z-index: 1200;
   display: flex;
   flex-direction: column;
-  min-height: 700px; /* Tăng lên nếu muốn panel cao hơn */
+  gap: 10px;
+  pointer-events: none;
 }
-
-.table-wrapper {
-  flex: 1 1 auto;
-  max-height: 500px;
-  overflow-y: auto;
+.toast {
+  min-width: 220px;
+  max-width: 350px;
+  padding: 14px 20px;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 15px;
+  background: linear-gradient(135deg, #38a169 0%, #43e97b 100%);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  opacity: 0;
+  transform: translateY(-20px);
+  transition: opacity 0.3s, transform 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  pointer-events: auto;
+  margin-right: 8px;
 }
-
-#product-list-pagination {
-  margin-top: 24px;
-  align-self: center;
+.toast.show {
+  opacity: 0.97;
+  transform: translateY(0);
+}
+.toast-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+.toast-icon {
+  font-size: 22px !important;
+  color: #fff !important;
+  background: #38a169;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.toast-message {
+  font-size: 15px;
+  font-weight: 500;
+  color: #fff;
+}
+.toast-close {
+  cursor: pointer;
+  font-size: 20px;
+  margin-left: 12px;
+  color: #fff;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+  background: none;
+  border: none;
+}
+.toast-close:hover {
+  opacity: 1;
+}
+.btn-disable {
+  background: #e53e3e;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  margin-right: 6px;
+  margin-bottom: 0;
+  display: inline-block;
+  min-width: 0;
+  min-height: 0;
+  line-height: 1.4;
+  white-space: nowrap;
+  transition: background 0.2s, transform 0.2s;
+}
+.btn-disable:hover {
+  background: #c53030;
+}
+.btn-enable {
+  background: #38a169;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  margin-right: 6px;
+  margin-bottom: 0;
+  display: inline-block;
+  min-width: 0;
+  min-height: 0;
+  line-height: 1.4;
+  white-space: nowrap;
+  transition: background 0.2s, transform 0.2s;
+}
+.btn-enable:hover {
+  background: #2f855a;
+}
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
 }
