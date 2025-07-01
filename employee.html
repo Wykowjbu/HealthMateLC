@@ -121,18 +121,47 @@
             <!-- Customer Management Section -->
             <div class="customer-container">
                 <!-- Customer List -->
-                <div class="customers-list-page" id="customersList">
+                <div class="customers-list">
                     <div class="customers-list-header">
-                        <h3 class="form-title">Danh sách khách hàng</h3>
-                        <div class="search-container">
-                            <input type="text" id="searchCustomer" placeholder="Tìm kiếm khách hàng">
+                        <h3 class="form-title">
+                            <span class="material-icons">group</span>
+                            Danh sách khách hàng
+                        </h3>
+                        
+                        <div class="header-actions-group">
+                            <!-- Ô tìm kiếm khách hàng -->
+                            <div class="customer-search">
+                                <span class="material-icons search-icon">search</span>
+                                <input type="text" placeholder="Tìm kiếm theo tên hoặc SĐT" id="customerSearchInput">
+                            </div>
+                            
+                            <!-- Nút thêm mới khách hàng -->
                             <button class="add-customer-btn" onclick="openAddCustomerForm()">
-                                <span class="material-icons">add</span>
-                                Thêm Mới Khách Hàng
+                                <span class="material-icons">person_add</span>
+                                Thêm mới
                             </button>
                         </div>
                     </div>
-                    <div id="customer-list" class="customer-list"></div>
+                    
+                    <!-- Container có thể cuộn -->
+                    <div class="customers-container" id="customersContainer">
+                        <!-- Loading state -->
+                        <div class="customers-loading" id="customersLoading" style="display: none;">
+                            <span class="material-icons">refresh</span>
+                            <div>Đang tải danh sách khách hàng...</div>
+                        </div>
+                        
+                        <!-- Empty state -->
+                        <div class="customers-empty" id="customersEmpty" style="display: none;">
+                            <span class="material-icons">group_off</span>
+                            <div>Không tìm thấy khách hàng nào</div>
+                        </div>
+                        
+                        <!-- Customer items will be dynamically loaded from database -->
+                        <div id="customer-list">
+                            <!-- Customer items will be populated by JavaScript -->
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Create Customer Form -->
@@ -147,12 +176,12 @@
                         
                         <form id="customerForm">
                             <div class="form-group">
-                                <label for="fullName">Họ và tên</label>
+                                <label for="fullName">Họ và tên *</label>
                                 <input type="text" id="fullName" placeholder="Nhập họ và tên..." required>
                             </div>
                             
                             <div class="form-group">
-                                <label for="phone">Số điện thoại</label>
+                                <label for="phone">Số điện thoại *</label>
                                 <input type="tel" id="phone" placeholder="Nhập số điện thoại..." required>
                             </div>
                             
@@ -160,9 +189,29 @@
                                 <label for="email">Email</label>
                                 <input type="email" id="email" placeholder="Nhập email...">
                             </div>
+
+                            <div class="form-group">
+                                <label for="gender">Giới tính</label>
+                                <select id="gender">
+                                    <option value="">Chọn giới tính</option>
+                                    <option value="Nam">Nam</option>
+                                    <option value="Nữ">Nữ</option>
+                                    <option value="Khác">Khác</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="dateOfBirth">Ngày sinh</label>
+                                <input type="date" id="dateOfBirth">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="medicalHistory">Tiền sử bệnh lý</label>
+                                <textarea id="medicalHistory" placeholder="Nhập tiền sử bệnh lý..." rows="3"></textarea>
+                            </div>
                             
                             <div class="form-group">
-                                <label for="allergies">Ghi chú</label>
+                                <label for="allergies">Dị ứng</label>
                                 <textarea id="allergies" placeholder="Các thành phần dị ứng..." rows="3"></textarea>
                             </div>
 
@@ -198,7 +247,19 @@
                                 <p id="detailEmail"></p>
                             </div>
                             <div class="detail-item">
-                                <span class="detail-label">Ghi chú:</span>
+                                <span class="detail-label">Giới tính:</span>
+                                <p id="detailGender"></p>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Ngày sinh:</span>
+                                <p id="detailDateOfBirth"></p>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Tiền sử bệnh lý:</span>
+                                <p id="detailMedicalHistory"></p>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Dị ứng:</span>
                                 <p id="detailAllergies"></p>
                             </div>
                             <div class="detail-item">
@@ -220,10 +281,7 @@
                                 <span class="material-icons">history</span>
                                 Xem Lịch Sử Đơn Hàng
                             </button>
-                            <button class="edit-customer-info-btn" onclick="testMainEdit()">
-                              <span class="material-icons">bug_report</span>
-                              Test Edit (Debug)
-                            </button>
+                            
                         </div>
                     </div>
                 </div>
@@ -282,26 +340,26 @@
                                     </div>
 
                                     <div class="form-group">
-                                        <label for="mainEditBirthDate">
-                                            <span class="material-icons">cake</span>
-                                            Ngày sinh
-                                        </label>
-                                        <input type="date" id="mainEditBirthDate" name="birthDate">
-                                    </div>
-                                </div>
-
-                                <div class="form-row">
-                                    <div class="form-group">
                                         <label for="mainEditGender">
                                             <span class="material-icons">wc</span>
                                             Giới tính
                                         </label>
                                         <select id="mainEditGender" name="gender">
-                                            <option value="">Chọn giới tính</option>
-                                            <option value="male">Nam</option>
-                                            <option value="female">Nữ</option>
-                                            <option value="other">Khác</option>
+                                        
+                                            <option value="Male">Male</option>
+                                            <option value="Female">Female</option>
+                                            
                                         </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="mainEditDateOfBirth">
+                                            <span class="material-icons">cake</span>
+                                            Ngày sinh
+                                        </label>
+                                        <input type="date" id="mainEditDateOfBirth" name="dateOfBirth">
                                     </div>
 
                                     <div class="form-group">
@@ -309,16 +367,9 @@
                                             <span class="material-icons">stars</span>
                                             Điểm tích lũy
                                         </label>
-                                        <input type="number" id="mainEditTotalPoints" name="totalPoints" min="0">
+                                        <input type="number" id="mainEditTotalPoints" name="totalPoints" min="0" readonly>
+                                        <small style="color: #718096; font-size: 12px;">Chỉ có thể xem, không thể chỉnh sửa</small>
                                     </div>
-                                </div>
-
-                                <div class="form-group full-width">
-                                    <label for="mainEditAddress">
-                                        <span class="material-icons">location_on</span>
-                                        Địa chỉ
-                                    </label>
-                                    <textarea id="mainEditAddress" name="address" rows="2" placeholder="Nhập địa chỉ..."></textarea>
                                 </div>
 
                                 <div class="form-group full-width">
@@ -382,13 +433,34 @@
                             </div>
 
                             <div class="form-group">
-                                <label for="editAllergies">Ghi chú</label>
-                                <textarea id="editAllergies" rows="3" placeholder="Nhập ghi chú..."></textarea>
+                                <label for="editGender">Giới tính</label>
+                                <select id="editGender">
+                                    
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                    
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="editDateOfBirth">Ngày sinh</label>
+                                <input type="date" id="editDateOfBirth">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="editMedicalHistory">Tiền sử bệnh lý</label>
+                                <textarea id="editMedicalHistory" rows="3" placeholder="Nhập tiền sử bệnh lý..."></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="editAllergies">Dị ứng</label>
+                                <textarea id="editAllergies" rows="3" placeholder="Nhập các loại dị ứng..."></textarea>
                             </div>
 
                             <div class="form-group">
                                 <label for="editTotalPoints">Điểm tích lũy</label>
-                                <input type="number" id="editTotalPoints" min="0">
+                                <input type="number" id="editTotalPoints" min="0" readonly>
+                                <small style="color: #718096; font-size: 12px;">Không thể chỉnh sửa</small>
                             </div>
 
                             <div class="edit-form-btn-container">
@@ -401,47 +473,220 @@
             </div>
 
             <!-- Create Order Form -->
-            <div class="form-container" id="createOrderForm" style="display: none;">
-                <h3 class="form-title">
-                    <span class="material-icons">receipt_long</span>
-                    Tạo đơn thuốc
-                </h3>
-                <form>
-                    <div class="form-group">
-                        <label class="form-label">Số điện thoại khách hàng</label>
-                        <input type="tel" class="form-input" placeholder="0901234567">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Tên khách hàng</label>
-                        <input type="text" class="form-input" placeholder="Nguyễn Văn A" readonly>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Chọn thuốc</label>
-                        <select class="form-select">
-                            <option>Paracetamol 500mg</option>
-                            <option>Amoxicillin 250mg</option>
-                            <option>Vitamin C 1000mg</option>
-                            <option>Aspirin 100mg</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Số lượng</label>
-                        <input type="number" class="form-input" placeholder="1" min="1">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Ghi chú</label>
-                        <textarea class="form-input" rows="3" placeholder="Uống sau ăn, ngày 3 lần..."></textarea>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary">
-                        <span class="material-icons">add_shopping_cart</span>
-                        Thêm vào đơn
+            <div class="create-order-container" id="createOrderForm" style="display: none;">
+                <div class="order-form-header">
+                    <h3 class="form-title">
+                        <span class="material-icons">receipt_long</span>
+                        Tạo đơn thuốc
+                    </h3>
+                    <button class="close-order-btn" onclick="closeCreateOrderForm()">
+                        <span class="material-icons">close</span>
                     </button>
-                </form>
+                </div>
+
+                <div class="order-form-content">
+                    <!-- Left Side - Customer & Medicine Selection -->
+                    <div class="order-left-panel">
+                        <!-- Customer Selection Section -->
+                        <div class="customer-selection-section">
+                            <h4 class="section-title">
+                                <span class="material-icons">person_search</span>
+                                Chọn khách hàng
+                            </h4>
+                            
+                            <!-- Customer Search -->
+                            <div class="customer-search-container">
+                                <div class="search-input-group">
+                                    <span class="material-icons search-icon">search</span>
+                                    <input type="text" id="orderCustomerSearch" placeholder="Tìm theo tên hoặc SĐT..." class="search-input">
+                                </div>
+                                <button class="add-new-customer-btn" onclick="openQuickAddCustomer()">
+                                    <span class="material-icons">person_add</span>
+                                    Thêm mới
+                                </button>
+                            </div>
+
+                            <!-- Selected Customer Display -->
+                            <div class="selected-customer" id="selectedCustomer" style="display: none;">
+                                <div class="customer-avatar" id="selectedCustomerAvatar">KH</div>
+                                <div class="customer-info">
+                                    <h5 id="selectedCustomerName">Tên khách hàng</h5>
+                                    <p id="selectedCustomerPhone">Số điện thoại</p>
+                                    <span class="customer-points" id="selectedCustomerPoints">Điểm: 0</span>
+                                </div>
+                                <button class="remove-customer-btn" onclick="removeSelectedCustomer()">
+                                    <span class="material-icons">close</span>
+                                </button>
+                            </div>
+
+                            <!-- Customer Search Results -->
+                            <div class="customer-search-results" id="customerSearchResults" style="display: none;">
+                                <!-- Results will be populated by JavaScript -->
+                            </div>
+
+                            <!-- No Customer Option -->
+                            <div class="no-customer-option">
+                                <label class="checkbox-container">
+                                    <input type="checkbox" id="noCustomerCheckbox">
+                                    <span class="checkmark"></span>
+                                    Khách hàng không có tài khoản
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Medicine Selection Section -->
+                        <div class="medicine-selection-section">
+                            <h4 class="section-title">
+                                <span class="material-icons">medication</span>
+                                Chọn thuốc
+                            </h4>
+                            
+                            <!-- Medicine Search -->
+                            <div class="medicine-search-container">
+                                <div class="search-input-group">
+                                    <span class="material-icons search-icon">search</span>
+                                    <input type="text" id="medicineSearch" placeholder="Tìm kiếm thuốc..." class="search-input">
+                                </div>
+                            </div>
+
+                            <!-- Medicine Search Results -->
+                            <div class="medicine-search-results" id="medicineSearchResults">
+                                <!-- Sample medicines - will be populated by JavaScript -->
+                                <div class="medicine-item" data-id="1" data-name="Paracetamol 500mg" data-price="2500">
+                                    <div class="medicine-info">
+                                        <h6>Paracetamol 500mg</h6>
+                                        <p>Giảm đau, hạ sốt</p>
+                                        <span class="medicine-price">2,500 VND</span>
+                                    </div>
+                                    <button class="add-medicine-btn" onclick="addMedicineToOrder(1, 'Paracetamol 500mg', 2500)">
+                                        <span class="material-icons">add</span>
+                                    </button>
+                                </div>
+                                
+                                <div class="medicine-item" data-id="2" data-name="Amoxicillin 250mg" data-price="3500">
+                                    <div class="medicine-info">
+                                        <h6>Amoxicillin 250mg</h6>
+                                        <p>Kháng sinh</p>
+                                        <span class="medicine-price">3,500 VND</span>
+                                    </div>
+                                    <button class="add-medicine-btn" onclick="addMedicineToOrder(2, 'Amoxicillin 250mg', 3500)">
+                                        <span class="material-icons">add</span>
+                                    </button>
+                                </div>
+                                
+                                <div class="medicine-item" data-id="3" data-name="Vitamin C 1000mg" data-price="1500">
+                                    <div class="medicine-info">
+                                        <h6>Vitamin C 1000mg</h6>
+                                        <p>Bổ sung vitamin</p>
+                                        <span class="medicine-price">1,500 VND</span>
+                                    </div>
+                                    <button class="add-medicine-btn" onclick="addMedicineToOrder(3, 'Vitamin C 1000mg', 1500)">
+                                        <span class="material-icons">add</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Side - Order Summary -->
+                    <div class="order-right-panel">
+                        <div class="order-summary-section">
+                            <h4 class="section-title">
+                                <span class="material-icons">shopping_cart</span>
+                                Đơn hàng
+                            </h4>
+
+                            <!-- Order Items List -->
+                            <div class="order-items-list" id="orderItemsList">
+                                <div class="empty-order">
+                                    <span class="material-icons">shopping_cart_outlined</span>
+                                    <p>Chưa có sản phẩm nào</p>
+                                </div>
+                            </div>
+
+                            <!-- Order Total -->
+                            <div class="order-total">
+                                <div class="total-row">
+                                    <span>Tạm tính:</span>
+                                    <span id="orderSubtotal">0 VND</span>
+                                </div>
+                                <div class="total-row discount-row" id="discountRow" style="display: none;">
+                                    <span>Giảm giá (điểm):</span>
+                                    <span id="orderDiscount">0 VND</span>
+                                </div>
+                                <div class="total-row final-total">
+                                    <span>Tổng cộng:</span>
+                                    <span id="orderTotal">0 VND</span>
+                                </div>
+                            </div>
+
+                            <!-- Payment Method -->
+                            <div class="payment-method">
+                                <h5>Phương thức thanh toán</h5>
+                                <div class="payment-options">
+                                    <label class="radio-container">
+                                        <input type="radio" name="paymentMethod" value="cash" checked>
+                                        <span class="radio-checkmark"></span>
+                                        Tiền mặt
+                                    </label>
+                                    <label class="radio-container">
+                                        <input type="radio" name="paymentMethod" value="card">
+                                        <span class="radio-checkmark"></span>
+                                        Thẻ
+                                    </label>
+                                    <label class="radio-container">
+                                        <input type="radio" name="paymentMethod" value="transfer">
+                                        <span class="radio-checkmark"></span>
+                                        Chuyển khoản
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Order Actions -->
+                            <div class="order-actions">
+                                <button class="cancel-order-btn" onclick="cancelOrder()">
+                                    <span class="material-icons">cancel</span>
+                                    Hủy đơn
+                                </button>
+                                <button class="create-order-btn" onclick="createOrder()">
+                                    <span class="material-icons">receipt</span>
+                                    Tạo đơn hàng
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Add Customer Popup -->
+            <div class="quick-add-customer-popup" id="quickAddCustomerPopup" style="display: none;">
+                <div class="popup-overlay" onclick="closeQuickAddCustomer()"></div>
+                <div class="popup-content">
+                    <div class="popup-header">
+                        <h4>Thêm khách hàng nhanh</h4>
+                        <button class="close-popup-btn" onclick="closeQuickAddCustomer()">
+                            <span class="material-icons">close</span>
+                        </button>
+                    </div>
+                    <form id="quickAddCustomerForm" class="popup-form">
+                        <div class="form-group">
+                            <label for="quickFullName">Họ và tên *</label>
+                            <input type="text" id="quickFullName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="quickPhone">Số điện thoại *</label>
+                            <input type="tel" id="quickPhone" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="quickEmail">Email</label>
+                            <input type="email" id="quickEmail">
+                        </div>
+                        <div class="popup-actions">
+                            <button type="button" class="cancel-btn" onclick="closeQuickAddCustomer()">Hủy</button>
+                            <button type="submit" class="submit-btn">Thêm và chọn</button>
+                        </div>
+                    </form>
+                </div>
             </div>
 
             <!-- Schedule Container -->
