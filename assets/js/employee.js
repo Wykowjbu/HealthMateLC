@@ -3,6 +3,11 @@ let customers = []
 let currentCustomer = null
 let currentSection = "customers" // Track current active section
 
+// Order Management Variables
+let selectedCustomerForOrder = null;
+let orderItems = [];
+let orderTotal = 0;
+
 // Initialize the application
 document.addEventListener("DOMContentLoaded", () => {
     initializeApp()
@@ -13,6 +18,7 @@ function initializeApp() {
     setupEventListeners()
     setupNavigation()
     setupMainEditForm() // Thêm dòng này
+    setupOrderFormEventListeners() // Thêm dòng này
     showCustomerSection() // Show customer section by default
 }
 
@@ -23,16 +29,13 @@ function setupEventListeners() {
         customerForm.addEventListener("submit", handleAddCustomer)
     }
 
-    // Edit customer form submission
-    const editCustomerForm = document.getElementById("editCustomerForm")
-    if (editCustomerForm) {
-        editCustomerForm.addEventListener("submit", handleEditCustomer)
-    }
-
-    // Search functionality
-    const searchInput = document.getElementById("searchCustomer")
+    // Search functionality - sử dụng đúng ID từ HTML
+    const searchInput = document.getElementById("customerSearchInput")
     if (searchInput) {
         searchInput.addEventListener("input", handleSearch)
+        console.log("Customer search event listener added successfully")
+    } else {
+        console.error("Customer search input not found!")
     }
 }
 
@@ -140,6 +143,9 @@ function showCreateOrderForm() {
     if (createOrderForm) {
         createOrderForm.style.display = "block"
     }
+    
+    // Reset form and ensure all elements are visible
+    resetOrderForm()
 }
 
 function showSchedule() {
@@ -154,7 +160,7 @@ function showSchedule() {
 
 function resetCustomerSectionStates() {
     // Reset all customer section states
-    const customersList = document.getElementById("customersList")
+    const customersList = document.querySelector(".customers-list")
     const createCustomerForm = document.getElementById("createCustomerForm")
     const customerDetailView = document.getElementById("customerDetailView")
     const editCustomerInfo = document.getElementById("editCustomerInfo")
@@ -186,8 +192,11 @@ function openAddCustomerForm() {
     document.getElementById("customerDetailView").classList.remove("active")
     document.getElementById("editCustomerInfo").classList.remove("active")
 
-    // Show create form
-    document.getElementById("customersList").classList.add("shrink")
+    // Show create form and shrink customer list
+    const customersList = document.querySelector(".customers-list")
+    if (customersList) {
+        customersList.classList.add("shrink")
+    }
     document.getElementById("createCustomerForm").classList.add("active")
 
     // Clear form
@@ -198,7 +207,10 @@ function openAddCustomerForm() {
 }
 
 function closeAddCustomerForm() {
-    document.getElementById("customersList").classList.remove("shrink")
+    const customersList = document.querySelector(".customers-list")
+    if (customersList) {
+        customersList.classList.remove("shrink")
+    }
     document.getElementById("createCustomerForm").classList.remove("active")
 
     const customerForm = document.getElementById("customerForm")
@@ -214,13 +226,19 @@ function openCustomerDetails() {
 
     document.getElementById("createCustomerForm").classList.remove("active")
     document.getElementById("editCustomerInfo").classList.remove("active")
-    document.getElementById("customersList").classList.add("shrink")
+    const customersList = document.querySelector(".customers-list")
+    if (customersList) {
+        customersList.classList.add("shrink")
+    }
     document.getElementById("customerDetailView").classList.add("active")
 }
 
 function closeCustomerDetails() {
     document.getElementById("customerDetailView").classList.remove("active")
-    document.getElementById("customersList").classList.remove("shrink")
+    const customersList = document.querySelector(".customers-list")
+    if (customersList) {
+        customersList.classList.remove("shrink")
+    }
 }
 
 function openEditCustomerInfoForm() {
@@ -229,7 +247,10 @@ function openEditCustomerInfoForm() {
 
 function closeEditCustomerForm() {
     document.getElementById("editCustomerInfo").classList.remove("active")
-    document.getElementById("customersList").classList.remove("hide", "shrink")
+    const customersList = document.querySelector(".customers-list")
+    if (customersList) {
+        customersList.classList.remove("hide", "shrink")
+    }
 
     const editForm = document.getElementById("editCustomerForm")
     if (editForm) {
@@ -263,8 +284,6 @@ async function fetchCustomers() {
         displayCustomers(customers)
     } catch (error) {
         console.error("Error fetching customers:", error)
-        // Display mock data for demo purposes
-        displayMockCustomers()
     }
 }
 
@@ -307,6 +326,9 @@ function showCustomerDetails(customer) {
     document.getElementById("detailFullName").textContent = customer.fullName || "N/A"
     document.getElementById("detailPhone").textContent = customer.phone || "N/A"
     document.getElementById("detailEmail").textContent = customer.email || "N/A"
+    document.getElementById("detailGender").textContent = customer.gender || "Không xác định"
+    document.getElementById("detailDateOfBirth").textContent = formatDate(customer.dateOfBirth) || "N/A"
+    document.getElementById("detailMedicalHistory").textContent = customer.medicalHistory || "Không có"
     document.getElementById("detailAllergies").textContent = customer.allergies || "Không có"
     document.getElementById("detailTotalPoints").textContent = customer.totalPoints || 0
     document.getElementById("detailCreatedDate").textContent = formatDate(customer.createdDate)
@@ -314,16 +336,20 @@ function showCustomerDetails(customer) {
     openCustomerDetails()
 }
 
+
 // Event Handlers
 async function handleAddCustomer(event) {
-    
+
     event.preventDefault()
 
     const formData = {
-        fullName: document.getElementById("fullName").value,
-        phone: document.getElementById("phone").value,
-        email: document.getElementById("email").value,
-        allergies: document.getElementById("allergies").value,
+        fullName: document.getElementById("fullName").value.trim(),
+        phone: document.getElementById("phone").value.trim(),
+        email: document.getElementById("email").value.trim(),
+        gender: document.getElementById("gender").value,
+        dateOfBirth: document.getElementById("dateOfBirth").value,
+        medicalHistory: document.getElementById("medicalHistory").value.trim(),
+        allergies: document.getElementById("allergies").value.trim(),
     }
 
     try {
@@ -343,52 +369,11 @@ async function handleAddCustomer(event) {
         }
     } catch (error) {
         console.error("Error adding customer:", error)
-        // For demo purposes, add to local array
-        const newCustomer = {
-            id: customers.length + 1,
-            ...formData,
-            totalPoints: 0,
-            createdDate: new Date().toISOString().split("T")[0],
-        }
-        
+        showNotification("Lỗi khi thêm khách hàng: " + error.message, "error") ;
     }
 }
 
-async function handleEditCustomer(event) {
-    event.preventDefault()
 
-    if (!currentCustomer) return
-
-    const formData = {
-        id: currentCustomer.id,
-        fullName: document.getElementById("editFullName").value,
-        phone: document.getElementById("editPhone").value,
-        email: document.getElementById("editEmail").value,
-        allergies: document.getElementById("editAllergies").value,
-        totalPoints: Number.parseInt(document.getElementById("editTotalPoints").value) || 0,
-    }
-
-    try {
-        const response = await fetch("http://localhost:8080/employee/edit-customer-info", {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(formData),
-        })
-
-        if (response.ok) {
-            console.log("Chỉnh Sửa Thông Tin Khách Hàng Thành Công!")
-            closeEditCustomerForm()
-            fetchCustomers() // Refresh the customer list
-            showNotification("Cập nhật thông tin thành công!", "success")
-        } else {
-            throw new Error("Lỗi Khi Cập Nhật Khách Hàng")
-        }
-    } catch (error) {
-        console.error("Error updating customer: with full new namr "+{fullName}, error)
-        showNotification("Lỗi khi cập nhật thông tin khách hàng: " + error.message, "error");
-    }
-    closeEditCustomerForm()
-}
 
 function handleSearch(event) {
     const searchTerm = event.target.value.toLowerCase()
@@ -401,7 +386,7 @@ function handleSearch(event) {
     displayCustomers(filteredCustomers)
 }
 
-// Main Edit Customer Functions
+// hàm chỉnh sua thong tin khách hàng(hiển thị, điền thông tin và chỉnh sửa)
 function openMainEditCustomer() {
     console.log("Opening main edit customer form") // Debug log
 
@@ -411,7 +396,7 @@ function openMainEditCustomer() {
         return
     }
 
-    // Populate form with current customer data
+    // Chèn data vào các ô thông tin của khách hàng
     populateMainEditForm(currentCustomer)
 
     // Show main edit section
@@ -419,9 +404,9 @@ function openMainEditCustomer() {
     if (mainEditSection) {
         mainEditSection.style.display = "flex" // Thay đổi từ classList.add("active")
         mainEditSection.classList.add("active")
-        console.log("Main edit section should be visible now")
+        console.log("Đã hiển thị form để chỉnh sửa khách hàng!")
     } else {
-        console.error("Main edit section not found")
+        console.error("Hiển thị form chỉnh sủa bị lỗi!!")
     }
 
     // Close other forms
@@ -445,79 +430,10 @@ function closeMainEditCustomer() {
     }
 }
 
-function populateMainEditForm(customer) {
-    console.log("Populating form with customer:", customer)
 
-    try {
-        // Update preview
-        const initials = customer.fullName
-            .split(" ")
-            .map((word) => word.charAt(0))
-            .slice(-2)
-            .join("")
-            .toUpperCase()
-
-        const previewAvatar = document.getElementById("previewAvatar")
-        const previewName = document.getElementById("previewName")
-        const previewPhone = document.getElementById("previewPhone")
-
-        if (previewAvatar) previewAvatar.textContent = initials
-        if (previewName) previewName.textContent = customer.fullName || "N/A"
-        if (previewPhone) previewPhone.textContent = customer.phone || "N/A"
-
-        // Populate form fields
-        const fields = [
-            { id: "mainEditFullName", value: customer.fullName || "" },
-            { id: "mainEditPhone", value: customer.phone || "" },
-            { id: "mainEditEmail", value: customer.email || "" },
-            { id: "mainEditBirthDate", value: customer.birthDate || "" },
-            { id: "mainEditGender", value: customer.gender || "" },
-            { id: "mainEditTotalPoints", value: customer.totalPoints || 0 },
-            { id: "mainEditAddress", value: customer.address || "" },
-            { id: "mainEditMedicalHistory", value: customer.medicalHistory || "" },
-            { id: "mainEditAllergies", value: customer.allergies || "" },
-        ]
-
-        fields.forEach((field) => {
-            const element = document.getElementById(field.id)
-            if (element) {
-                element.value = field.value
-            } else {
-                console.warn(`Element ${field.id} not found`)
-            }
-        })
-
-        console.log("Form populated successfully")
-    } catch (error) {
-        console.error("Error populating form:", error)
-    }
-}
 
 // Form validation functions
-function validateCustomerForm(formData) {
-    const errors = {}
 
-    // Validate full name
-    if (!formData.fullName || formData.fullName.trim().length < 2) {
-        errors.fullName = "Họ tên phải có ít nhất 2 ký tự"
-    }
-
-    // Validate phone
-    const phoneRegex = /^[0-9]{10,11}$/
-    if (!formData.phone || !phoneRegex.test(formData.phone.replace(/\s/g, ""))) {
-        errors.phone = "Số điện thoại không hợp lệ (10-11 số)"
-    }
-
-    // Validate email if provided
-    if (formData.email) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-        if (!emailRegex.test(formData.email)) {
-            errors.email = "Email không hợp lệ"
-        }
-    }
-
-    return errors
-}
 
 function showFormErrors(errors) {
     // Clear previous errors
@@ -551,104 +467,10 @@ function clearFormErrors() {
 }
 
 // Process data before sending to server
-function processCustomerData(formData) {
-    return {
-        id: currentCustomer.id,
-        fullName: formData.fullName.trim(),
-        phone: formData.phone.replace(/\s/g, ""), // Remove spaces
-        email: formData.email ? formData.email.trim().toLowerCase() : null,
-        birthDate: formData.birthDate || null,
-        gender: formData.gender || null,
-        totalPoints: Number.parseInt(formData.totalPoints) || 0,
-        address: formData.address ? formData.address.trim() : null,
-        medicalHistory: formData.medicalHistory ? formData.medicalHistory.trim() : null,
-        allergies: formData.allergies ? formData.allergies.trim() : null,
-        updatedAt: new Date().toISOString(),
-    }
-}
+
 
 // Handle main edit form submission
-async function handleMainEditCustomer(event) {
-    event.preventDefault()
 
-    if (!currentCustomer) return
-
-    const form = event.target
-    const formData = new FormData(form)
-    const customerData = {}
-
-    // Convert FormData to object
-    for (const [key, value] of formData.entries()) {
-        customerData[key] = value
-    }
-
-    // Validate form data
-    const errors = validateCustomerForm(customerData)
-    if (Object.keys(errors).length > 0) {
-        showFormErrors(errors)
-        return
-    }
-
-    // Process data before sending
-    const processedData = processCustomerData(customerData)
-
-    // Show loading state
-    const saveBtn = document.getElementById("saveCustomerBtn")
-    const btnText = saveBtn.querySelector(".btn-text")
-    const loadingSpinner = saveBtn.querySelector(".loading-spinner")
-
-    saveBtn.disabled = true
-    btnText.style.display = "none"
-    loadingSpinner.style.display = "flex"
-
-    try {
-        console.log("Sending customer data:", processedData)
-
-        const response = await fetch("http://localhost:8080/HealthMateLC", {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
-                Accept: "application/json",
-            },
-            body: JSON.stringify(processedData),
-        })
-
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}))
-            throw new Error(errorData.message || `HTTP error! Status: ${response.status}`)
-        }
-
-        const result = await response.json()
-        console.log("Server response:", result)
-
-        // Update local customer data
-        currentCustomer = { ...currentCustomer, ...processedData }
-
-        // Update customer in the list
-        const customerIndex = customers.findIndex((c) => c.id === currentCustomer.id)
-        if (customerIndex !== -1) {
-            customers[customerIndex] = currentCustomer
-            displayCustomers(customers)
-        }
-
-        // Close form and show success
-        closeMainEditCustomer()
-        showNotification("Cập nhật thông tin khách hàng thành công!", "success")
-
-        // Refresh customer details if it was open
-        if (document.getElementById("customerDetailView").classList.contains("active")) {
-            showCustomerDetails(currentCustomer)
-        }
-    } catch (error) {
-        console.error("Error updating customer:", error)
-        showNotification(`Lỗi cập nhật: ${error.message}`, "error")
-    } finally {
-        // Reset loading state
-        saveBtn.disabled = false
-        btnText.style.display = "inline"
-        loadingSpinner.style.display = "none"
-    }
-}
 
 // Utility Functions
 function formatDate(dateString) {
@@ -715,41 +537,648 @@ function historyOrderByCustomer() {
     // Implement order history functionality here
 }
 
-// Thêm vào cuối file, sau function historyOrderByCustomer()
-
-// Setup event listeners for main edit form
+// Setup main edit form
 function setupMainEditForm() {
     const mainEditForm = document.getElementById("mainEditCustomerForm")
     if (mainEditForm) {
         mainEditForm.addEventListener("submit", handleMainEditCustomer)
     }
+}
 
-    // Add click outside to close
-    const mainEditSection = document.getElementById("mainEditCustomerSection")
-    if (mainEditSection) {
-        mainEditSection.addEventListener("click", (e) => {
-            if (e.target === mainEditSection) {
-                closeMainEditCustomer()
-            }
-        })
+// Populate main edit form with current customer data
+function populateMainEditForm(customer) {
+    if (!customer) return
+
+    // Populate form fields
+    const fullNameInput = document.getElementById("mainEditFullName")
+    const phoneInput = document.getElementById("mainEditPhone")
+    const emailInput = document.getElementById("mainEditEmail")
+    const genderInput = document.getElementById("mainEditGender")
+    const dateOfBirthInput = document.getElementById("mainEditDateOfBirth")
+    const medicalHistoryInput = document.getElementById("mainEditMedicalHistory")
+    const allergiesInput = document.getElementById("mainEditAllergies")
+    const totalPointsInput = document.getElementById("mainEditTotalPoints")
+
+    if (fullNameInput) fullNameInput.value = customer.fullName || ""
+    if (phoneInput) phoneInput.value = customer.phone || ""
+    if (emailInput) emailInput.value = customer.email || ""
+    if (genderInput) genderInput.value = customer.gender || ""
+    if (dateOfBirthInput) dateOfBirthInput.value = customer.dateOfBirth || ""
+    if (medicalHistoryInput) medicalHistoryInput.value = customer.medicalHistory || ""
+    if (allergiesInput) allergiesInput.value = customer.allergies || ""
+    if (totalPointsInput) totalPointsInput.value = customer.totalPoints || 0
+
+    // Update preview
+    updateCustomerPreview(customer)
+}
+
+// Update customer preview in edit form
+function updateCustomerPreview(customer) {
+    const previewName = document.getElementById("previewName")
+    const previewPhone = document.getElementById("previewPhone")
+    const previewAvatar = document.getElementById("previewAvatar")
+
+    if (previewName) previewName.textContent = customer.fullName || "Tên khách hàng"
+    if (previewPhone) previewPhone.textContent = customer.phone || "Số điện thoại"
+    
+    if (previewAvatar && customer.fullName) {
+        const initials = customer.fullName
+            .split(" ")
+            .map((word) => word.charAt(0))
+            .slice(-2)
+            .join("")
+            .toUpperCase()
+        previewAvatar.textContent = initials
     }
 }
 
-// Thêm function debug này vào cuối file
-function testMainEdit() {
-    console.log("Test main edit clicked")
-    console.log("Current customer:", currentCustomer)
+// Handle main edit form submission
+async function handleMainEditCustomer(event) {
+    event.preventDefault()
 
     if (!currentCustomer) {
-        // Tạo customer giả để test
-        currentCustomer = {
-            id: 999,
-            fullName: "Test Customer",
-            phone: "0123456789",
-            email: "test@example.com",
-            totalPoints: 100,
+        showNotification("Không tìm thấy thông tin khách hàng", "error")
+        return
+    }
+
+    // Clear previous errors
+    clearFormErrors()
+
+    // Get form data
+    const formData = {
+        id: currentCustomer.customerId,
+        fullName: document.getElementById("mainEditFullName").value.trim(),
+        phone: document.getElementById("mainEditPhone").value.trim(),
+        email: document.getElementById("mainEditEmail").value.trim(),
+        gender: document.getElementById("mainEditGender").value,
+        dateOfBirth: document.getElementById("mainEditDateOfBirth").value,
+        medicalHistory: document.getElementById("mainEditMedicalHistory").value.trim(),
+        allergies: document.getElementById("mainEditAllergies").value.trim(),
+    }
+
+    // Validate form data
+    const errors = validateMainEditForm(formData)
+    if (Object.keys(errors).length > 0) {
+        showFormErrors(errors)
+        return
+    }
+
+    try {
+        // Show loading state
+        const submitBtn = document.querySelector("#mainEditCustomerForm button[type='submit']")
+        const originalText = submitBtn?.textContent
+        if (submitBtn) {
+            submitBtn.disabled = true
+            submitBtn.textContent = "Đang xử lý..."
+        }
+
+        // Send update request to backend
+        const response = await fetch(`http://localhost:8080/employee/cap-nhat-khach-hang/${formData.id}`, {
+            method: "PUT",
+            headers: { 
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                fullName: formData.fullName,
+                phone: formData.phone,
+                email: formData.email,
+                gender: formData.gender,
+                dateOfBirth: formData.dateOfBirth,
+                medicalHistory: formData.medicalHistory,
+                allergies: formData.allergies
+            }),
+        })
+        if (response.ok) {
+            const updatedCustomer = await response.json()
+            
+            // Update current customer data
+            currentCustomer = { ...currentCustomer, ...updatedCustomer }
+            
+            // Update customers array
+            const customerIndex = customers.findIndex(c => c.customerID === currentCustomer.customerID || c.id === currentCustomer.id)
+            if (customerIndex !== -1) {
+                customers[customerIndex] = currentCustomer
+            }
+
+            // Refresh UI
+            fetchCustomers();
+            displayCustomers(customers)
+            showCustomerDetails(currentCustomer)
+            closeMainEditCustomer()
+            
+            showNotification("Cập nhật thông tin khách hàng thành công!", "success")
+
+        } else {
+            
+            const errorData = await response.json().catch(() => ({}))
+            throw new Error(errorData.message || `Số điện thoại hoặc email đã tồn tại! Vui lòng kiểm tra lại.`)
+        }
+    } catch (error) {
+        console.error("Error updating customer:", error)
+        showNotification("Số điện thoại hoặc email đã tồn tại! Vui lòng kiểm tra lại.", "error")
+    } finally {
+        // Reset button state
+        const submitBtn = document.querySelector("#mainEditCustomerForm button[type='submit']")
+        submitBtn.disabled = false
+        submitBtn.textContent = "Lưu thay đổi"
+        
+    }
+}
+
+// Validate main edit form
+function validateMainEditForm(formData) {
+    const errors = {}
+
+    // Validate full name
+    if (!formData.fullName) {
+        errors.fullName = "Tên khách hàng không được để trống"
+    } else if (formData.fullName.length < 2) {
+        errors.fullName = "Tên khách hàng phải có ít nhất 2 ký tự"
+    } else if (formData.fullName.length > 100) {
+        errors.fullName = "Tên khách hàng không được vượt quá 100 ký tự"
+    }
+
+    // Validate phone
+    if (!formData.phone) {
+        errors.phone = "Số điện thoại không được để trống"
+    } else if (!/^[0-9]{10,11}$/.test(formData.phone)) {
+        errors.phone = "Số điện thoại phải có 10-11 chữ số"
+    }
+
+    // Validate email (optional but must be valid if provided)
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+        errors.email = "Email không hợp lệ"
+    }
+
+    // Validate date of birth (optional but must be valid if provided)
+    if (formData.dateOfBirth) {
+        const birthDate = new Date(formData.dateOfBirth)
+        const today = new Date()
+        if (birthDate >= today) {
+            errors.dateOfBirth = "Ngày sinh phải nhỏ hơn ngày hiện tại"
         }
     }
 
-    openMainEditCustomer()
+    // Validate medical history (optional, max length check)
+    if (formData.medicalHistory && formData.medicalHistory.length > 1000) {
+        errors.medicalHistory = "Tiền sử bệnh lý không được vượt quá 1000 ký tự"
+    }
+
+    // Validate allergies (optional, max length check)
+    if (formData.allergies && formData.allergies.length > 500) {
+        errors.allergies = "Thông tin dị ứng không được vượt quá 500 ký tự"
+    }
+
+    return errors
 }
+
+// Show Create Order Form
+function showCreateOrderForm() {
+    // Hide other sections first
+    hideAllSections();
+    
+    // Show the create order form
+    document.getElementById("createOrderForm").style.display = "flex";
+    
+    // Reset form and ensure all elements are visible
+    resetOrderForm();
+}
+
+// Close Create Order Form
+function closeCreateOrderForm() {
+    document.getElementById("createOrderForm").style.display = "none";
+    resetOrderForm();
+    
+    // Show customer section by default
+    showCustomerSection();
+}
+
+// Reset Order Form
+function resetOrderForm() {
+    selectedCustomerForOrder = null;
+    orderItems = [];
+    orderTotal = 0;
+    
+    // Clear form fields
+    document.getElementById("orderCustomerSearch").value = "";
+    document.getElementById("medicineSearch").value = "";
+    document.getElementById("noCustomerCheckbox").checked = false;
+    
+    // Hide selected customer
+    document.getElementById("selectedCustomer").style.display = "none";
+    document.getElementById("customerSearchResults").style.display = "none";
+    
+    // Show customer search elements
+    showCustomerSearchElements();
+    
+    // Reset order summary
+    updateOrderSummary();
+}
+
+// Search Customers for Order
+function searchCustomersForOrder(searchTerm) {
+    if (!searchTerm || searchTerm.length < 2) {
+        document.getElementById("customerSearchResults").style.display = "none";
+        return;
+    }
+    
+    // Filter customers based on search term
+    const filteredCustomers = customers.filter(customer => 
+        customer.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        customer.phone.includes(searchTerm)
+    );
+    
+    displayCustomerSearchResults(filteredCustomers);
+}
+
+// Display Customer Search Results
+function displayCustomerSearchResults(customerList) {
+    const resultsContainer = document.getElementById("customerSearchResults");
+    
+    if (customerList.length === 0) {
+        resultsContainer.innerHTML = `
+            <div style="padding: 20px; text-align: center; color: #718096;">
+                <span class="material-icons">search_off</span>
+                <p>Không tìm thấy khách hàng</p>
+            </div>
+        `;
+        resultsContainer.style.display = "block";
+        return;
+    }
+    
+    resultsContainer.innerHTML = customerList.map(customer => {
+        const initials = customer.fullName
+            .split(" ")
+            .map(word => word.charAt(0))
+            .slice(-2)
+            .join("")
+            .toUpperCase();
+            
+        return `
+            <div class="customer-result-item" onclick="selectCustomerForOrder(${customer.id}, '${customer.fullName}', '${customer.phone}', ${customer.totalPoints || 0})">
+                <div class="customer-avatar">${initials}</div>
+                <div class="customer-info">
+                    <h6>${customer.fullName}</h6>
+                    <p>${customer.phone} • Điểm: ${customer.totalPoints || 0}</p>
+                </div>
+            </div>
+        `;
+    }).join("");
+    
+    resultsContainer.style.display = "block";
+}
+
+// Select Customer for Order
+function selectCustomerForOrder(customerId, fullName, phone, totalPoints) {
+    selectedCustomerForOrder = {
+        id: customerId,
+        fullName: fullName,
+        phone: phone,
+        totalPoints: totalPoints
+    };
+    
+    // Update selected customer display
+    const initials = fullName
+        .split(" ")
+        .map(word => word.charAt(0))
+        .slice(-2)
+        .join("")
+        .toUpperCase();
+    
+    document.getElementById("selectedCustomerAvatar").textContent = initials;
+    document.getElementById("selectedCustomerName").textContent = fullName;
+    document.getElementById("selectedCustomerPhone").textContent = phone;
+    document.getElementById("selectedCustomerPoints").textContent = `Điểm: ${totalPoints || 0}`;
+    
+    // Show selected customer and hide search results
+    document.getElementById("selectedCustomer").style.display = "flex";
+    document.getElementById("customerSearchResults").style.display = "none";
+    document.getElementById("orderCustomerSearch").value = "";
+    document.getElementById("noCustomerCheckbox").checked = false;
+    
+    // Hide customer search elements
+    hideCustomerSearchElements();
+}
+
+// Hide Customer Search Elements when a customer is selected
+function hideCustomerSearchElements() {
+    const customerSearchContainer = document.querySelector(".customer-search-container");
+    const noCustomerOption = document.querySelector(".no-customer-option");
+    
+    if (customerSearchContainer) {
+        customerSearchContainer.style.display = "none";
+    }
+    if (noCustomerOption) {
+        noCustomerOption.style.display = "none";
+    }
+}
+
+// Show Customer Search Elements when customer is removed
+function showCustomerSearchElements() {
+    const customerSearchContainer = document.querySelector(".customer-search-container");
+    const noCustomerOption = document.querySelector(".no-customer-option");
+    
+    if (customerSearchContainer) {
+        customerSearchContainer.style.display = "flex";
+    }
+    if (noCustomerOption) {
+        noCustomerOption.style.display = "block";
+    }
+}
+
+// Remove Selected Customer
+function removeSelectedCustomer() {
+    selectedCustomerForOrder = null;
+    document.getElementById("selectedCustomer").style.display = "none";
+    document.getElementById("orderCustomerSearch").value = "";
+    document.getElementById("noCustomerCheckbox").checked = false;
+    
+    // Show customer search elements again
+    showCustomerSearchElements();
+}
+
+// Add Medicine to Order
+function addMedicineToOrder(medicineId, medicineName, price) {
+    // Check if medicine already exists in order
+    const existingItem = orderItems.find(item => item.id === medicineId);
+    
+    if (existingItem) {
+        existingItem.quantity += 1;
+        existingItem.total = existingItem.quantity * existingItem.price;
+    } else {
+        orderItems.push({
+            id: medicineId,
+            name: medicineName,
+            price: price,
+            quantity: 1,
+            total: price
+        });
+    }
+    
+    updateOrderSummary();
+    showNotification(`Đã thêm ${medicineName} vào đơn hàng`, "success");
+}
+
+// Remove Medicine from Order
+function removeMedicineFromOrder(medicineId) {
+    orderItems = orderItems.filter(item => item.id !== medicineId);
+    updateOrderSummary();
+}
+
+// Update Medicine Quantity
+function updateMedicineQuantity(medicineId, newQuantity) {
+    if (newQuantity <= 0) {
+        removeMedicineFromOrder(medicineId);
+        return;
+    }
+    
+    const item = orderItems.find(item => item.id === medicineId);
+    if (item) {
+        item.quantity = newQuantity;
+        item.total = item.quantity * item.price;
+        updateOrderSummary();
+    }
+}
+
+// Update Order Summary
+function updateOrderSummary() {
+    const orderItemsList = document.getElementById("orderItemsList");
+    
+    if (orderItems.length === 0) {
+        orderItemsList.innerHTML = `
+            <div class="empty-order">
+                <span class="material-icons">shopping_cart_outlined</span>
+                <p>Chưa có sản phẩm nào</p>
+            </div>
+        `;
+        orderTotal = 0;
+    } else {
+        orderItemsList.innerHTML = orderItems.map(item => `
+            <div class="order-item">
+                <div class="order-item-info">
+                    <h6>${item.name}</h6>
+                    <p>${formatCurrency(item.price)} x ${item.quantity}</p>
+                </div>
+                <div class="order-item-controls">
+                    <button class="quantity-btn" onclick="updateMedicineQuantity(${item.id}, ${item.quantity - 1})">
+                        <span class="material-icons" style="font-size: 14px;">remove</span>
+                    </button>
+                    <input type="number" class="quantity-input" value="${item.quantity}" 
+                           onchange="updateMedicineQuantity(${item.id}, parseInt(this.value) || 0)" min="1">
+                    <button class="quantity-btn" onclick="updateMedicineQuantity(${item.id}, ${item.quantity + 1})">
+                        <span class="material-icons" style="font-size: 14px;">add</span>
+                    </button>
+                    <button class="remove-item-btn" onclick="removeMedicineFromOrder(${item.id})">
+                        <span class="material-icons" style="font-size: 14px;">delete</span>
+                    </button>
+                </div>
+                <div class="order-item-total">
+                    ${formatCurrency(item.total)}
+                </div>
+            </div>
+        `).join("");
+        
+        orderTotal = orderItems.reduce((sum, item) => sum + item.total, 0);
+    }
+    
+    // Update totals
+    document.getElementById("orderSubtotal").textContent = formatCurrency(orderTotal);
+    document.getElementById("orderTotal").textContent = formatCurrency(orderTotal);
+}
+
+// Format Currency
+function formatCurrency(amount) {
+    return new Intl.NumberFormat('vi-VN', {
+        style: 'currency',
+        currency: 'VND'
+    }).format(amount);
+}
+
+// Open Quick Add Customer Popup
+function openQuickAddCustomer() {
+    document.getElementById("quickAddCustomerPopup").style.display = "block";
+}
+
+// Close Quick Add Customer Popup
+function closeQuickAddCustomer() {
+    document.getElementById("quickAddCustomerPopup").style.display = "none";
+    document.getElementById("quickAddCustomerForm").reset();
+}
+
+// Handle Quick Add Customer Form
+async function handleQuickAddCustomer(event) {
+    event.preventDefault();
+    
+    const formData = {
+        fullName: document.getElementById("quickFullName").value.trim(),
+        phone: document.getElementById("quickPhone").value.trim(),
+        email: document.getElementById("quickEmail").value.trim()
+    };
+    
+    try {
+        // Show loading state
+        const submitBtn = event.target.querySelector('button[type="submit"]');
+        const originalText = submitBtn.textContent;
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Đang thêm...";
+        
+        // Send request to backend
+        const response = await fetch("http://localhost:8080/employee/tao-moi-khach-hang", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(formData),
+        });
+        
+        if (response.ok) {
+            const newCustomer = await response.json();
+            
+            // Add to customers array
+            customers.push(newCustomer);
+            
+            // Select the new customer
+            selectCustomerForOrder(
+                newCustomer.customerID,
+                newCustomer.fullName,
+                newCustomer.phone,
+                newCustomer.totalPoints || 0
+            );
+            
+            closeQuickAddCustomer();
+            showNotification("Thêm khách hàng thành công!", "success");
+        } else {
+            throw new Error("Không thể thêm khách hàng");
+        }
+    } catch (error) {
+        console.error("Error adding customer:", error);
+        showNotification("Lỗi khi thêm khách hàng: " + error.message, "error");
+    } finally {
+        // Reset button state
+        const submitBtn = event.target.querySelector('button[type="submit"]');
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Thêm và chọn";
+    }
+}
+
+// Cancel Order
+function cancelOrder() {
+    if (orderItems.length > 0) {
+        if (confirm("Bạn có chắc chắn muốn hủy đơn hàng này?")) {
+            closeCreateOrderForm();
+        }
+    } else {
+        closeCreateOrderForm();
+    }
+}
+
+// Create Order
+async function createOrder() {
+    if (orderItems.length === 0) {
+        showNotification("Vui lòng thêm ít nhất một sản phẩm", "error");
+        return;
+    }
+    
+    const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+    const noCustomer = document.getElementById("noCustomerCheckbox").checked;
+    
+    const orderData = {
+        customerId: noCustomer ? null : selectedCustomerForOrder?.id,
+        items: orderItems,
+        totalAmount: orderTotal,
+        paymentMethod: paymentMethod,
+        invoiceDate: new Date().toISOString()
+    };
+    
+    try {
+        // Show loading state
+        const createBtn = document.querySelector('.create-order-btn');
+        const originalText = createBtn.innerHTML;
+        createBtn.disabled = true;
+        createBtn.innerHTML = '<span class="material-icons">refresh</span> Đang tạo...';
+        
+        // Send to backend
+        const response = await fetch("http://localhost:8080/employee/tao-don-hang", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(orderData),
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            showNotification("Tạo đơn hàng thành công!", "success");
+            closeCreateOrderForm();
+            
+            // Print receipt if needed
+            if (confirm("Bạn có muốn in hóa đơn không?")) {
+                printReceipt(result);
+            }
+        } else {
+            throw new Error("Không thể tạo đơn hàng");
+        }
+    } catch (error) {
+        console.error("Error creating order:", error);
+        showNotification("Lỗi khi tạo đơn hàng: " + error.message, "error");
+    } finally {
+        // Reset button state
+        const createBtn = document.querySelector('.create-order-btn');
+        createBtn.disabled = false;
+        createBtn.innerHTML = originalText;
+    }
+}
+
+// Print Receipt
+function printReceipt(orderData) {
+    // Implementation for printing receipt
+    console.log("Printing receipt for order:", orderData);
+    showNotification("Chức năng in hóa đơn sẽ được cập nhật", "info");
+}
+
+// Setup Order Form Event Listeners
+function setupOrderFormEventListeners() {
+    // Customer search
+    const customerSearchInput = document.getElementById("orderCustomerSearch");
+    if (customerSearchInput) {
+        customerSearchInput.addEventListener("input", (e) => {
+            // If user starts typing and no customer checkbox is checked, uncheck it
+            const noCustomerCheckbox = document.getElementById("noCustomerCheckbox");
+            if (noCustomerCheckbox && noCustomerCheckbox.checked && e.target.value.length > 0) {
+                noCustomerCheckbox.checked = false;
+                showCustomerSearchElements();
+            }
+            
+            searchCustomersForOrder(e.target.value);
+        });
+    }
+    
+    // No customer checkbox
+    const noCustomerCheckbox = document.getElementById("noCustomerCheckbox");
+    if (noCustomerCheckbox) {
+        noCustomerCheckbox.addEventListener("change", (e) => {
+            if (e.target.checked) {
+                removeSelectedCustomer();
+                document.getElementById("customerSearchResults").style.display = "none";
+                
+                // Hide customer search elements when no customer is selected
+                const customerSearchContainer = document.querySelector(".customer-search-container");
+                if (customerSearchContainer) {
+                    customerSearchContainer.style.display = "none";
+                }
+            } else {
+                // Show customer search elements when unchecked
+                showCustomerSearchElements();
+            }
+        });
+    }
+    
+    // Quick add customer form
+    const quickAddForm = document.getElementById("quickAddCustomerForm");
+    if (quickAddForm) {
+        quickAddForm.addEventListener("submit", handleQuickAddCustomer);
+    }
+}
+
+
+
