@@ -42,9 +42,9 @@
 
           <div class="nav-group">
             <div class="nav-group-title">Quản lý kho thuốc</div>
-            <div class="nav-item" data-type="create-category">
-              <span class="material-icons">category</span>
-              Tạo danh mục thuốc
+            <div class="nav-item" data-type="list-products">
+              <span class="material-icons">list_alt</span>
+              Danh sách sản phẩm
             </div>
             <div class="nav-item" data-type="add-product">
               <span class="material-icons">add_box</span>
@@ -105,6 +105,7 @@
           </div>
         </div>
       </header>
+      <div class="toast-container"></div>
 
       <main class="main-content">
         <!-- Panel Danh sách tài khoản -->
@@ -144,17 +145,21 @@
               <div class="content-header">
                 <h3 class="content-title">Cửa hàng</h3>
                 <div class="search-controls">
-                  <input
-                    type="text"
-                    class="search-input"
-                    placeholder="Tìm kiếm theo tên, địa chỉ, số điện thoại..."
-                  />
-                  <select class="search-select">
-                    <option value="all">Tất cả</option>
-                    <option value="name">Tên</option>
-                    <option value="address">Địa chỉ</option>
-                    <option value="phone">Số điện thoại</option>
-                  </select>
+                  <label>
+                    <input
+                      type="text"
+                      class="search-input"
+                      placeholder="Tìm kiếm theo tên, địa chỉ, số điện thoại..."
+                    />
+                  </label>
+                  <label>
+                    <select class="search-select">
+                      <option value="all">Tất cả</option>
+                      <option value="name">Tên</option>
+                      <option value="address">Địa chỉ</option>
+                      <option value="phone">Số điện thoại</option>
+                    </select>
+                  </label>
                   <button class="btn-search">
                     <span class="material-symbols-outlined">search</span>
                   </button>
@@ -209,10 +214,9 @@
                   </div>
                   <div class="form-group">
                     <label for="role">Vai trò</label>
-                    <select id="role" class="form-select">
-                      <option value="employee">Nhân viên</option>
-                      <option value="manager">Quản lý</option>
-                      <option value="admin">Quản trị viên</option>
+                    <select id="role" class="form-select" required>
+                      <option value="">Chọn vai trò</option>
+                      <!-- Danh sách vai trò sẽ được load từ admin.js -->
                     </select>
                   </div>
                 </div>
@@ -220,42 +224,43 @@
                   <label for="pharmacy">Nhà thuốc</label>
                   <select id="pharmacy" class="form-select">
                     <option value="">Chọn nhà thuốc</option>
+                    <!-- Danh sách nhà thuốc sẽ được load từ admin.js -->
                   </select>
                 </div>
                 <div class="form-actions">
                   <button type="submit" class="btn btn-primary">Tạo tài khoản</button>
-                  <button type="button" class="btn btn-secondary">Hủy</button>
+
                 </div>
               </form>
             </div>
           </div>
         </div>
-
-        <!-- Panel Tạo danh mục thuốc -->
-        <div class="panel" id="panel-create-category">
+        <!-- Panel Danh sách sản phẩm -->
+        <div class="panel" id="panel-list-products">
           <div class="panel-container">
             <div class="panel-header">
-              <h2>Tạo danh mục thuốc</h2>
+              <h2>Danh sách sản phẩm</h2>
             </div>
             <div class="panel-content">
-              <form class="panel-form">
-                <div class="form-group">
-                  <label for="category-name">Tên danh mục</label>
-                  <input type="text" id="category-name" class="form-input" required />
-                </div>
-                <div class="form-group">
-                  <label for="category-description">Mô tả</label>
-                  <textarea id="category-description" class="form-textarea" rows="4"></textarea>
-                </div>
-                <div class="form-group">
-                  <label for="category-image">Hình ảnh danh mục</label>
-                  <input type="file" id="category-image" class="form-input" accept="image/*" />
-                </div>
-                <div class="form-actions">
-                  <button type="submit" class="btn btn-primary">Tạo danh mục</button>
-                  <button type="button" class="btn btn-secondary">Hủy</button>
-                </div>
-              </form>
+              <div class="table-wrapper">
+                <table class="data-table" id="product-list-table">
+                  <thead>
+                  <tr>
+                    <th>STT</th>
+                    <th>Tên sản phẩm</th>
+                    <th>Loại</th>
+                    <th>Đơn vị</th>
+                    <th>Giá bán (VNĐ)</th>
+                    <th>Mô tả</th>
+                  </tr>
+                  </thead>
+                  <tbody>
+                  <!-- JS sẽ render các dòng sản phẩm vào đây -->
+                  </tbody>
+                </table>
+                <div id="product-list-empty" style="display:none;text-align:center;color:#718096;">Chưa có sản phẩm nào</div>
+              </div>
+              <div id="product-list-pagination" class="pagination"></div>
             </div>
           </div>
         </div>
@@ -274,33 +279,44 @@
                     <input type="text" id="product-name" class="form-input" required />
                   </div>
                   <div class="form-group">
-                    <label for="product-category">Danh mục</label>
-                    <select id="product-category" class="form-select">
-                      <option value="">Chọn danh mục</option>
+                    <label for="product-type">Loại sản phẩm</label>
+                    <select id="product-type" class="form-select" required>
+                      <option value="">Chọn loại sản phẩm</option>
+                      <option value="Thuốc">Thuốc</option>
+                      <option value="Thực phẩm chức năng">Thực phẩm chức năng</option>
+                      <option value="Mỹ phẩm">Mỹ phẩm</option>
+                      <option value="Dụng cụ y tế">Dụng cụ y tế</option>
+                      <option value="other">Khác</option>
                     </select>
+                    <label for="product-type-custom"></label><input type="text" id="product-type-custom" class="form-input custom-input" placeholder="Nhập loại sản phẩm khác" style="display: none; margin-top: 5px;" />
                   </div>
                 </div>
                 <div class="form-row">
                   <div class="form-group">
-                    <label for="product-price">Giá bán (VNĐ)</label>
-                    <input type="number" id="product-price" class="form-input" required />
+                    <label for="product-unit">Đơn vị</label>
+                    <select id="product-unit" class="form-select" required>
+                      <option value="">Chọn đơn vị</option>
+                      <option value="Hộp">Hộp</option>
+                      <option value="Viên">Viên</option>
+                      <option value="Chai">Chai</option>
+                      <option value="Túi">Túi</option>
+                      <option value="Cái">Cái</option>
+                      <option value="Gói">Gói</option>
+                      <option value="other">Khác</option>
+                    </select>
+                    <label for="product-unit-custom"></label><input type="text" id="product-unit-custom" class="form-input custom-input" placeholder="Nhập đơn vị khác" style="display: none; margin-top: 5px;" />
                   </div>
                   <div class="form-group">
-                    <label for="product-quantity">Số lượng</label>
-                    <input type="number" id="product-quantity" class="form-input" required />
+                    <label for="product-price">Giá bán (VNĐ)</label>
+                    <input type="number" id="product-price" class="form-input" required />
                   </div>
                 </div>
                 <div class="form-group">
                   <label for="product-description">Mô tả sản phẩm</label>
                   <textarea id="product-description" class="form-textarea" rows="4"></textarea>
                 </div>
-                <div class="form-group">
-                  <label for="product-image">Hình ảnh sản phẩm</label>
-                  <input type="file" id="product-image" class="form-input" accept="image/*" multiple />
-                </div>
                 <div class="form-actions">
                   <button type="submit" class="btn btn-primary">Thêm sản phẩm</button>
-                  <button type="button" class="btn btn-secondary">Hủy</button>
                 </div>
               </form>
             </div>
@@ -314,14 +330,14 @@
               <h2>Tạo nhà thuốc mới</h2>
             </div>
             <div class="panel-content">
-              <form class="panel-form">
+              <form class="panel-form" id="create-store-form">
                 <div class="form-group">
                   <label for="store-name">Tên nhà thuốc</label>
                   <input type="text" id="store-name" class="form-input" required />
                 </div>
                 <div class="form-group">
                   <label for="store-address">Địa chỉ</label>
-                  <input type="text" id="store-address" class="form-input" required />
+                  <input type="text" id="store-address" class="form-input" />
                 </div>
                 <div class="form-row">
                   <div class="form-group">
@@ -333,26 +349,12 @@
                     <input type="email" id="store-email" class="form-input" />
                   </div>
                 </div>
-                <div class="form-row">
-                  <div class="form-group">
-                    <label for="store-manager">Quản lý nhà thuốc</label>
-                    <select id="store-manager" class="form-select">
-                      <option value="">Chọn quản lý</option>
-                    </select>
-                  </div>
-                  <div class="form-group">
-                    <label for="store-status">Trạng thái</label>
-                    <select id="store-status" class="form-select">
-                      <option value="active">Hoạt động</option>
-                      <option value="inactive">Tạm ngừng</option>
-                    </select>
-                  </div>
-                </div>
+
                 <div class="form-actions">
                   <button type="submit" class="btn btn-primary">Tạo nhà thuốc</button>
-                  <button type="button" class="btn btn-secondary">Hủy</button>
                 </div>
               </form>
+              <div id="create-store-message"></div>
             </div>
           </div>
         </div>
@@ -373,32 +375,27 @@
               <div class="table-wrapper">
                 <table class="data-table">
                   <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Tên nhà thuốc</th>
-                      <th>Địa chỉ</th>
-                      <th>Số điện thoại</th>
-                      <th>Quản lý</th>
-                      <th>Trạng thái</th>
-                      <th>Thao tác</th>
-                    </tr>
+                  <tr>
+                    <th>ID</th>
+                    <th>Tên nhà thuốc</th>
+                    <th>Địa chỉ</th>
+                    <th>Số điện thoại</th>
+                    <th>Quản lý</th>
+                    <th>Trạng thái</th>
+                    <th>Thao tác</th>
+                  </tr>
                   </thead>
-                  <tbody>
-                    <tr>
-                      <td>1</td>
-                      <td>Long Châu Quận 1</td>
-                      <td>123 Nguyễn Huệ, Q.1, TP.HCM</td>
-                      <td>0901234567</td>
-                      <td>Nguyễn Văn A</td>
-                      <td><span class="status active">Hoạt động</span></td>
-                      <td>
-                        <button class="btn-edit">Sửa</button>
-                        <button class="btn-delete">Xóa</button>
-                      </td>
-                    </tr>
+                  <tbody id="store-list-tbody">
+                  <!-- Dữ liệu sẽ được render bằng JS -->
                   </tbody>
                 </table>
               </div>
+              <!-- Empty state giống sản phẩm -->
+              <div id="store-list-empty" style="display:none; text-align:center; padding:40px; color:#888;">
+                <p>Không có nhà thuốc nào</p>
+              </div>
+              <!-- Pagination -->
+              <div id="store-list-pagination" class="pagination"></div>
             </div>
           </div>
         </div>
@@ -411,6 +408,7 @@
             </div>
             <div class="panel-content">
               <form class="panel-form">
+                <input type="hidden" id="edit-store-id" />
                 <div class="form-group">
                   <label for="edit-store-name">Tên nhà thuốc</label>
                   <input type="text" id="edit-store-name" class="form-input" required />
@@ -431,13 +429,11 @@
                 </div>
                 <div class="form-actions">
                   <button type="submit" class="btn btn-primary">Cập nhật</button>
-                  <button type="button" class="btn btn-secondary">Hủy</button>
                 </div>
               </form>
             </div>
           </div>
         </div>
-
         <!-- Panel Báo cáo doanh thu -->
         <div class="panel" id="panel-revenue-report">
           <div class="stats-grid">

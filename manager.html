@@ -71,8 +71,8 @@
       </div>
     </nav>
   </aside>
-  <header class="header">
-    <h1 class="header-title">Chi nhánh Quận 1 - Nguyễn Huệ</h1>
+  <header class="header" onclick="handleUserProfile()">
+    <h1 class="header-title" id="branch">Chưa gán chi nhánh</h1>
     <div class="header-actions">
       <button class="btn btn-primary" onclick="handleCreateSchedule()">
         <span class="material-icons">add</span>
@@ -81,7 +81,7 @@
       <div class="user-profile">
         <div class="avatar">QL</div>
         <div>
-          <div id="userFullName" style="font-weight: 500">Nguyễn Thị Lan</div>
+          <div id="userFullName" style="font-weight: 500">Loading...</div>
           <div id="userPharmacyName" style="font-size: 12px; color: #718096">Quản lý chi nhánh</div>
         </div>
         <span class="material-icons">expand_more</span>
@@ -97,7 +97,7 @@
         </div>
       </div>
     </div>
-  </header>
+</header>
   <main class="main-content">
     <div id="content-area">
       <!-- Dashboard Content -->
