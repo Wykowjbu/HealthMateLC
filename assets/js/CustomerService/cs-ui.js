@@ -24,7 +24,6 @@ window.currentReviewId = null; // ID của đánh giá đang được xử lý
 
 // Biến để lưu trữ dữ liệu từ API
 let reviewsData = [];
-let upgradedCustomers = [];
 
 // Khởi tạo khi DOM load xong
 document.addEventListener("DOMContentLoaded", function () {
@@ -633,7 +632,7 @@ async function populatePharmacies(selectElement) {
 // ====================================
 
 // Lọc đánh giá theo từ khóa, cửa hàng, số sao và trạng thái xử lý
-function filterReviews() {
+function filterReviews(forceNoCache = false) {
   const ratingFilterValue = document.getElementById("ratingFilter").value;
   const statusFilterValue = document.getElementById("statusFilter").value;
 
@@ -649,12 +648,11 @@ function filterReviews() {
 
   // Reset về trang đầu tiên khi lọc
   currentPage = 1;
-
-  loadReviews();
+  loadReviews(forceNoCache);
 }
 
 // Lấy đánh giá đã lọc
-async function getFilteredReviews() {
+async function getFilteredReviews(forceNoCache = false) {
   // Lấy các giá trị filter
   const searchInput = document.getElementById("reviewSearch");
   const searchTerm = searchInput && searchInput.value ? searchInput.value : "";
@@ -662,14 +660,15 @@ async function getFilteredReviews() {
   const ratingFilterValue = document.getElementById("ratingFilter").value;
   const statusFilterValue = document.getElementById("statusFilter").value;
   // Lấy tất cả đánh giá
-  const allReviews = await reviewAPI.getAll();
+  const allReviews = await reviewAPI.getAll(forceNoCache);
 
   // Nếu không nhập gì, trả về toàn bộ feedback (vẫn lọc theo cửa hàng và số sao)
   if (!searchTerm.trim()) {
     return allReviews.filter((review) => {
       const pharmacyMatch =
         pharmacyId === "all" ||
-        parseInt(review.pharmacy) === parseInt(pharmacyId);
+        (review.pharmacy &&
+          parseInt(review.pharmacy.id) === parseInt(pharmacyId));
       let starMatch = true;
       if (ratingFilterValue !== "all") {
         starMatch = parseInt(review.rating) === parseInt(ratingFilterValue);
@@ -716,7 +715,8 @@ async function getFilteredReviews() {
     // Lọc theo cửa hàng
     const pharmacyMatch =
       pharmacyId === "all" ||
-      parseInt(review.pharmacy) === parseInt(pharmacyId);
+      (review.pharmacy &&
+        parseInt(review.pharmacy.id) === parseInt(pharmacyId));
     // Lọc theo số sao
     let starMatch = true;
     if (ratingFilterValue !== "all") {
@@ -739,7 +739,7 @@ async function getFilteredReviews() {
 }
 
 // Tải dữ liệu đánh giá và hiển thị
-async function loadReviews() {
+async function loadReviews(forceNoCache = false) {
   const tableBody = document.getElementById("reviewsTableBody");
 
   // Hiển thị loading state
@@ -755,12 +755,10 @@ async function loadReviews() {
   `;
 
   try {
-    // Lấy đánh giá từ API nếu chưa có
-    if (!reviewsData || reviewsData.length === 0) {
-      reviewsData = await reviewAPI.getAll();
-    }
+    reviewsData = []; // Xóa cache trước khi gọi API
+    reviewsData = await reviewAPI.getAll(forceNoCache);
 
-    const filteredReviews = await getFilteredReviews();
+    const filteredReviews = await getFilteredReviews(forceNoCache);
     const startIndex = (currentPage - 1) * reviewsPerPage;
     const endIndex = Math.min(
       startIndex + reviewsPerPage,
@@ -1140,7 +1138,7 @@ async function sendMessage() {
   const sendButton = document.querySelector(
     '.message-composer form button[type="submit"]'
   );
-  const originalButtonText = sendButton.textContent;
+  const originalButtonText = sendButton.innerHTML;
   sendButton.innerHTML =
     '<span class="material-icons spin">refresh</span> Đang gửi...';
   sendButton.disabled = true;
@@ -1161,19 +1159,17 @@ async function sendMessage() {
   try {
     // Nếu chọn kênh email, gửi qua API email
     if (channels.includes("email")) {
-      // Lấy thông tin khách hàng để lấy email
-      let customer = null;
-      if (window.selectedCustomerId) {
-        customer = await customerAPI.getById(window.selectedCustomerId);
-      }
-      if (!customer || !customer.email) {
+      // Lấy email từ trường đã hiển thị trên UI
+      const customerEmail = document
+        .getElementById("selectedCustomerEmail")
+        ?.textContent?.trim();
+      if (!customerEmail || customerEmail === "(Chưa cập nhật)") {
         alert("Không tìm thấy email khách hàng để gửi!");
         return;
       }
-      // Gửi email qua API
       await messageAPI.sendEmail({
-        to: customer.email,
-        subject: "Thông báo từ Long Châu", // Có thể cho phép nhập subject nếu muốn
+        to: customerEmail,
+        subject: "Thông báo từ Long Châu",
         content: messageContent,
         customerId: window.selectedCustomerId,
       });
@@ -1184,10 +1180,19 @@ async function sendMessage() {
 
     // Nếu đang trả lời đánh giá, cập nhật trạng thái đánh giá thành "Đã xử lý"
     if (window.currentReviewId) {
-      await reviewAPI.updateStatus(window.currentReviewId, "Đã xử lý");
+      await reviewAPI.updateStatus(window.currentReviewId, "APPROVED");
+      console.log("Đánh giá đã được cập nhật thành công.");
+      // Cập nhật trực tiếp status trong reviewsData nếu có
+      if (Array.isArray(reviewsData)) {
+        const idx = reviewsData.findIndex(
+          (r) => r.id === window.currentReviewId
+        );
+        if (idx !== -1) {
+          reviewsData[idx].status = "APPROVED";
+        }
+      }
       window.currentReviewId = null;
-      // Tải lại danh sách đánh giá để hiển thị trạng thái mới
-      await loadReviews();
+      filterReviews(); // Không cần forceNoCache
     }
 
     // Hiển thị thông báo thành công
@@ -1197,14 +1202,19 @@ async function sendMessage() {
   } catch (error) {
     console.error("Error sending message:", error);
     // Hiển thị lỗi nếu có
-    alert(
-      error && error.message
-        ? `Có lỗi xảy ra khi gửi: ${error.message}`
-        : "Có lỗi xảy ra khi gửi tin nhắn. Vui lòng thử lại."
-    );
+    let userMessage = "Có lỗi xảy ra khi gửi tin nhắn. Vui lòng thử lại.";
+    if (error && error.status === 401) {
+      userMessage = "Bạn cần đăng nhập để gửi email.";
+      window.location.href = "/index.html"; // Chuyển hướng đến trang đăng nhập
+    } else if (error && error.status === 403) {
+    } else if (error && error.message) {
+      userMessage = `Có lỗi xảy ra khi gửi: ${error.message}`;
+    }
+    alert(userMessage);
   } finally {
-    // Khôi phục trạng thái ban đầu của nút gửi
-    sendButton.innerHTML = originalButtonText;
+    // Khôi phục trạng thái ban đầu của nút gửi (bao gồm icon)
+    sendButton.innerHTML =
+      '<span class="material-icons">send</span>\n            Gửi';
     sendButton.disabled = false;
   }
 }

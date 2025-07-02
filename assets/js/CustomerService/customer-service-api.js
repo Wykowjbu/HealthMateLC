@@ -195,17 +195,29 @@ const pharmacyAPI = {
 // ====================================
 const reviewAPI = {
   // Lấy tất cả đánh giá
-  getAll: async function () {
+  getAll: async function (forceNoCache = false) {
+    let endpoint = "/reviews";
+    let options = {};
+    if (forceNoCache) {
+      endpoint += (endpoint.includes("?") ? "&" : "?") + "ts=" + Date.now();
+      options.useCache = false;
+    }
     return await withFallback(
-      async () => await fetchApi("/reviews"),
+      async () => await fetchApi(endpoint, options),
       "reviews"
     );
   },
 
   // Lọc đánh giá theo cửa hàng
-  filterByPharmacy: async function (pharmacyId) {
+  filterByPharmacy: async function (pharmacyId, forceNoCache = false) {
+    let endpoint = `/reviews?pharmacyId=${pharmacyId}`;
+    let options = {};
+    if (forceNoCache) {
+      endpoint += `&ts=${Date.now()}`;
+      options.useCache = false;
+    }
     return await withFallback(
-      async () => await fetchApi(`/reviews?pharmacyId=${pharmacyId}`),
+      async () => await fetchApi(endpoint, options),
       "reviews",
       (reviews) =>
         reviews.filter((review) => review.pharmacy === parseInt(pharmacyId))
@@ -213,9 +225,15 @@ const reviewAPI = {
   },
 
   // Lấy đánh giá theo ID
-  getById: async function (id) {
+  getById: async function (id, forceNoCache = false) {
+    let endpoint = `/reviews/${id}`;
+    let options = {};
+    if (forceNoCache) {
+      endpoint += `?ts=${Date.now()}`;
+      options.useCache = false;
+    }
     return await withFallback(
-      async () => await fetchApi(`/reviews/${id}`),
+      async () => await fetchApi(endpoint, options),
       "reviews",
       (reviews) => reviews.find((review) => review.id === parseInt(id))
     );
@@ -234,17 +252,23 @@ const reviewAPI = {
   // Cập nhật trạng thái đánh giá
   updateStatus: async function (id, status) {
     try {
+      // Lấy user hiện tại để lấy userId
+      const currentUser = await userAPI.getCurrentUser();
+      const handledByUserId =
+        currentUser && currentUser.id ? currentUser.id : null;
       return await fetchApi(`/reviews/${id}/status`, {
         method: "PUT",
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status, handledByUserId }),
       });
     } catch (error) {
       console.error("Failed to update review status:", error);
       // Thông báo cho người dùng biết lỗi này
       alert(
-        "Không thể cập nhật trạng thái đánh giá. Hệ thống sẽ tự động đồng bộ khi kết nối được khôi phục."
+        error && error.message
+          ? `Có lỗi xảy ra khi cập nhật trạng thái đánh giá: ${error.message}`
+          : "Có lỗi xảy ra khi cập nhật trạng thái đánh giá. Vui lòng thử lại."
       );
-      return false;
+      return null;
     }
   },
 };
@@ -424,10 +448,10 @@ const messageAPI = {
   },
 
   // Gửi email cho khách hàng
-  sendEmail: async function (to, subject, content) {
+  sendEmail: async function ({ to, subject, content, customerId }) {
     return await fetchApi("/send-email", {
       method: "POST",
-      body: JSON.stringify({ to, subject, content }),
+      body: JSON.stringify({ to, subject, content, customerId }),
     });
   },
 
