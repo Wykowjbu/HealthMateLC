@@ -276,7 +276,6 @@
             </table>
             <div id="product-list-empty" style="display:none;text-align:center;color:#718096;">Chưa có sản phẩm nào</div>
           </div>
-
           <div class="pagination" id="product-list-pagination">
             <!-- Pagination buttons sẽ được render bằng JS -->
           </div>
@@ -473,6 +472,7 @@
                 <th>Tên nhà thuốc</th>
                 <th>Địa chỉ</th>
                 <th>Số điện thoại</th>
+                <th>Email</th>
                 <th>Quản lý</th>
                 <th>Trạng thái</th>
                 <th>Thao tác</th>
@@ -483,14 +483,13 @@
               </tbody>
             </table>
           </div>
-
           <div class="pagination" id="store-list-pagination">
             <!-- Pagination buttons sẽ được render bằng JS -->
           </div>
         </div>
       </div>
     </div>
-    
+
     <!-- Panel Chỉnh sửa thông tin -->
     <div class="panel" id="panel-edit-store">
       <div class="panel-container">
@@ -526,7 +525,7 @@
         </div>
       </div>
     </div>
-    
+
     <!-- Panel Báo cáo doanh thu -->
     <div class="panel" id="panel-revenue-report">
       <div class="stats-grid">
@@ -600,11 +599,5 @@
   </main>
 </div>
 <script src="assets/js/admin.js"></script>
-<script>
-  function closeConfirmDialog() {
-    const dialog = document.querySelector(".confirm-dialog");
-    if (dialog) dialog.remove();
-  }
-</script>
 </body>
 </html>

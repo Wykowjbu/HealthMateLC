@@ -13,36 +13,43 @@ const pageSize = 4;
 // INITIALIZATION & EVENT LISTENERS
 // ============================================================================
 
+// Initialize the admin dashboard
 document.addEventListener("DOMContentLoaded", function () {
   initializeNavigation();
   initializeUserDropdown();
   initializeProductSearch();
   initializeStoreSearch();
   loadInitialData();
+  attachAddStoreButtonEvent();
 });
 
 // Form submission handlers
 document.addEventListener("DOMContentLoaded", function () {
+  // Add Account form
   const addAccountForm = document.querySelector("#panel-add-account .panel-form");
   if (addAccountForm) {
     addAccountForm.addEventListener("submit", handleAddAccount);
   }
 
+  // Add Product form
   const addProductForm = document.querySelector("#panel-add-product .panel-form");
   if (addProductForm) {
     addProductForm.addEventListener("submit", handleAddProduct);
   }
 
+  // Edit Product form
   const editProductForm = document.querySelector("#panel-edit-product .panel-form");
   if (editProductForm) {
     editProductForm.addEventListener("submit", handleEditProduct);
   }
 
+  // Create Store form
   const createStoreForm = document.querySelector("#panel-create-store .panel-form");
   if (createStoreForm) {
     createStoreForm.addEventListener("submit", handleCreateStore);
   }
 
+  // Edit Store form
   const editStoreForm = document.querySelector("#panel-edit-store .panel-form");
   if (editStoreForm) {
     editStoreForm.addEventListener("submit", handleEditStore);
@@ -53,6 +60,7 @@ document.addEventListener("DOMContentLoaded", function () {
 // NAVIGATION & UI COMPONENTS
 // ============================================================================
 
+// Navigation handling
 function initializeNavigation() {
   navItems.forEach((item) => {
     item.addEventListener("click", () => {
@@ -68,6 +76,8 @@ function initializeNavigation() {
       const panel = document.getElementById(`panel-${type}`);
       if (panel) {
         panel.classList.add("active");
+      } else {
+        console.error(`Panel not found for type: ${type}`);
       }
 
       // Update header title
@@ -124,11 +134,40 @@ function initializeUserDropdown() {
   }
 }
 
+// Initialize store search functionality
+function initializeStoreSearch() {
+  const storeSearchBtn = document.querySelector("#store-search-btn");
+  const storeSearchInput = document.querySelector("#store-search-input");
+  const storeClearBtn = document.querySelector("#store-clear-btn");
+
+  if (storeSearchBtn) {
+    storeSearchBtn.addEventListener("click", performStoreSearch);
+  }
+
+  if (storeSearchInput) {
+    storeSearchInput.addEventListener("keypress", function (e) {
+      if (e.key === "Enter") {
+        performStoreSearch();
+      }
+    });
+  }
+
+  if (storeClearBtn) {
+    storeClearBtn.addEventListener("click", clearStoreSearch);
+  }
+}
+
 // ============================================================================
 // CONTENT RENDERING
 // ============================================================================
 
+// Content rendering based on panel type
 function renderContent(type) {
+  // Ẩn tất cả pagination sections trước
+  document.querySelectorAll('.pagination-section').forEach(section => {
+    section.style.display = 'none';
+  });
+
   switch (type) {
     case "list-accounts":
       renderListAccounts();
@@ -168,9 +207,10 @@ function loadInitialData() {
 }
 
 // ============================================================================
-// BASIC RENDER FUNCTIONS
+// ACCOUNTS MANAGEMENT
 // ============================================================================
 
+// Render list accounts panel
 function renderListAccounts() {
   fetch(`http://localhost:8080/admin/list-accounts`, {
     method: "GET",
@@ -447,20 +487,28 @@ function renderPagination() {
   if (!container) return;
   const totalPages = Math.ceil(allProducts.length / pageSize);
   if (totalPages <= 1) {
-    container.innerHTML = "";
+    container.innerHTML = '<span style="color: #718096; font-size: 14px; font-weight: 500;">Trang 1 / 1</span>';
     return;
   }
   let html = "";
+  if (currentPage > 1) {
+    html += `<button class="pagination-btn" data-page="${currentPage - 1}">‹</button>`;
+  }
   for (let i = 1; i <= totalPages; i++) {
     html += `<button class="pagination-btn${i === currentPage ? " active" : ""}" data-page="${i}">${i}</button>`;
   }
+  if (currentPage < totalPages) {
+    html += `<button class="pagination-btn" data-page="${currentPage + 1}">›</button>`;
+  }
   container.innerHTML = html;
-
   container.querySelectorAll(".pagination-btn").forEach((btn) => {
     btn.addEventListener("click", function () {
-      currentPage = parseInt(this.getAttribute("data-page"));
-      renderProductTable();
-      renderPagination();
+      const page = parseInt(this.getAttribute("data-page"));
+      if (page && page !== currentPage) {
+        currentPage = page;
+        renderProductTable();
+        renderPagination();
+      }
     });
   });
 }
@@ -794,14 +842,16 @@ function renderListStores(keepPage = false) {
       if (!keepPage) currentPage = 1;
       renderStoreTable();
       renderStorePagination();
-      
+
       // Hiển thị pagination section sau khi render xong
       const paginationSection = document.getElementById('store-pagination-section');
       if (paginationSection) {
         paginationSection.style.display = 'block';
       }
-      
+
       updateHeaderTitle("list-stores");
+      // Đảm bảo nút Thêm nhà thuốc luôn hoạt động
+      attachAddStorePanelButtonEvent();
     })
     .catch(() => {
       const tbody = document.getElementById("store-list-tbody");
@@ -809,23 +859,25 @@ function renderListStores(keepPage = false) {
         tbody.innerHTML =
           '<tr><td colspan="7" style="color:red;text-align:center;">Không thể tải danh sách nhà thuốc</td></tr>';
       updateHeaderTitle("list-stores");
+      // Đảm bảo nút Thêm nhà thuốc luôn hoạt động kể cả khi lỗi
+      attachAddStorePanelButtonEvent();
     });
 }
 
 function renderStoreTable() {
   const tbody = document.getElementById("store-list-tbody");
   if (!tbody) return;
-  
+
   if (!allStores || allStores.length === 0) {
     tbody.innerHTML =
       '<tr><td colspan="7" style="text-align:center;color:#888;">Không có nhà thuốc nào</td></tr>';
     return;
   }
-  
+
   const start = (currentPage - 1) * pageSize;
   const end = start + pageSize;
   const pageStores = allStores.slice(start, end);
-  
+
   let html = "";
   pageStores.forEach((store) => {
     html += `
@@ -834,6 +886,7 @@ function renderStoreTable() {
         <td>${store.pharmacyName}</td>
         <td>${store.address || ""}</td>
         <td>${store.phone || ""}</td>
+        <td>${store.email || ""}</td>
         <td>${store.manager || "Chưa gán"}</td>
         <td>
           <span class="status ${store.isActive ? 'active' : 'inactive'}">
@@ -843,7 +896,7 @@ function renderStoreTable() {
         <td>
           <div class="action-buttons">
             ${store.isActive ? `<button class="btn-edit" data-id="${store.pharmacyId}">Sửa</button>` : ''}
-            ${store.isActive 
+            ${store.isActive
               ? `<button class="btn-disable" data-id="${store.pharmacyId}">Vô hiệu hóa</button>`
               : `<button class="btn-enable" data-id="${store.pharmacyId}">Kích hoạt</button>`
             }
@@ -852,7 +905,7 @@ function renderStoreTable() {
       </tr>
     `;
   });
-  
+
   tbody.innerHTML = html;
   attachStoreActionEvents();
 }
@@ -860,40 +913,22 @@ function renderStoreTable() {
 function renderStorePagination() {
   const container = document.getElementById("store-list-pagination");
   if (!container) return;
-
   const totalPages = Math.ceil(allStores.length / pageSize);
-  
-  // Luôn hiển thị pagination section
-  const paginationSection = document.getElementById("store-pagination-section");
-  if (paginationSection) {
-    paginationSection.style.display = "block";
-  }
-  
   if (totalPages <= 1) {
     container.innerHTML = '<span style="color: #718096; font-size: 14px; font-weight: 500;">Trang 1 / 1</span>';
     return;
   }
-
   let html = "";
-  
-  // Previous button
   if (currentPage > 1) {
     html += `<button class="pagination-btn" data-page="${currentPage - 1}">‹</button>`;
   }
-  
-  // Page numbers
   for (let i = 1; i <= totalPages; i++) {
     html += `<button class="pagination-btn${i === currentPage ? " active" : ""}" data-page="${i}">${i}</button>`;
   }
-  
-  // Next button
   if (currentPage < totalPages) {
     html += `<button class="pagination-btn" data-page="${currentPage + 1}">›</button>`;
   }
-  
   container.innerHTML = html;
-
-  // Attach event listeners
   container.querySelectorAll(".pagination-btn").forEach((btn) => {
     btn.addEventListener("click", function () {
       const page = parseInt(this.getAttribute("data-page"));
@@ -1330,20 +1365,24 @@ function handleEditStore(e) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   })
-    .then((res) => res.json())
-    .then((res) => {
-      showToast(res.message || "Cập nhật thành công!");
-      document.getElementById("panel-edit-store").classList.remove("active");
-      document.getElementById("panel-list_stores").classList.add("active");
-      document.querySelectorAll(".nav-item").forEach((item) => item.classList.remove("active"));
-      document.querySelector('.nav-item[data-type="list-stores"]').classList.add("active");
-      updateHeaderTitle("list-stores");
-      renderListStores();
-      document.getElementById("edit-store-id").value = "";
-      document.getElementById("edit-store-name").value = "";
-      document.getElementById("edit-store-address").value = "";
-      document.getElementById("edit-store-phone").value = "";
-      document.getElementById("edit-store-email").value = "";
+    .then(async (res) => {
+      const result = await res.json();
+      if (res.ok) {
+        showToast(result.message || "Cập nhật thành công!");
+        document.getElementById("panel-edit-store").classList.remove("active");
+        document.getElementById("panel-list-stores").classList.add("active");
+        document.querySelectorAll(".nav-item").forEach((item) => item.classList.remove("active"));
+        document.querySelector('.nav-item[data-type="list-stores"]').classList.add("active");
+        updateHeaderTitle("list-stores");
+        renderListStores();
+        document.getElementById("edit-store-id").value = "";
+        document.getElementById("edit-store-name").value = "";
+        document.getElementById("edit-store-address").value = "";
+        document.getElementById("edit-store-phone").value = "";
+        document.getElementById("edit-store-email").value = "";
+      } else {
+        showToast(result.message || "Có lỗi xảy ra khi cập nhật!");
+      }
     })
     .catch(() => showToast("Có lỗi xảy ra khi cập nhật!"));
 }
@@ -1374,7 +1413,7 @@ function performStoreSearch() {
       currentPage = 1;
       renderStoreTable();
       renderStorePagination();
-      
+
       // Hiển thị pagination section
       const paginationSection = document.getElementById('store-pagination-section');
       if (paginationSection) {
@@ -1390,14 +1429,14 @@ function performStoreSearch() {
 function clearStoreSearch() {
   const searchInput = document.getElementById("store-search-input");
   const searchType = document.getElementById("store-search-type");
-  
+
   if (searchInput) {
     searchInput.value = "";
   }
   if (searchType) {
     searchType.value = "all";
   }
-  
+
   // Reset lại data và hiển thị
   renderListStores();
 }
@@ -1622,7 +1661,7 @@ function closeConfirmDialog() {
 
 // Sau khi renderListStores, gắn lại sự kiện cho nút Thêm nhà thuốc
 function attachAddStorePanelButtonEvent() {
-  const addBtn = document.querySelector('#panel-list_stores .panel-header .btn.btn-primary');
+  const addBtn = document.querySelector('#panel-list-stores .panel-header .btn.btn-primary');
   if (addBtn) {
     addBtn.onclick = function() {
       // Ẩn tất cả panel
@@ -1638,11 +1677,4 @@ function attachAddStorePanelButtonEvent() {
       renderCreateStore();
     };
   }
-}
-
-// Gọi hàm này sau mỗi lần renderListStores
-const originalRenderListStores = renderListStores;
-renderListStores = function(...args) {
-  originalRenderListStores.apply(this, args);
-  attachAddStorePanelButtonEvent();
 };
