@@ -6,8 +6,16 @@ let panelItems = document.querySelectorAll(".panel");
 let listPharmacy = [];
 let allProducts = [];
 let allStores = [];
-let currentPage = 1;
-const pageSize = 4;
+let currentPage = 0; // dùng cho nhà thuốc
+const pageSize = 6; // dùng cho nhà thuốc, mỗi trang 7 nhà thuốc
+let totalPages = 0;
+let isSearching = false;
+let currentSearchParams = {};
+// Nếu muốn phân trang sản phẩm riêng, hãy dùng biến khác như currentProductPage, productPageSize...
+// ... giữ nguyên các phần code còn lại ...
+
+// ========== STORES MANAGEMENT (SERVER-SIDE PAGINATION) =============
+// (Đã khai báo biến toàn cục ở đầu file, không khai báo lại ở đây)
 
 // ============================================================================
 // INITIALIZATION & EVENT LISTENERS
@@ -177,6 +185,11 @@ function renderContent(type) {
       break;
     case "list-products":
       renderListProducts();
+      // Hiện pagination-section cho sản phẩm
+      const productPagSection = document.querySelector('#product-list-pagination')?.parentElement;
+      if (productPagSection && productPagSection.classList.contains('pagination-section')) {
+        productPagSection.style.display = 'block';
+      }
       break;
     case "add-product":
       renderAddProduct();
@@ -823,66 +836,63 @@ function initializeCustomInputs() {
   }
 }
 
-// ============================================================================
-// STORES MANAGEMENT
-// ============================================================================
+// ========== STORES MANAGEMENT (SERVER-SIDE PAGINATION) =============
 
-// Render create store panel
 function renderCreateStore() {
   loadManagerOptions();
   updateHeaderTitle("create-store");
 }
 
-// Render list stores with pagination
 function renderListStores(keepPage = false) {
-  fetch("http://localhost:8080/admin/list-pharmacy")
-    .then((res) => res.json())
-    .then((stores) => {
-      allStores = stores || [];
-      if (!keepPage) currentPage = 1;
+  if (!keepPage) currentPage = 0;
+  loadStoresFromAPI(currentPage, pageSize);
+  const paginationSection = document.getElementById('store-pagination-section');
+  if (paginationSection) {
+    paginationSection.style.display = 'block';
+  }
+  updateHeaderTitle("list-stores");
+  attachAddStorePanelButtonEvent();
+}
+
+function loadStoresFromAPI(page, size) {
+  const url = isSearching
+    ? `http://localhost:8080/admin/search-pharmacies-paginated?keyword=${encodeURIComponent(currentSearchParams.keyword)}&type=${currentSearchParams.type}&page=${page}&size=${size}`
+    : `http://localhost:8080/admin/list-pharmacies-paginated?page=${page}&size=${size}`;
+
+  fetch(url, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      allStores = data.pharmacies || [];
+      totalPages = data.totalPages || 0;
+      currentPage = data.currentPage || 0;
       renderStoreTable();
       renderStorePagination();
-
-      // Hiển thị pagination section sau khi render xong
-      const paginationSection = document.getElementById('store-pagination-section');
-      if (paginationSection) {
-        paginationSection.style.display = 'block';
-      }
-
-      updateHeaderTitle("list-stores");
-      // Đảm bảo nút Thêm nhà thuốc luôn hoạt động
-      attachAddStorePanelButtonEvent();
     })
-    .catch(() => {
+    .catch((error) => {
       const tbody = document.getElementById("store-list-tbody");
       if (tbody)
         tbody.innerHTML =
-          '<tr><td colspan="7" style="color:red;text-align:center;">Không thể tải danh sách nhà thuốc</td></tr>';
-      updateHeaderTitle("list-stores");
-      // Đảm bảo nút Thêm nhà thuốc luôn hoạt động kể cả khi lỗi
-      attachAddStorePanelButtonEvent();
+          '<tr><td colspan="8" style="color:red;text-align:center;">Không thể tải danh sách nhà thuốc (API lỗi)</td></tr>';
     });
 }
 
 function renderStoreTable() {
   const tbody = document.getElementById("store-list-tbody");
   if (!tbody) return;
-
   if (!allStores || allStores.length === 0) {
     tbody.innerHTML =
-      '<tr><td colspan="7" style="text-align:center;color:#888;">Không có nhà thuốc nào</td></tr>';
+      '<tr><td colspan="8" style="text-align:center;color:#888;">Không có nhà thuốc nào</td></tr>';
     return;
   }
-
-  const start = (currentPage - 1) * pageSize;
-  const end = start + pageSize;
-  const pageStores = allStores.slice(start, end);
-
   let html = "";
-  pageStores.forEach((store) => {
+  allStores.forEach((store, idx) => {
+    const globalIndex = currentPage * pageSize + idx + 1;
     html += `
       <tr>
-        <td>${store.pharmacyId}</td>
+        <td>${globalIndex}</td>
         <td>${store.pharmacyName}</td>
         <td>${store.address || ""}</td>
         <td>${store.phone || ""}</td>
@@ -905,7 +915,6 @@ function renderStoreTable() {
       </tr>
     `;
   });
-
   tbody.innerHTML = html;
   attachStoreActionEvents();
 }
@@ -913,32 +922,55 @@ function renderStoreTable() {
 function renderStorePagination() {
   const container = document.getElementById("store-list-pagination");
   if (!container) return;
-  const totalPages = Math.ceil(allStores.length / pageSize);
   if (totalPages <= 1) {
-    container.innerHTML = '<span style="color: #718096; font-size: 14px; font-weight: 500;">Trang 1 / 1</span>';
+    container.innerHTML = `<span style="color: #718096; font-size: 14px; font-weight: 500;">Trang ${currentPage + 1} / ${totalPages || 1}</span>`;
     return;
   }
   let html = "";
-  if (currentPage > 1) {
+  if (currentPage > 0) {
     html += `<button class="pagination-btn" data-page="${currentPage - 1}">‹</button>`;
   }
-  for (let i = 1; i <= totalPages; i++) {
-    html += `<button class="pagination-btn${i === currentPage ? " active" : ""}" data-page="${i}">${i}</button>`;
+  for (let i = 0; i < totalPages; i++) {
+    html += `<button class="pagination-btn${i === currentPage ? " active" : ""}" data-page="${i}">${i + 1}</button>`;
   }
-  if (currentPage < totalPages) {
+  if (currentPage < totalPages - 1) {
     html += `<button class="pagination-btn" data-page="${currentPage + 1}">›</button>`;
   }
   container.innerHTML = html;
   container.querySelectorAll(".pagination-btn").forEach((btn) => {
     btn.addEventListener("click", function () {
       const page = parseInt(this.getAttribute("data-page"));
-      if (page && page !== currentPage) {
+      if (page !== null && page !== currentPage) {
         currentPage = page;
-        renderStoreTable();
-        renderStorePagination();
+        loadStoresFromAPI(currentPage, pageSize);
       }
     });
   });
+}
+
+function performStoreSearch() {
+  const keyword = document.getElementById("store-search-input")?.value?.trim() || "";
+  const searchType = document.getElementById("store-search-type")?.value || "all";
+  if (!keyword) {
+    isSearching = false;
+    currentPage = 0;
+    loadStoresFromAPI(currentPage, pageSize);
+    return;
+  }
+  isSearching = true;
+  currentSearchParams = { keyword, type: searchType };
+  currentPage = 0;
+  loadStoresFromAPI(currentPage, pageSize);
+}
+
+function clearStoreSearch() {
+  const searchInput = document.getElementById("store-search-input");
+  const searchType = document.getElementById("store-search-type");
+  if (searchInput) searchInput.value = "";
+  if (searchType) searchType.value = "all";
+  isSearching = false;
+  currentPage = 0;
+  loadStoresFromAPI(currentPage, pageSize);
 }
 
 function attachStoreActionEvents() {
@@ -1387,64 +1419,6 @@ function handleEditStore(e) {
     .catch(() => showToast("Có lỗi xảy ra khi cập nhật!"));
 }
 
-function performStoreSearch() {
-  const keyword = document.getElementById("store-search-input")?.value?.trim() || "";
-  const searchType = document.getElementById("store-search-type")?.value || "all";
-
-  if (!keyword) {
-    renderListStores();
-    return;
-  }
-
-  fetch(
-    `http://localhost:8080/admin/search-pharmacies?keyword=${encodeURIComponent(
-      keyword
-    )}&type=${searchType}`,
-    {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }
-  )
-    .then((response) => response.json())
-    .then((pharmacies) => {
-      allStores = pharmacies || [];
-      currentPage = 1;
-      renderStoreTable();
-      renderStorePagination();
-
-      // Hiển thị pagination section
-      const paginationSection = document.getElementById('store-pagination-section');
-      if (paginationSection) {
-        paginationSection.style.display = 'block';
-      }
-    })
-    .catch((error) => {
-      console.error("Error searching pharmacies:", error);
-      showToast("Có lỗi xảy ra khi tìm kiếm nhà thuốc");
-    });
-}
-
-function clearStoreSearch() {
-  const searchInput = document.getElementById("store-search-input");
-  const searchType = document.getElementById("store-search-type");
-
-  if (searchInput) {
-    searchInput.value = "";
-  }
-  if (searchType) {
-    searchType.value = "all";
-  }
-
-  // Reset lại data và hiển thị
-  renderListStores();
-}
-
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
-
 function loadPharmacyOptions() {
   const pharmacySelect = document.getElementById("pharmacy");
   if (pharmacySelect && listPharmacy.length > 0) {
@@ -1520,7 +1494,7 @@ function getRoleDisplayName(role) {
   const roleNames = {
     manager: "Quản lý",
     employee: "Nhân viên",
-    "customer-service": "Chăm sóc khách hàng",
+    "customer-service": "Chăm sóc khách hàng"
   };
   return roleNames[role] || role;
 }
