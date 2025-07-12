@@ -265,6 +265,7 @@
                 <th>Tên sản phẩm</th>
                 <th>Loại</th>
                 <th>Đơn vị</th>
+                <th>Số lượng</th> <!-- Thêm cột số lượng -->
                 <th>Giá bán (VNĐ)</th>
                 <th>Mô tả</th>
                 <th>Thao tác</th>
@@ -329,6 +330,10 @@
               <div class="form-group">
                 <label for="product-price">Giá bán (VNĐ)</label>
                 <input type="number" id="product-price" class="form-input" required />
+              </div>
+              <div class="form-group">
+                <label for="product-quantity">Số lượng</label>
+                <input type="number" id="product-quantity" class="form-input" min="0" value="0" required />
               </div>
             </div>
             <div class="form-group">

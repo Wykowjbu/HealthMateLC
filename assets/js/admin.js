@@ -482,6 +482,13 @@ function renderProductTable() {
         <td>${p.productName}</td>
         <td>${p.productType}</td>
         <td>${p.unit}</td>
+        <td>
+          <div class="quantity-control" data-product-id="${p.productId}">
+            <button class="btn-qty btn-qty-minus" data-action="subtract">-</button>
+            <input type="number" class="input-qty" value="${p.quantity ?? 0}" min="0" style="width:60px;text-align:center;" />
+            <button class="btn-qty btn-qty-plus" data-action="add">+</button>
+          </div>
+        </td>
         <td>${Number(p.price).toLocaleString("vi-VN")}</td>
         <td>${p.description || ""}</td>
         <td>
@@ -493,6 +500,7 @@ function renderProductTable() {
     `;
   });
   tbody.innerHTML = html;
+  attachQuantityEvents();
 }
 
 function renderPagination() {
@@ -1160,6 +1168,7 @@ function handleAddProduct(e) {
   const productUnitSelect = document.getElementById("product-unit");
   const productUnitCustom = document.getElementById("product-unit-custom");
   const productPriceInput = document.getElementById("product-price");
+  const productQuantityInput = document.getElementById("product-quantity"); // Lấy input số lượng
   const productDescriptionInput = document.getElementById("product-description");
   const productName = productNameInput.value.trim();
 
@@ -1204,6 +1213,13 @@ function handleAddProduct(e) {
     return;
   }
 
+  const quantity = parseInt(productQuantityInput.value) || 0;
+  if (quantity < 0) {
+    showToast("Số lượng không được âm");
+    productQuantityInput.focus();
+    return;
+  }
+
   const description = productDescriptionInput.value.trim();
   const formData = {
     productName: productName,
@@ -1211,6 +1227,7 @@ function handleAddProduct(e) {
     unit: productUnit,
     description: description,
     price: price.toFixed(2),
+    quantity: quantity // Gửi số lượng lên backend
   };
 
   const submitBtn = e.target.querySelector('button[type="submit"]');
@@ -1652,3 +1669,66 @@ function attachAddStorePanelButtonEvent() {
     };
   }
 };
+
+function attachQuantityEvents() {
+  document.querySelectorAll(".quantity-control").forEach((container) => {
+    const productId = container.getAttribute("data-product-id");
+    const input = container.querySelector(".input-qty");
+    const btnMinus = container.querySelector(".btn-qty-minus");
+    const btnPlus = container.querySelector(".btn-qty-plus");
+
+    btnMinus.onclick = function () {
+      let val = parseInt(input.value) || 0;
+      if (val > 0) {
+        updateProductQuantity(productId, 1, "subtract", input);
+      }
+    };
+    btnPlus.onclick = function () {
+      updateProductQuantity(productId, 1, "add", input);
+    };
+    input.onchange = function () {
+      let val = parseInt(input.value) || 0;
+      updateProductQuantity(productId, val, "set", input);
+    };
+  });
+}
+
+function updateProductQuantity(productId, quantity, operation, inputEl) {
+  fetch("http://localhost:8080/admin/update-product-quantity", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ productId: Number(productId), quantity: Number(quantity), operation }),
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      showToast(data.message || "Cập nhật số lượng thành công");
+      // Lưu trang hiện tại
+      const currentPageBefore = currentPage;
+      // Reload lại danh sách sản phẩm để đồng bộ số lượng
+      fetch("http://localhost:8080/admin/list-products", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+        .then((response) => response.json())
+        .then((products) => {
+          allProducts = products || [];
+          // Khôi phục lại trang hiện tại
+          currentPage = currentPageBefore;
+          renderProductTable();
+          renderPagination();
+        })
+        .catch((error) => {
+          console.error("Error reloading products:", error);
+          // Nếu reload thất bại, vẫn giữ nguyên trang hiện tại
+          currentPage = currentPageBefore;
+          renderProductTable();
+          renderPagination();
+        });
+    })
+    .catch(() => {
+      showToast("Có lỗi xảy ra khi cập nhật số lượng!");
+      if (inputEl) inputEl.value = inputEl.defaultValue;
+    });
+}
