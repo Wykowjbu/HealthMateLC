@@ -145,6 +145,30 @@ body {
   font-weight: 600;
 }
 
+/* Dropdown styling */
+.dropdown-item {
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.dropdown-item:hover {
+  background: #f8fafc;
+}
+
+.dropdown-item .material-icons {
+  font-size: 18px;
+  color: #64748b;
+}
+
 .main-content {
   grid-area: main;
   padding: 30px;
@@ -1251,4 +1275,51 @@ body {
     max-width: 100%;
     padding: 8px 2px 8px 2px;
   }
+}
+
+/* Revenue Items */
+.revenue-item,
+.product-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  background: white;
+}
+
+.revenue-info h4,
+.product-info h4 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 4px;
+}
+
+.revenue-info p,
+.product-info p {
+  font-size: 14px;
+  color: #718096;
+}
+
+.revenue-stats,
+.product-stats {
+  text-align: right;
+}
+
+.revenue-amount,
+.product-revenue {
+  font-size: 16px;
+  font-weight: 700;
+  color: #38a169;
+  margin-bottom: 4px;
+}
+
+.revenue-orders,
+.product-sold {
+  font-size: 12px;
+  color: #718096;
 }
