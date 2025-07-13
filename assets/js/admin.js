@@ -314,7 +314,7 @@ function showUserDetails(user) {
       
       <div class="user-details-field">
         <label>Trạng thái</label>
-        <p>Hoạt động</p>
+        <p>${user.active ? "Hoạt động" : "Vô hiệu hóa"}</p>
       </div>
       
       <div class="user-actions">
@@ -410,8 +410,10 @@ function openEditUserModal(user) {
   document.getElementById("edit-fullname").value = user.fullName || "";
   document.getElementById("edit-email").value = user.email || "";
   document.getElementById("edit-phone").value = user.phone || "";
-  document.getElementById("edit-role").value = user.role || "employee";
-  document.getElementById("edit-status").value = user.status || "active";
+  document.getElementById("edit-role").value = user.role;
+  document.getElementById("edit-status").value = user.active
+    ? "active"
+    : "inactive";
 }
 
 // Initialize password validation when modal opens
