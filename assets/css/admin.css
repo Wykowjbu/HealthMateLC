@@ -1417,3 +1417,6 @@ body {
 .data-table th {
   text-align: center;
 }
+.data-table td:nth-child(6) {
+  text-align: center;
+}
