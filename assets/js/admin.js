@@ -115,6 +115,7 @@ function renderListAccounts() {
     .then((data) => {
       const listNumber = data.listNumbers;
       const listPharmacyData = data.listPharmacies;
+      console.log("List pharmacies:", listPharmacyData);
       const listUser = data.listUsersByPharmacy;
 
       // Store pharmacy data globally
@@ -1190,17 +1191,16 @@ function resetUserPassword(userId, newPassword) {
       document.getElementById("resetPasswordModal").style.display = "none";
 
       // Show success message
-      showToast("Đặt lại mật khẩu thành công");
+      showToast(data.message || "Đặt lại mật khẩu thành công");
 
       // Clear form
       document.getElementById("new-password").value = "";
       document.getElementById("confirm-password").value = "";
     })
     .catch((error) => {
-      console.error("Error resetting password:", error);
       showFormError(
         "resetPasswordForm",
-        "Lỗi khi đặt lại mật khẩu. Vui lòng thử lại."
+        error.message || "Lỗi khi đặt lại mật khẩu"
       );
     })
     .finally(() => {
