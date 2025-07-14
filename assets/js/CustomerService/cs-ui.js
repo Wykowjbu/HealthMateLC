@@ -8,13 +8,15 @@ import {
   pharmacyAPI,
   reviewAPI,
   customerAPI,
-  rankUpgradeAPI,
   chartAPI,
   statsAPI,
   messageAPI,
   invoiceAPI,
   userAPI,
 } from "./customer-service-api.js";
+
+// Import các hàm từ customer-service.js
+import { showCustomerInfo } from "./customer-service.js";
 
 // Các biến UI
 let currentPage = 1;
@@ -46,6 +48,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Hiển thị thông tin người đăng nhập lên header
   displayCurrentUserHeader();
+
+  // Tải lịch sử tin nhắn
+  loadMessageHistory();
 });
 
 // ====================================
@@ -113,25 +118,11 @@ if (nextBtn) {
     }
   };
 }
-// Hiển thị tất cả các section khi khởi tạo và chỉ làm nổi bật phần được chọn
-document.getElementById("nav-upgrade-customers").onclick = function () {
-  document.getElementById("reviewsContainer").style.display = "";
-  document.getElementById("upgradedCustomersContainer").style.display = "";
-
-  // Làm nổi bật tab đang chọn
-  document.querySelector(".nav-item.active").classList.remove("active");
-  this.classList.add("active");
-
-  // Cuộn đến phần khách hàng thăng hạng
-  document
-    .getElementById("upgradedCustomersContainer")
-    .scrollIntoView({ behavior: "smooth" });
-};
+// Removed upgraded customers navigation since the section was deleted
 
 // Quay lại xem đánh giá
 document.querySelector(".nav-item.active").onclick = function () {
   document.getElementById("reviewsContainer").style.display = "";
-  document.getElementById("upgradedCustomersContainer").style.display = "";
 
   // Làm nổi bật tab đang chọn
   document.querySelector(".nav-item.active").classList.remove("active");
@@ -311,15 +302,11 @@ function setupInitialDisplay() {
   // Tải dữ liệu đánh giá
   loadReviews();
 
-  // Tải dữ liệu khách hàng thăng hạng
-  loadUpgradedCustomers();
-
   // Cập nhật thống kê dashboard
   updateDashboardStats();
 
-  // Đảm bảo hiển thị cả hai phần
+  // Đảm bảo hiển thị phần reviews
   document.getElementById("reviewsContainer").style.display = "";
-  document.getElementById("upgradedCustomersContainer").style.display = "";
 }
 
 // Thiết lập các sự kiện listener
@@ -424,35 +411,6 @@ function setupEventListeners() {
       }
     };
   }
-  // Hiển thị tất cả các section khi khởi tạo và chỉ làm nổi bật phần được chọn
-  document.getElementById("nav-upgrade-customers").onclick = function () {
-    document.getElementById("reviewsContainer").style.display = "";
-    document.getElementById("upgradedCustomersContainer").style.display = "";
-
-    // Làm nổi bật tab đang chọn
-    document.querySelector(".nav-item.active").classList.remove("active");
-    this.classList.add("active");
-
-    // Cuộn đến phần khách hàng thăng hạng
-    document
-      .getElementById("upgradedCustomersContainer")
-      .scrollIntoView({ behavior: "smooth" });
-  };
-
-  // Quay lại xem đánh giá
-  document.querySelector(".nav-item.active").onclick = function () {
-    document.getElementById("reviewsContainer").style.display = "";
-    document.getElementById("upgradedCustomersContainer").style.display = "";
-
-    // Làm nổi bật tab đang chọn
-    document.querySelector(".nav-item.active").classList.remove("active");
-    this.classList.add("active");
-
-    // Cuộn đến phần đánh giá
-    document
-      .getElementById("reviewsContainer")
-      .scrollIntoView({ behavior: "smooth" });
-  };
 
   // Đăng ký sự kiện cho nút soạn tin nhắn
   const messageComposerBtn = document.querySelector(
@@ -534,12 +492,78 @@ function setupEventListeners() {
   });
 }
 
+// Cập nhật số liệu trên Dashboard stats cards
+async function updateDashboardStats() {
+  try {
+    // Số tin nhắn đã gửi
+    const messagesSent = await statsAPI.getMessagesSent();
+    document.getElementById("statMessagesSent").textContent = messagesSent;
+
+    // Số đánh giá cần xử lý (tổng đánh giá từ 3 sao trở xuống)
+    const allReviews = await reviewAPI.getAll();
+    const reviewsPending = allReviews.filter((r) => {
+      const rating = parseInt(r.rating);
+      return !isNaN(rating) && rating <= 3;
+    }).length;
+    document.getElementById("statReviewsPending").textContent = reviewsPending;
+
+    // Tổng số khách hàng đã được chăm sóc
+    const customersServed = await statsAPI.getCustomersServed();
+    document.getElementById("statCustomersServed").textContent =
+      customersServed;
+
+    // Tỷ lệ hài lòng tính từ điểm trung bình
+    const avgRating = await statsAPI.getAverageRating();
+    const satisfactionRate = Math.round((avgRating / 5) * 100);
+    document.getElementById("statSatisfactionRate").textContent =
+      satisfactionRate + "%";
+  } catch (error) {
+    console.error("Error updating dashboard stats:", error);
+  } finally {
+    // Reload message history as well
+    loadMessageHistory();
+  }
+}
+
+// Load message history and render into table
+async function loadMessageHistory() {
+  try {
+    const messages = await messageAPI.getAllMessages();
+    const tbody = document.getElementById("messageHistoryBody");
+    tbody.innerHTML = "";
+    messages.forEach((msg) => {
+      const tr = document.createElement("tr");
+      const timeTd = document.createElement("td");
+      timeTd.textContent = new Date(msg.sentAt).toLocaleString();
+      const channelTd = document.createElement("td");
+      channelTd.textContent = msg.channel;
+      const contentTd = document.createElement("td");
+      contentTd.textContent = msg.messageText;
+      const customerTd = document.createElement("td");
+      customerTd.textContent = msg.targetCustomerId || "Tất cả";
+      tr.append(timeTd, channelTd, contentTd, customerTd);
+      tbody.appendChild(tr);
+    });
+  } catch (error) {
+    console.error("Error loading message history:", error);
+  }
+}
+
 // Đưa các hàm vào global scope để có thể gọi từ HTML nếu cần
 function setupGlobalHandlers() {
   window.showUserInfo = showUserInfo;
   window.logout = logout;
   window.closeUserInfoModal = closeUserInfoModal;
-  window.replyReview = replyReview; // Nếu cần các hàm khác cũng có thể thêm vào window ở đây
+  window.closeCustomerInfoModal = closeCustomerInfoModal;
+  window.sendMessageToCustomer = sendMessageToCustomer;
+  window.replyReview = replyReview;
+  window.showCustomerInfo = showCustomerInfo;
+  window.toggleCustomerInput = toggleCustomerInput;
+  window.selectCustomer = selectCustomer;
+  window.clearSelectedCustomer = clearSelectedCustomer;
+  window.searchCustomers = searchCustomers;
+  window.loadMessageTemplate = loadMessageTemplate;
+  window.filterReviews = filterReviews; // Thêm các hàm cần thiết cho HTML
 
   // Đăng ký sự kiện cho nút thông tin cá nhân trong dropdown
   const userInfoBtn = document.getElementById("btnUserInfo");
@@ -552,9 +576,7 @@ function setupGlobalHandlers() {
         showUserInfo();
       }, 100);
     });
-  }
-
-  // Đăng ký sự kiện cho nút đăng xuất trong dropdown
+  } // Đăng ký sự kiện cho nút đăng xuất trong dropdown
   const logoutBtn = document.getElementById("btnLogout");
   if (logoutBtn) {
     logoutBtn.addEventListener("click", (e) => {
@@ -780,6 +802,9 @@ async function loadReviews(forceNoCache = false) {
     // Thêm dữ liệu mới
     currentReviews.forEach((review) => {
       const row = document.createElement("tr");
+      // Tag row with review ID for direct updates
+      row.setAttribute("data-review-id", review.id);
+
       // Cột khách hàng
       const customerCell = document.createElement("td");
       // Đảm bảo luôn lấy đúng tên khách hàng (fullname hoặc name)
@@ -816,11 +841,6 @@ async function loadReviews(forceNoCache = false) {
       contentCell.textContent = review.content;
       row.appendChild(contentCell);
 
-      // Cột thời gian
-      const timeCell = document.createElement("td");
-      timeCell.textContent = review.date;
-      row.appendChild(timeCell);
-
       // Cột trạng thái
       const statusCell = document.createElement("td");
       let statusText = review.status || "Không rõ";
@@ -840,11 +860,12 @@ async function loadReviews(forceNoCache = false) {
 
       // Cột thao tác
       const actionCell = document.createElement("td");
-      actionCell.innerHTML = `
-        <button class="btn-action" onclick="replyReview(${review.id})">
-          <span class="material-icons">reply</span>
-        </button>
-      `;
+      // Tạo nút reply và gán sự kiện click
+      const replyBtn = document.createElement("button");
+      replyBtn.className = "btn-action";
+      replyBtn.innerHTML = '<span class="material-icons">reply</span>';
+      replyBtn.addEventListener("click", () => replyReview(review.id));
+      actionCell.appendChild(replyBtn);
       row.appendChild(actionCell);
 
       tableBody.appendChild(row);
@@ -890,104 +911,6 @@ function updatePagination(totalReviews) {
   const nextBtn = document.getElementById("nextBtn");
   if (prevBtn) prevBtn.disabled = currentPage <= 1;
   if (nextBtn) nextBtn.disabled = currentPage >= totalPages || totalPages === 0;
-}
-
-//#endregion
-
-// ====================================
-//#region UPGRADED CUSTOMERS
-// ====================================
-
-// Tải dữ liệu khách hàng thăng hạng và hiển thị
-async function loadUpgradedCustomers() {
-  const tableBody = document.getElementById("upgradedCustomersTableBody");
-
-  // Hiển thị trạng thái đang tải
-  tableBody.innerHTML = `
-    <tr>
-      <td colspan="6" class="loading-row">
-        <div class="loading-indicator">
-          <span class="material-icons spin">refresh</span>
-          <span>Đang tải dữ liệu khách hàng...</span>
-        </div>
-      </td>
-    </tr>
-  `;
-
-  try {
-    // Lấy dữ liệu khách hàng thăng hạng từ API nếu chưa có
-    if (!upgradedCustomers || upgradedCustomers.length === 0) {
-      upgradedCustomers = await rankUpgradeAPI.getAll();
-    }
-
-    // Xóa trạng thái đang tải
-    tableBody.innerHTML = "";
-
-    // Nếu không có dữ liệu
-    if (upgradedCustomers.length === 0) {
-      tableBody.innerHTML = `
-        <tr>
-          <td colspan="6" class="empty-row">
-            <div class="empty-state">Không có khách hàng thăng hạng nào</div>
-          </td>
-        </tr>
-      `;
-      return;
-    }
-
-    // Hiển thị dữ liệu
-    upgradedCustomers.forEach((customer) => {
-      const row = document.createElement("tr"); // Cột tên khách hàng
-      const nameCell = document.createElement("td");
-      nameCell.innerHTML = `<span class="clickable-customer" data-customer-id="${customer.id}">${customer.name}</span>`;
-      nameCell.title = "Click để xem thông tin khách hàng";
-      nameCell.style.cursor = "pointer";
-      row.appendChild(nameCell);
-
-      // Cột số điện thoại
-      const phoneCell = document.createElement("td");
-      phoneCell.textContent = customer.phone;
-      row.appendChild(phoneCell);
-
-      // Cột hạng cũ
-      const oldRankCell = document.createElement("td");
-      oldRankCell.textContent = customer.oldRank;
-      row.appendChild(oldRankCell);
-
-      // Cột hạng mới
-      const newRankCell = document.createElement("td");
-      newRankCell.textContent = customer.newRank;
-      row.appendChild(newRankCell);
-
-      // Cột ngày thăng hạng
-      const dateCell = document.createElement("td");
-      dateCell.textContent = customer.upgradeDate;
-      row.appendChild(dateCell);
-
-      // Cột thao tác
-      const actionCell = document.createElement("td");
-      actionCell.innerHTML = `
-        <button class="btn-action" onclick="sendCongratulation(${customer.id})">
-          <span class="material-icons">celebration</span>
-        </button>
-      `;
-      row.appendChild(actionCell);
-
-      tableBody.appendChild(row);
-    });
-  } catch (error) {
-    console.error("Error loading upgraded customers:", error);
-    tableBody.innerHTML = `
-      <tr>
-        <td colspan="6" class="error-row">
-          <div class="error-message">
-            <span class="material-icons">error</span>
-            <span>Không thể tải dữ liệu khách hàng thăng hạng. Vui lòng thử lại sau.</span>
-          </div>
-        </td>
-      </tr>
-    `;
-  }
 }
 
 //#endregion
@@ -1057,6 +980,24 @@ async function searchCustomers(query) {
   suggestionBox.style.display = "block";
 }
 
+// Chọn khách hàng từ danh sách gợi ý
+function selectCustomer(customer) {
+  window.selectedCustomerId = customer.id || customer.customerId;
+
+  // Hiển thị thông tin khách hàng đã chọn
+  document.getElementById("selectedCustomer").style.display = "";
+  document.getElementById("selectedCustomerName").textContent =
+    customer.name || customer.fullname || "(Không tên)";
+  document.getElementById("selectedCustomerPhone").textContent =
+    customer.phone || "";
+  document.getElementById("selectedCustomerEmail").textContent =
+    customer.email || "";
+
+  // Ẩn danh sách gợi ý và xóa nội dung tìm kiếm
+  document.getElementById("customerSuggestions").style.display = "none";
+  document.getElementById("customerSearch").value = "";
+}
+
 // Xóa khách hàng đã chọn
 function clearSelectedCustomer() {
   window.selectedCustomerId = null;
@@ -1091,25 +1032,30 @@ function loadMessageTemplate(type) {
   } else if (type === "survey") {
     template.content = "Bạn vui lòng đánh giá dịch vụ của Long Châu tại đây.";
     template.hint = "Gửi khảo sát đánh giá dịch vụ.";
+  } else if (type === "promotion") {
+    template.content =
+      "Xin chào {Tên khách hàng},\nChúng tôi đang có chương trình khuyến mãi đặc biệt dành cho bạn. Vui lòng kiểm tra chi tiết tại Long Châu ngay hôm nay!";
+    template.hint = "Nội dung thông báo khuyến mãi cho khách hàng.";
   }
 
   document.getElementById("messageContent").value = template.content;
   document.getElementById("templateHint").innerText = template.hint;
 
   // Nếu đã chọn khách hàng cụ thể và là tin nhắc thuốc, tự động cập nhật theo take note
-  if (window.selectedCustomerId && type === "reminder") {
-    const customer = customerAPI.getById(window.selectedCustomerId);
-    if (customer) {
-      customerAPI
-        .getLatestInvoice(window.selectedCustomerId)
-        .then((invoice) => {
-          if (invoice && invoice.takeNote) {
-            document.getElementById(
-              "messageContent"
-            ).value = `Xin chào ${customer.name}! Đây là lời nhắc nhở uống thuốc từ Long Châu cho đơn hàng gần nhất của bạn.\n\nHướng dẫn sử dụng thuốc: ${invoice.takeNote}\n\nVui lòng tuân thủ đúng hướng dẫn sử dụng và liên hệ với chúng tôi nếu có thắc mắc.\n\nChúc bạn mau khỏe!`;
-          }
-        });
-    }
+  if (type === "reminder" && window.selectedCustomerId) {
+    invoiceAPI
+      .getReminders(window.selectedCustomerId)
+      .then((data) => {
+        const invoice = Array.isArray(data) ? data[0] : data;
+        if (invoice && invoice.notes) {
+          const greeting = `Xin chào ${invoice.customerName || ""},`;
+          const noteText = invoice.notes;
+          document.getElementById(
+            "messageContent"
+          ).value = `${greeting}\n\nLời nhắc uống thuốc:\n${noteText}\n\nChúc bạn mau khỏe!`;
+        }
+      })
+      .catch((err) => console.error("Error fetching invoice note:", err));
   }
 }
 
@@ -1121,13 +1067,51 @@ async function sendMessage() {
     '.message-composer form select[onchange="toggleCustomerInput(this)"]'
   ).value;
 
-  // Lấy kênh gửi tin được chọn
-  const channels = [];
-  document
-    .querySelectorAll('input[name="sendChannel"]:checked')
-    .forEach((input) => {
-      channels.push(input.value);
-    });
+  // Determine selected channels
+  const channels = Array.from(document.querySelectorAll('input[name="sendChannel"]:checked')).map(
+    (cb) => cb.value
+  );
+
+  // If reminder type, send based on target: individual or all
+  if (messageType === "reminder") {
+    try {
+      // Fetch invoices: if individual, pass customerId, else get all
+      const invoices = await invoiceAPI.getReminders(
+        targetType === "individual" ? window.selectedCustomerId : null
+      );
+      let sentCount = 0;
+      let failedCount = 0;
+      for (const inv of invoices) {
+        const email = inv.customerEmail;
+        const name = inv.customerName;
+        const content = `Xin chào ${name},\n\nLời nhắc uống thuốc:\n${inv.notes}\n\nChúc bạn mau khỏe!`;
+        try {
+          await messageAPI.sendEmail({
+            to: email,
+            subject: "Nhắc nhở uống thuốc - Long Châu",
+            content,
+            customerId: inv.customerId,
+          });
+          sentCount++;
+        } catch (e) {
+          failedCount++;
+        }
+      }
+      alert(
+        `Đã gửi ${sentCount} trong tổng số ${invoices.length} nhắc nhở. Thất bại: ${failedCount}`
+      );
+    } catch (e) {
+      console.error("Error sending reminders:", e);
+      alert("Có lỗi xảy ra khi gửi nhắc nhở. Vui lòng thử lại.");
+    } finally {
+      // Restore send button state
+      sendButton.innerHTML = originalButtonText;
+      sendButton.disabled = false;
+    }
+    // Refresh message history and exit
+    loadMessageHistory();
+    return;
+  }
 
   if (!messageContent) {
     alert("Vui lòng nhập nội dung tin nhắn!");
@@ -1175,30 +1159,36 @@ async function sendMessage() {
       });
     } else {
       // Gửi thông qua API thông thường (SMS, app, v.v.)
-      await messageAPI.send(messageData);
+      if (messageType === "reminder" && targetType === "all") {
+        const result = await invoiceAPI.sendBulkReminders();
+        alert(`Đã gửi ${result.sentCount}/${result.total} nhắc nhở.`);
+      } else {
+        await messageAPI.send(messageData);
+      }
     }
 
     // Nếu đang trả lời đánh giá, cập nhật trạng thái đánh giá thành "Đã xử lý"
     if (window.currentReviewId) {
       await reviewAPI.updateStatus(window.currentReviewId, "APPROVED");
       console.log("Đánh giá đã được cập nhật thành công.");
-      // Cập nhật trực tiếp status trong reviewsData nếu có
+      // Update status in local data and directly update DOM row without full reload
       if (Array.isArray(reviewsData)) {
         const idx = reviewsData.findIndex(
           (r) => r.id === window.currentReviewId
         );
-        if (idx !== -1) {
-          reviewsData[idx].status = "APPROVED";
-        }
+        if (idx !== -1) reviewsData[idx].status = "APPROVED";
       }
+      updateReviewStatusInDOM(window.currentReviewId);
       window.currentReviewId = null;
-      filterReviews(); // Không cần forceNoCache
     }
 
     // Hiển thị thông báo thành công
     alert("Đã gửi tin nhắn thành công!");
     // Xóa nội dung tin nhắn sau khi gửi thành công
     document.getElementById("messageContent").value = "";
+
+    // Refresh message history to include the new message
+    loadMessageHistory();
   } catch (error) {
     console.error("Error sending message:", error);
     // Hiển thị lỗi nếu có
@@ -1287,39 +1277,35 @@ async function replyReview(reviewId) {
     .scrollIntoView({ behavior: "smooth" });
 }
 
-// Gửi lời chúc mừng thăng hạng
-function sendCongratulation(customerId) {
-  const customer = rankUpgradeAPI.getById(customerId);
-  if (!customer) return;
-  // Tự động điền thông tin
-  document.getElementById("messageType").value = "custom";
-  loadMessageTemplate("custom");
-  document.querySelector(
+// Manage visibility of bulk reminders button based on messageType and target
+function toggleBulkReminderButton() {
+  const sendAllBtn = document.getElementById("sendAllRemindersBtn");
+  const type = document.getElementById("messageType").value;
+  const targetSelect = document.querySelector(
     '.message-composer form select[onchange="toggleCustomerInput(this)"]'
-  ).value = "individual";
-  toggleCustomerInput(
-    document.querySelector(
-      '.message-composer form select[onchange="toggleCustomerInput(this)"]'
-    )
   );
-
-  // Hiển thị thông tin khách hàng đã chọn
-  document.getElementById("selectedCustomer").style.display = "";
-  document.getElementById("selectedCustomerName").textContent = customer.name;
-  document.getElementById("selectedCustomerPhone").textContent = customer.phone;
-
-  // Điền nội dung tin nhắn chúc mừng
-  document.getElementById(
-    "messageContent"
-  ).value = `Xin chúc mừng ${customer.name} đã thăng hạng từ ${customer.oldRank} lên ${customer.newRank}! Long Châu xin gửi đến bạn chương trình ưu đãi đặc biệt dành cho khách hàng hạng ${customer.newRank}. Chi tiết xem tại: [link ưu đãi]`;
-  // Lưu ID khách hàng để gửi tin nhắn
-  window.selectedCustomerId = customerId;
-
-  // Cuộn đến phần soạn tin nhắn
-  document
-    .querySelector(".message-composer")
-    .scrollIntoView({ behavior: "smooth" });
+  const target = targetSelect ? targetSelect.value : null;
+  if (type === "reminder" && (!target || target !== "individual")) {
+    sendAllBtn.style.display = "";
+  } else {
+    sendAllBtn.style.display = "none";
+  }
 }
+
+// Setup bulk reminder button toggle on relevant controls
+document.getElementById("messageType").addEventListener("change", () => {
+  loadMessageTemplate(document.getElementById("messageType").value);
+  toggleBulkReminderButton();
+});
+const targetSelectElem = document.querySelector(
+  '.message-composer form select[onchange="toggleCustomerInput(this)"]'
+);
+if (targetSelectElem) {
+  targetSelectElem.addEventListener("change", toggleBulkReminderButton);
+}
+
+// After DOM and event listeners setup, initialize button state
+toggleBulkReminderButton();
 
 //#endregion
 
@@ -1328,125 +1314,149 @@ function sendCongratulation(customerId) {
 // ====================================
 
 // Khởi tạo biểu đồ
-let satisfactionChart;
-async function initSatisfactionChart() {
+var satisfactionChart;
+async function initSatisfactionChart(days = 30) {
+  console.log("Initializing rating distribution chart for", days);
+  const periodSpan = document.getElementById("chartPeriodInfo");
+  periodSpan.textContent =
+    days === "all" ? "Từ trước đến nay" : `${days} ngày qua`;
+
   const chartContainer = document.getElementById("satisfactionChartContainer");
   const canvas = document.getElementById("satisfactionChart");
+  const ctx = canvas.getContext("2d");
 
-  // Hiển thị loading indicator
+  // Show loading
   const loadingIndicator = document.createElement("div");
   loadingIndicator.className = "chart-loading-indicator";
   loadingIndicator.innerHTML =
-    '<span class="material-icons spin">refresh</span> Đang tải dữ liệu biểu đồ...';
-  chartContainer.insertBefore(loadingIndicator, canvas);
+    '<span class="material-icons spin">refresh</span> Đang tải...';
+  chartContainer.prepend(loadingIndicator);
 
-  const ctx = canvas.getContext("2d");
+  // Fetch all reviews
+  const allReviews = await reviewAPI.getAll();
+
+  // Always use full rating distribution, ignore `days` filter
+  const counts = [0, 0, 0, 0, 0];
+  allReviews.forEach((r) => {
+    const rt = parseInt(r.rating);
+    if (rt >= 1 && rt <= 5) counts[rt - 1]++;
+  });
+
+  // Destroy old chart
+  if (satisfactionChart) satisfactionChart.destroy();
+
+  // Create pie chart showing rating counts
   satisfactionChart = new Chart(ctx, {
-    type: "line",
+    type: "pie",
     data: {
-      labels: [],
+      labels: ["1 sao", "2 sao", "3 sao", "4 sao", "5 sao"],
       datasets: [
         {
-          label: "Tỷ lệ hài lòng (%)",
-          data: [],
-          borderColor: "#4FD1C5",
-          backgroundColor: "rgba(79, 209, 197, 0.1)",
-          fill: true,
-          tension: 0.4,
+          data: counts,
+          backgroundColor: [
+            "#FF6384",
+            "#36A2EB",
+            "#FFCE56",
+            "#4BC0C0",
+            "#9966FF",
+          ],
         },
       ],
     },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: {
-          position: "top",
-        },
-        tooltip: {
-          callbacks: {
-            label: function (context) {
-              return `Tỷ lệ hài lòng: ${context.parsed.y}%`;
-            },
-          },
-        },
-      },
-      scales: {
-        y: {
-          min: 0,
-          max: 100,
-        },
-      },
-    },
+    options: { responsive: true, plugins: { legend: { position: "top" } } },
   });
 
-  // Mặc định hiển thị dữ liệu 30 ngày
-  await updateSatisfactionChart(30);
+  // Hide period options with no data
+  const filterSelect = document.getElementById("chartFilter");
+  // 7 days
+  const cutoff7 = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const has7 = allReviews.some((r) => new Date(r.date).getTime() >= cutoff7);
+  const opt7 = filterSelect.querySelector('option[value="7"]');
+  if (opt7) opt7.style.display = has7 ? "" : "none";
+  // 30 days
+  const cutoff30 = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  const has30 = allReviews.some((r) => new Date(r.date).getTime() >= cutoff30);
+  const opt30 = filterSelect.querySelector('option[value="30"]');
+  if (opt30) opt30.style.display = has30 ? "" : "none";
 
-  // Xóa loading indicator sau khi tải xong
-  if (loadingIndicator) {
-    loadingIndicator.remove();
+  // If current selected option hidden, reset to 'all'
+  if (filterSelect.value === "7" && !has7) filterSelect.value = "all";
+  if (filterSelect.value === "30" && !has30) filterSelect.value = "all";
+
+  loadingIndicator.remove();
+}
+
+// Update listener for filter select
+document
+  .getElementById("chartFilter")
+  .addEventListener("change", (e) => initSatisfactionChart(e.target.value));
+
+// On load
+document.addEventListener("DOMContentLoaded", () => initSatisfactionChart());
+
+//#endregion
+
+//#region autofill
+
+// Đóng modal thông tin khách hàng
+export function closeCustomerInfoModal() {
+  const modal = document.getElementById("customerInfoModal");
+  if (!modal) {
+    console.error("Không tìm thấy element với ID 'customerInfoModal'");
+    return;
+  }
+  modal.style.display = "none";
+}
+
+// Gửi tin nhắn cho khách hàng đã chọn trong modal
+export function sendMessageToCustomer() {
+  // Lấy thông tin khách hàng từ modal
+  const customerName = document.getElementById("modalCustomerName").textContent;
+  const customerPhone =
+    document.getElementById("modalCustomerPhone").textContent;
+  const customerEmail =
+    document.getElementById("modalCustomerEmail").textContent;
+
+  if (!customerName || customerName === "---") {
+    alert("Không có thông tin khách hàng để gửi tin nhắn");
+    return;
+  }
+
+  // Đóng modal khách hàng
+  closeCustomerInfoModal();
+
+  const targetSelect = document.querySelector(
+    '.message-composer form select[onchange="toggleCustomerInput(this)"]'
+  );
+  targetSelect.value = "individual";
+  toggleCustomerInput(targetSelect);
+
+  // Hiển thị thông tin khách hàng đã chọn
+  document.getElementById("selectedCustomer").style.display = "";
+  document.getElementById("selectedCustomerName").textContent = customerName;
+  document.getElementById("selectedCustomerPhone").textContent = customerPhone;
+  document.getElementById("selectedCustomerEmail").textContent = customerEmail;
+
+  // Cuộn đến phần soạn tin nhắn
+  document
+    .querySelector(".message-composer")
+    .scrollIntoView({ behavior: "smooth" });
+}
+//#endregion
+
+// Update a review's status in the table DOM
+function updateReviewStatusInDOM(reviewId) {
+  const row = document.querySelector(`tr[data-review-id="${reviewId}"]`);
+  if (row) {
+    const badge = row.querySelector(".status-badge");
+    if (badge) {
+      badge.className = "status-badge status-success";
+      badge.textContent = "Đã xử lý";
+    }
   }
 }
 
-// Cập nhật dữ liệu biểu đồ
-async function updateSatisfactionChart(days) {
-  try {
-    // Hiển thị chart loading state
-    const chartDiv = document.querySelector(".chart-wrapper");
-    chartDiv.classList.add("loading");
-
-    // Lấy dữ liệu từ API
-    const data = await chartAPI.getSatisfactionData(days);
-    if (!data) {
-      console.error("No chart data available for", days, "days");
-      return;
-    } // Cập nhật biểu đồ với dữ liệu mới
-    satisfactionChart.data.labels = data.labels;
-    satisfactionChart.data.datasets[0].data = data.values;
-    satisfactionChart.update();
-  } catch (error) {
-    console.error("Error updating satisfaction chart:", error);
-    // Hiển thị thông báo lỗi trên biểu đồ nếu cần
-  } finally {
-    // Xóa trạng thái đang tải
-    const chartDiv = document.querySelector(".chart-wrapper");
-    chartDiv.classList.remove("loading");
-  }
-}
-
-// Cập nhật thống kê dashboard với dữ liệu thực tế
-async function updateDashboardStats() {
-  try {
-    // Hiển thị loading state trên các card stats
-    const statCards = document.querySelectorAll(".stat-card .stat-value");
-    statCards.forEach((card) => {
-      card.innerHTML =
-        '<span class="loading-indicator"><i class="material-icons spin">refresh</i></span>';
-    });
-
-    // Lấy dữ liệu thực từ API - sử dụng Promise.all để tải song song
-    const [messagesSent, reviewsPending, customersServed, satisfactionRate] =
-      await Promise.all([
-        statsAPI.getMessagesSent(),
-        statsAPI.getReviewsPending(),
-        statsAPI.getCustomersServed(),
-        statsAPI.getSatisfactionRate(),
-      ]);
-
-    // Cập nhật giao diện
-    document.querySelector(".stat-card:nth-child(1) .stat-value").textContent =
-      messagesSent;
-    document.querySelector(".stat-card:nth-child(2) .stat-value").textContent =
-      reviewsPending;
-    document.querySelector(".stat-card:nth-child(3) .stat-value").textContent =
-      customersServed ? customersServed.toLocaleString("vi-VN") : "0"; // Format với dấu phân cách hàng nghìn    document.querySelector(".stat-card:nth-child(4) .stat-value").textContent =
-    satisfactionRate + "%";
-  } catch (error) {
-    console.error("Lỗi khi cập nhật thống kê:", error);
-
-    // Hiển thị thông báo lỗi trên các card
-    document.querySelectorAll(".stat-card .stat-value").forEach((card) => {
-      card.innerHTML = '<span class="error-text">--</span>';
-    });
-  }
+// Alias for chart filter to call init
+function updateSatisfactionChart(days) {
+  initSatisfactionChart(days);
 }

@@ -8,12 +8,12 @@ import {
   pharmacyAPI,
   reviewAPI,
   customerAPI,
-  rankUpgradeAPI,
   chartAPI,
   statsAPI,
   messageAPI,
   invoiceAPI,
-} from "../customer-service-api.js";
+  userAPI,
+} from "./customer-service-api.js";
 
 // Global variable for selected customer ID - accessible to both modules
 window.selectedCustomerId = null;
@@ -78,8 +78,8 @@ function monitorPharmacyDropdown() {
 // Biến để lưu trữ dữ liệu từ API
 let pharmacies = [];
 let reviewsData = [];
-let upgradedCustomers = [];
 let customers = [];
+// NOTE: upgradedCustomers removed - rank upgrade functionality not available to customer service
 
 // Tải dữ liệu khi khởi động
 (async function loadInitialData() {
@@ -107,14 +107,8 @@ let customers = [];
     reviewsData = [];
   }
 
-  // Tải dữ liệu khách hàng thăng hạng
-  try {
-    upgradedCustomers = await rankUpgradeAPI.getAll();
-    console.log("Upgraded customers data loaded:", upgradedCustomers);
-  } catch (error) {
-    console.error("Failed to load upgraded customers data:", error);
-    upgradedCustomers = [];
-  }
+  // NOTE: Upgraded customers data loading removed
+  // Customer service staff cannot access rank upgrade information
 
   // Tải dữ liệu khách hàng
   try {
@@ -136,10 +130,7 @@ function updateUI() {
     loadReviews();
   }
 
-  // Hiển thị danh sách khách hàng thăng hạng
-  if (document.getElementById("upgradedCustomersTable")) {
-    loadUpgradedCustomers();
-  }
+  // NOTE: Upgraded customers functionality removed - not available to customer service staff
 
   // Cập nhật số liệu thống kê trên dashboard
   // Nếu không có hàm updateDashboardStats, bỏ qua lỗi này
@@ -556,10 +547,12 @@ showCustomerInfo = function (customerId) {
   `;
 
   document.body.appendChild(apiStatusElement);
-
   // Ẩn thông báo sau 5 giây
   setTimeout(() => {
     apiStatusElement.classList.add("fade-out");
     setTimeout(() => apiStatusElement.remove(), 500);
   }, 5000);
 })();
+
+// Export các hàm cần thiết
+export { showCustomerInfo };
