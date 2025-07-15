@@ -1,6 +1,6 @@
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
-
+  
   const username = document.getElementById("username").value.trim();
   const password = document.getElementById("password").value.trim();
   const messageDiv = document.getElementById("message");
@@ -34,16 +34,27 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
 
     // Parse JSON response
     const data = await response.json();
+    
+    // Log toàn bộ response để debug
+    console.log("Login response data:", data);
 
     if (response.ok && data.success) {
       messageDiv.innerHTML = '<div class="success">' + data.message + "</div>";
 
+      // Hiển thị userId trên console
+      if (data.userId) {
+        console.log("User ID từ backend:", data.userId);
+        localStorage.setItem("currentUserId", data.userId);
+      }
+
       // Store session info in localStorage (optional, for debugging)
       if (data.sessionId) {
         localStorage.setItem("sessionId", data.sessionId);
+        console.log("Session ID:", data.sessionId);
       }
       if (data.role) {
         localStorage.setItem("userRole", data.role);
+        console.log("User Role:", data.role);
       }
 
       // Chuyển hướng sau 1 giây
