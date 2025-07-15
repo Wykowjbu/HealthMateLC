@@ -12,21 +12,25 @@ let totalPages = 0;
 let isSearching = false;
 let currentSearchParams = {};
 
-// ========== STORES MANAGEMENT (SERVER-SIDE PAGINATION) =============
-// (Đã khai báo biến toàn cục ở đầu file, không khai báo lại ở đây)
-
-// ============================================================================
-// INITIALIZATION & EVENT LISTENERS
-// ============================================================================
-
 // Initialize the admin dashboard
+// Add session check on dashboard load
+async function checkSessionOnLoad() {
+  const ok = await checkSessionOrRedirect();
+  if (!ok) return;
+}
+
 document.addEventListener("DOMContentLoaded", function () {
+  checkSessionOnLoad(); // <--- Add this line
   initializeNavigation();
   initializeUserDropdown();
   initializeProductSearch();
   initializeStoreSearch();
   loadInitialData();
   attachAddStoreButtonEvent();
+});
+
+window.addEventListener("pageshow", function(event) {
+  checkSessionOnLoad();
 });
 
 // Form submission handlers
@@ -62,14 +66,12 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 });
 
-// ============================================================================
 // NAVIGATION & UI COMPONENTS
-// ============================================================================
 
 // Navigation handling
 function initializeNavigation() {
   navItems.forEach((item) => {
-    item.addEventListener("click", () => {
+    item.addEventListener("click", async () => {
       // Remove active class from all nav items and panels
       navItems.forEach((el) => el.classList.remove("active"));
       panelItems.forEach((el) => el.classList.remove("active"));
@@ -1457,18 +1459,63 @@ function loadRevenueData() {
   // Placeholder: Implement fetching revenue data if needed
 }
 
-function showUserInfo() {
-  console.log("Show user info");
+
+async function logout() {
+    showToast('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+    const response = await fetch('http://localhost:8080/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+    });
+
+    const data = await response.json();
+    console.log('Logout response:', data);
+
+    // Controller trả về JSON, JS phải tự redirect
+    if (data.success) {
+        window.location.href = data.redirectUrl || '/HealthMateLC/index.html';
+    }
 }
 
-function logout() {
-  try {
-    localStorage.clear();
-    sessionStorage.clear();
-  } catch (e) {
-    console.error("Error clearing storage:", e);
-  }
-  window.location.href = "index.html";
+async function checkSessionOrRedirect() {
+    try {
+        const response = await fetch('http://localhost:8080/admin/profile', {
+            method: 'GET',
+            credentials: 'include'
+        });
+
+        // Nếu server trả về 401
+        if (response.status === 401) {
+            showToast('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+            console.log('Redirecting to login (401)...');
+            setTimeout(() => {
+                window.location.replace('/HealthMateLC/index.html');
+            }, 1000);
+            return false;
+        }
+
+        // Nếu server trả về 200 nhưng nội dung báo lỗi
+        if (response.ok) {
+            const data = await response.json();
+            if (data && (data.error === 'Unauthorized access' || (data.message && data.message.includes('hết hạn')))) {
+                showToast('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+                console.log('Redirecting to login (expired session in JSON)...');
+                setTimeout(() => {
+                    window.location.replace('/HealthMateLC/index.html');
+                }, 1000);
+                return false;
+            }
+        }
+
+        return true;
+    } catch (e) {
+        // Lỗi mạng hoặc fetch lỗi
+        showToast('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+        console.log('Redirecting to login (network error)...');
+        setTimeout(() => {
+            window.location.replace('/HealthMateLC/index.html');
+        }, 1000);
+        return false;
+    }
 }
 
 function loadRoles() {
@@ -1729,4 +1776,107 @@ function updateProductQuantity(productId, quantity, operation, inputEl) {
       showToast("Có lỗi xảy ra khi cập nhật số lượng!");
       if (inputEl) inputEl.value = inputEl.defaultValue;
     });
+}
+
+async function handleUserProfile() {
+    console.log('Đang hiển thị thông tin user...');
+    try {
+        const response = await fetch('http://localhost:8080/admin/profile?detail=true', {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json',
+            }
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                showToast('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+                window.location.href = '/HealthMateLC/index.html';
+                return;
+            }
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('Dữ liệu user profile:', data);
+
+        const userFullNameElement = document.getElementById('userFullName');
+        if (userFullNameElement && data.fullName) {
+            userFullNameElement.textContent = data.fullName;
+        }
+
+        console.log('Thông tin người dùng đã được tải và hiển thị.');
+
+    } catch (error) {
+        console.error('Lỗi khi lấy thông tin user profile:', error);
+        alert('Không thể tải thông tin người dùng. Vui lòng thử lại. Lỗi: ' + error.message);
+        window.location.href = '/HealthMateLC/index.html';
+    }
+}
+
+async function showUserInfo() {
+    try {
+        const response = await fetch('http://localhost:8080/admin/showprofile', {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json',
+            }
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                showToast('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+                window.location.href = '/HealthMateLC/index.html';
+                return;
+            }
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('Dữ liệu hồ sơ đầy đủ:', data);
+
+        let modal = document.getElementById('userInfoModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'userInfoModal';
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <span class="close">×</span>
+                    <h2>Thông tin cá nhân</h2>
+                    <div id="userInfoContent"></div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        const userInfoContent = document.getElementById('userInfoContent');
+        userInfoContent.innerHTML = `
+                <p><strong>Họ và tên:</strong> ${data.fullName || 'Chưa cập nhật'}</p>
+            <p><strong>Số điện thoại:</strong> ${data.phone || 'Chưa cập nhật'}</p>
+            <p><strong>Email:</strong> ${data.email || 'Chưa cập nhật'}</p>
+        `;
+
+        modal.style.display = 'block';
+
+        const closeBtn = modal.querySelector('.close');
+        closeBtn.onclick = () => {
+            modal.style.display = 'none';
+        };
+
+        window.onclick = (event) => {
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        };
+
+        console.log('Thông tin cá nhân đã được hiển thị.');
+
+    } catch (error) {
+        console.error('Lỗi khi lấy thông tin cá nhân:', error);
+        showToast('Không thể tải thông tin cá nhân. Vui lòng thử lại. Lỗi: ' + error.message);
+        window.location.href = '/HealthMateLC/index.html';
+    }
 }
