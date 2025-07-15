@@ -7,12 +7,10 @@ let listPharmacy = [];
 let allProducts = [];
 let allStores = [];
 let currentPage = 0; // dùng cho nhà thuốc
-const pageSize = 6; // dùng cho nhà thuốc, mỗi trang 7 nhà thuốc
+const pageSize = 6; // dùng cho nhà thuốc, mỗi trang 6 nhà thuốc
 let totalPages = 0;
 let isSearching = false;
 let currentSearchParams = {};
-// Nếu muốn phân trang sản phẩm riêng, hãy dùng biến khác như currentProductPage, productPageSize...
-// ... giữ nguyên các phần code còn lại ...
 
 // ========== STORES MANAGEMENT (SERVER-SIDE PAGINATION) =============
 // (Đã khai báo biến toàn cục ở đầu file, không khai báo lại ở đây)
@@ -479,9 +477,9 @@ function renderProductTable() {
     html += `
       <tr>
         <td>${start + idx + 1}</td>
-        <td>${p.productName}</td>
-        <td>${p.productType}</td>
-        <td>${p.unit}</td>
+        <td title="${p.productName}">${p.productName}</td>
+        <td title="${p.productType}">${p.productType}</td>
+        <td title="${p.unit}">${p.unit}</td>
         <td>
           <div class="quantity-control" data-product-id="${p.productId}">
             <button class="btn-qty btn-qty-minus" data-action="subtract">-</button>
@@ -490,7 +488,7 @@ function renderProductTable() {
           </div>
         </td>
         <td>${Number(p.price).toLocaleString("vi-VN")}</td>
-        <td>${p.description || ""}</td>
+        <td title="${p.description || ''}">${p.description || ""}</td>
         <td>
           <div class="action-buttons">
             <button class="btn-edit" onclick="editProduct(${p.productId})">Sửa</button>
@@ -901,13 +899,13 @@ function renderStoreTable() {
     html += `
       <tr>
         <td>${globalIndex}</td>
-        <td>${store.pharmacyName}</td>
-        <td>${store.address || ""}</td>
-        <td>${store.phone || ""}</td>
-        <td>${store.email || ""}</td>
-        <td>${store.manager || "Chưa gán"}</td>
+        <td title="${store.pharmacyName}"><span title="${store.pharmacyName}">${store.pharmacyName}</span></td>
+        <td title="${store.address || ''}"><span title="${store.address || ''}">${store.address || ""}</span></td>
+        <td title="${store.phone || ''}"><span title="${store.phone || ''}">${store.phone || ""}</span></td>
+        <td title="${store.email || ''}"><span title="${store.email || ''}">${store.email || ""}</span></td>
+        <td title="${store.manager || 'Chưa gán'}"><span title="${store.manager || 'Chưa gán'}">${store.manager || "Chưa gán"}</span></td>
         <td>
-          <span class="status ${store.isActive ? 'active' : 'inactive'}">
+          <span class="status ${store.isActive ? 'active' : 'inactive'}" title="${store.isActive ? 'Hoạt động' : 'Ngừng hoạt động'}">
             ${store.isActive ? 'Hoạt động' : 'Ngừng hoạt động'}
           </span>
         </td>
