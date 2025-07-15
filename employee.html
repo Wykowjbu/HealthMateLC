@@ -63,13 +63,34 @@
                     <span class="material-icons">access_time</span>
                     Check-in
                 </button>
-                <div class="user-profile">
-                    <div class="avatar">NV</div>
+                <div class="user-profile" id="userProfileDropdown">
+                    <div class="avatar" id="employeeAvatar">NV</div>
                     <div>
-                        <div style="font-weight: 500;">Nguyễn Văn An</div>
-                        <div style="font-size: 12px; color: #718096;">Nhân viên bán hàng</div>
+                        <div style="font-weight: 500;" id="employeeName">Đang tải...</div>
+                        <div style="font-size: 12px; color: #718096;" id="employeeRole">Long Châu</div>
                     </div>
-                    <span class="material-icons">expand_more</span>
+                    <span class="material-icons" id="dropdownIcon">expand_more</span>
+                    
+                    <!-- Dropdown Menu -->
+                    <div class="dropdown-menu" id="userDropdownMenu">
+                        <div class="dropdown-item" onclick="showEmployeeDetails()">
+                            <span class="material-icons">person</span>
+                            <span>Thông tin cá nhân</span>
+                        </div>
+                        <div class="dropdown-item" onclick="showEmployeeSchedule()">
+                            <span class="material-icons">schedule</span>
+                            <span>Lịch làm việc</span>
+                        </div>
+                        <div class="dropdown-item" onclick="changePassword()">
+                            <span class="material-icons">lock</span>
+                            <span>Đổi mật khẩu</span>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <div class="dropdown-item logout" onclick="logout()">
+                            <span class="material-icons">logout</span>
+                            <span>Đăng xuất</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </header>
@@ -524,14 +545,7 @@
                                 <!-- Results will be populated by JavaScript -->
                             </div>
 
-                            <!-- No Customer Option -->
-                            <div class="no-customer-option">
-                                <label class="checkbox-container">
-                                    <input type="checkbox" id="noCustomerCheckbox">
-                                    <span class="checkmark"></span>
-                                    Khách hàng không có tài khoản
-                                </label>
-                            </div>
+                            
                         </div>
 
                         <!-- Medicine Selection Section -->
@@ -547,6 +561,13 @@
                                     <span class="material-icons search-icon">search</span>
                                     <input type="text" id="medicineSearch" placeholder="Tìm kiếm thuốc..." class="search-input">
                                 </div>
+                                <select id="productTypeFilter" class="filter-select">
+                                    <option value="all">Tất cả loại</option>
+                                    <option value="thuốc">Thuốc</option>
+                                    <option value="thực phẩm chức năng">Thực phẩm chức năng</option>
+                                    <option value="dụng cụ y tế">Dụng cụ y tế</option>
+                                    <option value="chăm sóc cá nhân">Chăm sóc cá nhân</option>
+                                </select>
                             </div>
 
                             <!-- Medicine Search Results -->
