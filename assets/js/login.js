@@ -1,6 +1,6 @@
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
-
+  
   const username = document.getElementById("username").value.trim();
   const password = document.getElementById("password").value.trim();
   const messageDiv = document.getElementById("message");
@@ -34,6 +34,9 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
 
     // Parse JSON response
     const data = await response.json();
+    
+    // Log toàn bộ response để debug
+    console.log("Login response data:", data);
 
     // Log toàn bộ response để debug
     console.log("Login response data:", data);
