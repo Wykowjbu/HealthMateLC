@@ -3,17 +3,267 @@ let customers = []
 let currentCustomer = null
 let currentSection = "customers" // Track current active section
 
-// Initialize the application
-document.addEventListener("DOMContentLoaded", () => {
-    initializeApp()
-})
+// Thêm vào đầu file, sau phần khai báo biến
+// Hàm định dạng thời gian
+function formatTime(time) {
+  try {
+    const [hours, minutes] = time.split(':');
+    const date = new Date();
+    date.setHours(parseInt(hours), parseInt(minutes));
+    return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+  } catch (error) {
+    console.error('Lỗi khi định dạng thời gian:', time, error);
+    return time;
+  }
+}
 
-function initializeApp() {
-    fetchCustomers()
-    setupEventListeners()
-    setupNavigation()
-    setupMainEditForm() // Thêm dòng này
-    showCustomerSection() // Show customer section by default
+// Hàm định dạng ngày
+function formatDateLocal(date) {
+  try {
+    return date.toISOString().split('T')[0];
+  } catch (error) {
+    console.error('Lỗi khi định dạng ngày:', date, error);
+    return '';
+  }
+}
+
+// Initialize the application
+document.addEventListener('DOMContentLoaded', () => {
+    handleUserProfile();
+    initializeUserDropdown();
+    initializeApp();
+});
+
+async function handleUserProfile() {
+    console.log('Đang hiển thị thông tin user...');
+    try {
+        const response = await fetch('http://localhost:8080/employee/profile?detail=true', {
+            method: 'GET',
+            credentials: 'include',
+            headers: { 'Accept': 'application/json' }
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                alert('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+                window.location.href = '/HealthMateLC/index.html';
+                return null;
+            }
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('Dữ liệu user profile:', data);
+
+        const userFullNameElement = document.getElementById('userFullName');
+        const userPharmacyNameElement = document.getElementById('userPharmacyName');
+        const branchElement = document.getElementById('branch');
+
+        if (userFullNameElement) userFullNameElement.textContent = data.fullName || 'Chưa cập nhật';
+        if (userPharmacyNameElement) userPharmacyNameElement.textContent = data.pharmacyName || data.branch || 'Chưa gán chi nhánh';
+        if (branchElement) branchElement.textContent = data.branch || 'Chưa gán chi nhánh';
+
+        console.log('Thông tin người dùng đã được tải và hiển thị.');
+        return data.userId; // Trả về userId để sử dụng trong loadSchedules
+    } catch (error) {
+        console.error('Lỗi khi lấy thông tin user profile:', error);
+        showNotification('Không thể tải thông tin người dùng. Vui lòng thử lại. Lỗi: ' + error.message, 'error');
+        window.location.href = '/HealthMateLC/index.html';
+        return null;
+    }
+}
+
+async function loadSchedules() {
+    try {
+        console.log('Fetching schedules from /employee/schedules...');
+        const response = await fetch('http://localhost:8080/employee/schedules', {
+            method: 'GET',
+            credentials: 'include',
+            headers: { 'Accept': 'application/json' }
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`HTTP error! status: ${response.status}, Details: ${errorText}`);
+        }
+
+        const schedules = await response.json();
+        console.log('Schedules data:', schedules);
+
+        const today = new Date();
+        const dayOfWeek = today.getDay();
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+        const weekSchedules = schedules.filter(s => {
+            const d = new Date(s.date);
+            return d >= startOfWeek && d <= endOfWeek;
+        });
+
+        console.log('Week schedules:', weekSchedules);
+
+        const dayNames = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
+        let gridHtml = '';
+        for (let i = 0; i < 7; i++) {
+            const currentDay = new Date(startOfWeek);
+            currentDay.setDate(startOfWeek.getDate() + i);
+
+            const dayStr = dayNames[i];
+            const dateStr = `${currentDay.getDate().toString().padStart(2, '0')}/${(currentDay.getMonth() + 1).toString().padStart(2, '0')}/${currentDay.getFullYear()}`;
+            const dayDateStr = formatDateLocal(currentDay);
+
+            const daySchedules = weekSchedules.filter(s => s.date === dayDateStr);
+            const shiftsHtml = daySchedules.length > 0 ? daySchedules.sort((a, b) => a.startTime.localeCompare(b.startTime)).map(schedule => `
+                <div class="employee-shift">${schedule.fullName} (${formatTime(schedule.startTime)} - ${formatTime(schedule.endTime)})</div>
+            `).join('') : '';
+
+            gridHtml += `
+                <div class="schedule-day">
+                    <div class="day-name">${dayStr}</div>
+                    <div class="day-date">${dateStr}</div>
+                    ${shiftsHtml}
+                </div>
+            `;
+        }
+
+        const scheduleSection = document.getElementById('scheduleContainer');
+        if (scheduleSection) {
+            console.log('Updating scheduleContainer with HTML:', gridHtml);
+            scheduleSection.querySelector('.schedule-grid').innerHTML = gridHtml || '<p>Không có lịch làm việc.</p>';
+        } else {
+            console.error('Element scheduleContainer not found');
+        }
+    } catch (error) {
+        console.error('Lỗi khi lấy lịch làm việc:', error);
+        showNotification('Không thể tải lịch làm việc. Vui lòng thử lại. Lỗi: ' + error.message, 'error');
+    }
+}
+
+function initializeUserDropdown() {
+    const userProfile = document.querySelector(".user-profile");
+    const userDropdown = document.getElementById("userDropdown");
+
+    if (userProfile && userDropdown) {
+        userProfile.addEventListener("click", (e) => {
+            e.stopPropagation();
+            userDropdown.classList.toggle("show");
+        });
+
+        document.addEventListener("click", (e) => {
+            if (!userProfile.contains(e.target)) {
+                userDropdown.classList.remove("show");
+            }
+        });
+
+        userDropdown.addEventListener("click", (e) => e.stopPropagation());
+
+        // Bind click handlers for dropdown items
+        const profileItem = userDropdown.querySelector("li:nth-child(1)"); // Thông tin cá nhân
+        const logoutItem = userDropdown.querySelector("li:nth-child(2)"); // Đăng xuất
+
+        if (profileItem) {
+            profileItem.addEventListener("click", () => {
+                showUserInfo();
+                userDropdown.classList.remove("show");
+            });
+        }
+
+        if (logoutItem) {
+            logoutItem.addEventListener("click", () => {
+                logout();
+                userDropdown.classList.remove("show");
+            });
+        }
+    } else {
+        console.error("userProfile or userDropdown not found");
+    }
+}
+
+async function showUserInfo() {
+    console.log('Hiển thị thông tin cá nhân...');
+    try {
+        const response = await fetch('http://localhost:8080/employee/showprofile', {
+            method: 'GET',
+            credentials: 'include',
+            headers: { 'Accept': 'application/json' }
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                alert('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+                window.location.href = '/HealthMateLC/index.html';
+                return;
+            }
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('Dữ liệu hồ sơ đầy đủ:', data);
+
+        let modal = document.getElementById('userInfoModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'userInfoModal';
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <span class="close">×</span>
+                    <h2>Thông tin cá nhân</h2>
+                    <div id="userInfoContent"></div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        const userInfoContent = document.getElementById('userInfoContent');
+        userInfoContent.innerHTML = `
+            <p><strong>Họ và tên:</strong> ${data.fullName || 'Chưa cập nhật'}</p>
+            <p><strong>Số điện thoại:</strong> ${data.phone || 'Chưa cập nhật'}</p>
+            <p><strong>Email:</strong> ${data.email || 'Chưa cập nhật'}</p>
+            <p><strong>ID Chi nhánh:</strong> ${data.pharmacyId || 'Chưa gán'}</p>
+            <p><strong>Tên chi nhánh:</strong> ${data.pharmacyName || 'Chưa gán'}</p>
+            <p><strong>Địa chỉ chi nhánh:</strong> ${data.pharmacyAddress || 'Chưa gán'}</p>
+            <p><strong>Số điện thoại chi nhánh:</strong> ${data.pharmacyPhone || 'Chưa gán'}</p>
+        `;
+
+        modal.style.display = 'block';
+        modal.querySelector('.close').onclick = () => modal.style.display = 'none';
+        window.onclick = (event) => event.target === modal && (modal.style.display = 'none');
+
+        console.log('Thông tin cá nhân đã được hiển thị.');
+    } catch (error) {
+        console.error('Lỗi khi lấy thông tin cá nhân:', error);
+        alert('Không thể tải thông tin cá nhân. Vui lòng thử lại. Lỗi: ' + error.message);
+        window.location.href = '/HealthMateLC/index.html';
+    }
+}
+
+async function logout() {
+    console.log('Đang đăng xuất...');
+    const response = await fetch('http://localhost:8080/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+    });
+
+    const data = await response.json();
+    console.log('Logout response:', data);
+    if (data.success) window.location.href = data.redirectUrl || '/HealthMateLC/index.html';
+}
+
+
+// Sửa hàm initializeApp để tải lịch khi khởi tạo
+async function initializeApp() {
+    const userId = await handleUserProfile();
+    if (userId) {
+        await loadSchedules(); // Tải lịch làm việc khi khởi tạo
+    }
+    fetchCustomers();
+    setupEventListeners();
+    setupNavigation();
+    setupMainEditForm();
+    showCustomerSection();
 }
 
 function setupEventListeners() {
@@ -118,7 +368,7 @@ function hideAllSections() {
     if (scheduleContainer) scheduleContainer.style.display = "none"
     if (mainEditCustomerSection) mainEditCustomerSection.style.display = "none"
 }
-// 
+//
 function showCustomerSection() {
     hideAllSections()
     currentSection = "customers"
@@ -142,13 +392,14 @@ function showCreateOrderForm() {
     }
 }
 
-function showSchedule() {
-    hideAllSections()
-    currentSection = "schedule"
+async function showSchedule() {
+    hideAllSections();
+    currentSection = "schedule";
 
-    const scheduleContainer = document.getElementById("scheduleContainer")
+    const scheduleContainer = document.getElementById("scheduleContainer");
     if (scheduleContainer) {
-        scheduleContainer.style.display = "block"
+        scheduleContainer.style.display = "block";
+        await loadSchedules(); // Tải lịch làm việc
     }
 }
 
@@ -382,7 +633,7 @@ async function handleAddCustomer(event) {
             totalPoints: 0,
             createdDate: new Date().toISOString().split("T")[0],
         }
-        
+
     }
 }
 
@@ -755,8 +1006,6 @@ function historyOrderByCustomer() {
     // Implement order history functionality here
 }
 
-// Thêm vào cuối file, sau function historyOrderByCustomer()
-
 // Setup event listeners for main edit form
 function setupMainEditForm() {
     const mainEditForm = document.getElementById("mainEditCustomerForm")
@@ -775,7 +1024,7 @@ function setupMainEditForm() {
     }
 }
 
-// Thêm function debug này vào cuối file
+// Test function debug này vào cuối file
 function testMainEdit() {
     console.log("Test main edit clicked")
     console.log("Current customer:", currentCustomer)
@@ -793,3 +1042,4 @@ function testMainEdit() {
 
     openMainEditCustomer()
 }
+
