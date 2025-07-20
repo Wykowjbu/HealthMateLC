@@ -15,7 +15,7 @@ async function handleUserProfile() {
     if (!response.ok) {
       if (response.status === 401) {
         alert("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
-        window.location.href = "/index.html";
+        window.location.href = "/HealthMateLC/index.html";
         return;
       }
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -26,6 +26,7 @@ async function handleUserProfile() {
 
     const userFullNameElement = document.getElementById("userFullName");
     const userPharmacyNameElement = document.getElementById("userPharmacyName");
+    const branchElement = document.getElementById("branch");
 
     if (userFullNameElement && data.fullName) {
       userFullNameElement.textContent = data.fullName;
@@ -35,6 +36,11 @@ async function handleUserProfile() {
     } else if (userPharmacyNameElement && data.pharmacyAddress) {
       userPharmacyNameElement.textContent = data.pharmacyAddress;
     }
+    if (branchElement && data.branch) {
+      branchElement.textContent = data.branch;
+    } else if (branchElement) {
+      branchElement.textContent = "Chưa gán chi nhánh";
+    }
 
     console.log("Thông tin người dùng đã được tải và hiển thị.");
   } catch (error) {
@@ -43,6 +49,7 @@ async function handleUserProfile() {
       "Không thể tải thông tin người dùng. Vui lòng thử lại. Lỗi: " +
         error.message
     );
+    window.location.href = "/HealthMateLC/index.html";
   }
 }
 
@@ -68,29 +75,105 @@ function initializeUserDropdown() {
   }
 }
 
-function showUserInfo() {
+async function showUserInfo() {
   console.log("Hiển thị thông tin cá nhân...");
-  // Chuyển hướng hoặc hiển thị modal thông tin cá nhân
-  // Ví dụ: window.location.href = '/profile.html';
+  try {
+    const response = await fetch("http://localhost:8080/manager/showprofile", {
+      method: "GET",
+      credentials: "include",
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        alert("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+        window.location.href = "/HealthMateLC/index.html";
+        return;
+      }
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log("Dữ liệu hồ sơ đầy đủ:", data);
+
+    let modal = document.getElementById("userInfoModal");
+    if (!modal) {
+      modal = document.createElement("div");
+      modal.id = "userInfoModal";
+      modal.className = "modal";
+      modal.innerHTML = `
+                <div class="modal-content">
+                    <span class="close">×</span>
+                    <h2>Thông tin cá nhân</h2>
+                    <div id="userInfoContent"></div>
+                </div>
+            `;
+      document.body.appendChild(modal);
+    }
+
+    const userInfoContent = document.getElementById("userInfoContent");
+    userInfoContent.innerHTML = `
+                <p><strong>Họ và tên:</strong> ${
+                  data.fullName || "Chưa cập nhật"
+                }</p>
+            <p><strong>Số điện thoại:</strong> ${
+              data.phone || "Chưa cập nhật"
+            }</p>
+            <p><strong>Email:</strong> ${data.email || "Chưa cập nhật"}</p>
+            <p><strong>ID Chi nhánh:</strong> ${
+              data.pharmacyId || "Chưa gán"
+            }</p>
+            <p><strong>Tên chi nhánh:</strong> ${
+              data.pharmacyName || "Chưa gán"
+            }</p>
+            <p><strong>Địa chỉ chi nhánh:</strong> ${
+              data.pharmacyAddress || "Chưa gán"
+            }</p>
+            <p><strong>Số điện thoại chi nhánh:</strong> ${
+              data.pharmacyPhone || "Chưa gán"
+            }</p>
+        `;
+
+    modal.style.display = "block";
+
+    const closeBtn = modal.querySelector(".close");
+    closeBtn.onclick = () => {
+      modal.style.display = "none";
+    };
+
+    window.onclick = (event) => {
+      if (event.target === modal) {
+        modal.style.display = "none";
+      }
+    };
+
+    console.log("Thông tin cá nhân đã được hiển thị.");
+  } catch (error) {
+    console.error("Lỗi khi lấy thông tin cá nhân:", error);
+    alert(
+      "Không thể tải thông tin cá nhân. Vui lòng thử lại. Lỗi: " + error.message
+    );
+    window.location.href = "/HealthMateLC/index.html";
+  }
 }
 
-function logout() {
+async function logout() {
   console.log("Đang đăng xuất...");
-  fetch("http://localhost:8080/logout", {
+
+  const response = await fetch("http://localhost:8080/logout", {
     method: "POST",
     credentials: "include",
-  })
-    .then((response) => {
-      if (response.ok) {
-        window.location.href = "/HealthMateLC/index.html";
-      } else {
-        alert("Đăng xuất thất bại. Vui lòng thử lại.");
-      }
-    })
-    .catch((error) => {
-      console.error("Lỗi khi đăng xuất:", error);
-      alert("Đã xảy ra lỗi khi đăng xuất.");
-    });
+  });
+
+  const data = await response.json();
+  console.log("Logout response:", data);
+
+  // Controller trả về JSON, JS phải tự redirect
+  if (data.success) {
+    window.location.href = data.redirectUrl || "/HealthMateLC/index.html";
+  }
 }
 
 function navigate(section) {
@@ -149,21 +232,19 @@ function navigate(section) {
 document.addEventListener("DOMContentLoaded", () => {
   handleUserProfile();
   initializeUserDropdown();
+  navigate("dashboard");
 });
 
 function handleStatCard(type) {
   console.log(`Stat card clicked: ${type}`);
-  // Placeholder for actual functionality
 }
 
 function handleChartPeriod(period) {
   console.log(`Chart period changed to: ${period} days`);
-  // Placeholder for actual chart update
 }
 
 function handleReviewClick(reviewId) {
   console.log(`Review clicked: ${reviewId}`);
-  // Placeholder for actual functionality
 }
 
 function handleCreateSchedule() {
@@ -181,17 +262,14 @@ function handleScheduleDay(date) {
 
 function handleSearchInvoices(query) {
   console.log(`Searching invoices: ${query}`);
-  // Placeholder for actual search
 }
 
 function handleFilterInvoices(status) {
   console.log(`Filtering invoices by status: ${status}`);
-  // Placeholder for actual filter
 }
 
 function handleStatusChange(invoiceId, status) {
   console.log(`Invoice ${invoiceId} status changed to: ${status}`);
-  // Placeholder for actual status update
 }
 
 function handleInvoiceAction(invoiceId, action) {
