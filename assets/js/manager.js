@@ -11,7 +11,27 @@ async function handleUserProfile() {
         },
       }
     );
+  console.log("Đang hiển thị thông tin user...");
+  try {
+    const response = await fetch(
+      "http://localhost:8080/manager/profile?detail=true",
+      {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          Accept: "application/json",
+        },
+      }
+    );
 
+    if (!response.ok) {
+      if (response.status === 401) {
+        alert("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+        window.location.href = "/index.html";
+        return;
+      }
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
     if (!response.ok) {
       if (response.status === 401) {
         alert("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
@@ -26,8 +46,24 @@ async function handleUserProfile() {
 
     const userFullNameElement = document.getElementById("userFullName");
     const userPharmacyNameElement = document.getElementById("userPharmacyName");
-    const branchElement = document.getElementById("branch");
 
+    if (userFullNameElement && data.fullName) {
+      userFullNameElement.textContent = data.fullName;
+    }
+    if (userPharmacyNameElement && data.pharmacyName) {
+      userPharmacyNameElement.textContent = data.pharmacyName;
+    } else if (userPharmacyNameElement && data.pharmacyAddress) {
+      userPharmacyNameElement.textContent = data.pharmacyAddress;
+    }
+
+    console.log("Thông tin người dùng đã được tải và hiển thị.");
+  } catch (error) {
+    console.error("Lỗi khi lấy thông tin user profile:", error);
+    alert(
+      "Không thể tải thông tin người dùng. Vui lòng thử lại. Lỗi: " +
+        error.message
+    );
+  }
     if (userFullNameElement && data.fullName) {
       userFullNameElement.textContent = data.fullName;
     }
@@ -232,17 +268,32 @@ function navigate(section) {
 document.addEventListener("DOMContentLoaded", () => {
   handleUserProfile();
   initializeUserDropdown();
+document.addEventListener("DOMContentLoaded", () => {
+  handleUserProfile();
+  initializeUserDropdown();
   navigate("dashboard");
 });
 
+function handleStatCard(type) {
+  console.log(`Stat card clicked: ${type}`);
+  // Placeholder for actual functionality
+}
 function handleStatCard(type) {
   console.log(`Stat card clicked: ${type}`);
 }
 
 function handleChartPeriod(period) {
   console.log(`Chart period changed to: ${period} days`);
+  // Placeholder for actual chart update
+}
+function handleChartPeriod(period) {
+  console.log(`Chart period changed to: ${period} days`);
 }
 
+function handleReviewClick(reviewId) {
+  console.log(`Review clicked: ${reviewId}`);
+  // Placeholder for actual functionality
+}
 function handleReviewClick(reviewId) {
   console.log(`Review clicked: ${reviewId}`);
 }
@@ -250,7 +301,13 @@ function handleReviewClick(reviewId) {
 function handleCreateSchedule() {
   navigate("edit_schedule");
 }
+function handleCreateSchedule() {
+  navigate("edit_schedule");
+}
 
+function handleAddSchedule() {
+  navigate("edit_schedule");
+}
 function handleAddSchedule() {
   navigate("edit_schedule");
 }
@@ -259,15 +316,31 @@ function handleScheduleDay(date) {
   console.log(`Schedule day clicked: ${date}`);
   navigate("edit_schedule");
 }
+function handleScheduleDay(date) {
+  console.log(`Schedule day clicked: ${date}`);
+  navigate("edit_schedule");
+}
 
+function handleSearchInvoices(query) {
+  console.log(`Searching invoices: ${query}`);
+  // Placeholder for actual search
+}
 function handleSearchInvoices(query) {
   console.log(`Searching invoices: ${query}`);
 }
 
 function handleFilterInvoices(status) {
   console.log(`Filtering invoices by status: ${status}`);
+  // Placeholder for actual filter
+}
+function handleFilterInvoices(status) {
+  console.log(`Filtering invoices by status: ${status}`);
 }
 
+function handleStatusChange(invoiceId, status) {
+  console.log(`Invoice ${invoiceId} status changed to: ${status}`);
+  // Placeholder for actual status update
+}
 function handleStatusChange(invoiceId, status) {
   console.log(`Invoice ${invoiceId} status changed to: ${status}`);
 }
