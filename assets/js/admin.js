@@ -1,39 +1,84 @@
-// Global variables
+// ============================================================================
+// GLOBAL VARIABLES
+// ============================================================================
 let navItems = document.querySelectorAll(".nav-item");
 let panelItems = document.querySelectorAll(".panel");
 let listPharmacy = [];
+let allProducts = [];
+let allStores = [];
+let currentPage = 0; // dùng cho nhà thuốc
+const pageSize = 6; // dùng cho nhà thuốc, mỗi trang 6 nhà thuốc
+let totalPages = 0;
+let isSearching = false;
+let currentSearchParams = {};
 let listUsersByPharmacy = {}; // Store users data by pharmacy
 let currentEditingUser = null; // Store the user being edited
 
 // Initialize the admin dashboard
+// Add session check on dashboard load
+async function checkSessionOnLoad() {
+  const ok = await checkSessionOrRedirect();
+  if (!ok) return;
+}
+
 document.addEventListener("DOMContentLoaded", function () {
+  checkSessionOnLoad(); // <--- Add this line
   initializeNavigation();
   initializeUserDropdown();
+  initializeProductSearch();
+  initializeStoreSearch();
   loadInitialData();
+  attachAddStoreButtonEvent();
   initializeModals();
 });
 
 // Navigation handling
 function initializeNavigation() {
-  navItems.forEach((item, index) => {
-    item.addEventListener("click", () => {
+  navItems.forEach((item) => {
+    item.addEventListener("click", async () => {
       // Remove active class from all nav items and panels
       navItems.forEach((el) => el.classList.remove("active"));
       panelItems.forEach((el) => el.classList.remove("active"));
 
-      // Add active class to clicked item and corresponding panel
+      // Add active class to clicked item
       item.classList.add("active");
-      panelItems[index].classList.add("active");
+
+      // Find and activate the corresponding panel
+      const type = item.getAttribute("data-type");
+      const panel = document.getElementById(`panel-${type}`);
+      if (panel) {
+        panel.classList.add("active");
+      } else {
+        console.error(`Panel not found for type: ${type}`);
+      }
 
       // Update header title
-      const headerTitle = document.querySelector(".header-title");
-      headerTitle.textContent = item.childNodes[2].textContent.trim();
+      updateHeaderTitle(type);
 
       // Render content based on panel type
-      const type = item.getAttribute("data-type");
       renderContent(type);
     });
   });
+}
+
+// Update header title based on panel type
+function updateHeaderTitle(type) {
+  const headerTitle = document.querySelector(".header-title");
+  if (!headerTitle) return;
+
+  const titleMap = {
+    "list-accounts": "Danh Sách Tài Khoản",
+    "add-account": "Tạo Tài Khoản",
+    "list-products": "Danh Sách Sản Phẩm",
+    "add-product": "Thêm Sản Phẩm",
+    "edit-product": "Chỉnh Sửa Sản Phẩm",
+    "create-store": "Tạo Nhà Thuốc Mới",
+    "list-stores": "Danh Sách Nhà Thuốc",
+    "edit-store": "Chỉnh Sửa Nhà Thuốc",
+    "revenue-report": "Báo Cáo Doanh Thu",
+  };
+
+  headerTitle.textContent = titleMap[type] || "Admin Dashboard";
 }
 
 // User dropdown functionality
@@ -61,6 +106,33 @@ function initializeUserDropdown() {
   }
 }
 
+// Initialize store search functionality
+function initializeStoreSearch() {
+  const storeSearchBtn = document.querySelector("#store-search-btn");
+  const storeSearchInput = document.querySelector("#store-search-input");
+  const storeClearBtn = document.querySelector("#store-clear-btn");
+
+  if (storeSearchBtn) {
+    storeSearchBtn.addEventListener("click", performStoreSearch);
+  }
+
+  if (storeSearchInput) {
+    storeSearchInput.addEventListener("keypress", function (e) {
+      if (e.key === "Enter") {
+        performStoreSearch();
+      }
+    });
+  }
+
+  if (storeClearBtn) {
+    storeClearBtn.addEventListener("click", clearStoreSearch);
+  }
+}
+
+// ============================================================================
+// CONTENT RENDERING
+// ============================================================================
+
 // Content rendering based on panel type
 function renderContent(type) {
   switch (type) {
@@ -82,11 +154,14 @@ function renderContent(type) {
     case "list-stores":
       renderListStores();
       break;
-    case "edit-store":
-      renderEditStore();
-      break;
     case "revenue-report":
       renderRevenueReport();
+      break;
+    case "edit-product":
+      renderEditProduct();
+      break;
+    case "edit-store":
+      renderEditStore();
       break;
     default:
       console.log(`Panel type ${type} not implemented yet`);
@@ -99,6 +174,10 @@ function loadInitialData() {
   document.querySelectorAll(".nav-item")[0].classList.add("active");
   document.querySelectorAll(".panel")[0].classList.add("active");
 }
+
+// ============================================================================
+// ACCOUNTS MANAGEMENT
+// ============================================================================
 
 // Render list accounts panel
 function renderListAccounts() {
@@ -132,7 +211,7 @@ function renderListAccounts() {
     })
     .catch((error) => {
       console.error("Error loading accounts data:", error);
-      showErrorMessage("Không thể tải dữ liệu tài khoản");
+      showToast("Không thể tải dữ liệu tài khoản");
     });
 }
 
@@ -169,11 +248,11 @@ function renderPharmacyList(pharmacyData, userData) {
       <div class="store-info">
         <h4>${pharmacy.pharmacyName}</h4>
         <p>
-          <span class="material-icons">location_on</span> 
+          <span class="material-icons">location_on</span>
           ${pharmacy.address}
         </p>
         <p>
-          <span class="material-icons">phone</span> 
+          <span class="material-icons">phone</span>
           ${pharmacy.phone}
         </p>
       </div>
@@ -185,12 +264,9 @@ function renderPharmacyList(pharmacyData, userData) {
 
     // Add click handler for pharmacy selection
     storeItem.addEventListener("click", () => {
-      // Remove active class from other items
       document
         .querySelectorAll(".store-item")
         .forEach((item) => item.classList.remove("active"));
-
-      // Add active class to clicked item
       storeItem.classList.add("active");
 
       // Show users for selected pharmacy using updated data
@@ -251,7 +327,6 @@ function showUsersForPharmacy(users) {
     const userItem = document.createElement("div");
     userItem.classList.add("user-item");
 
-    // Generate initials for avatar
     const initials = user.fullName
       .split(" ")
       .map((name) => name.charAt(0))
@@ -266,9 +341,7 @@ function showUsersForPharmacy(users) {
         <p>${user.email}</p>
         <p>${user.phone}</p>
       </div>
-      <div class="user-role ${
-        user.role === "manager" ? "manager" : "employee"
-      }">
+      <div class="user-role ${user.role === "manager" ? "manager" : "employee"}">
         ${user.role === "manager" ? "Quản lý" : "Nhân viên"}
       </div>
     `;
@@ -920,7 +993,10 @@ function initializeSearch() {
   const searchInput = document.querySelector(".search-input");
   const searchSelect = document.querySelector(".search-select");
 
-  // Initialize pharmacy search
+  if (searchBtn) {
+    searchBtn.addEventListener("click", performSearch);
+  }
+
   if (searchInput) {
     // Real-time search as the user types
     searchInput.addEventListener("input", function () {
@@ -954,7 +1030,7 @@ function initializeSearch() {
 // Variable to store search timeout
 let searchTimeout = null;
 
-// Perform search functionality
+// Perform search functionality for accounts
 function performSearch() {
   // Clear previous timeout to prevent multiple rapid searches
   if (searchTimeout) {
@@ -1029,348 +1105,432 @@ function performSearch() {
         }
       }
 
-      const storeItem = document.querySelectorAll(".store-item")[index];
-      if (storeItem) {
-        if (isMatch) {
-          matchCount++;
-          storeItem.style.display = "flex";
+    const storeItem = document.querySelectorAll(".store-item")[index];
+    if (storeItem) {
+      storeItem.style.display = isMatch ? "flex" : "none";
+    }
+  });
+}
 
-          // Highlight matched text if there's a search term
-          if (searchTerm) {
-            highlightMatchedText(storeItem, pharmacy, searchType, searchTerm);
-          }
-        } else {
-          storeItem.style.display = "none";
-        }
+// ============================================================================
+// PRODUCTS MANAGEMENT
+// ============================================================================
+
+// Render list products with pagination
+function renderListProducts() {
+  fetch("http://localhost:8080/admin/list-products", {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  })
+    .then((response) => response.json())
+    .then((products) => {
+      allProducts = products || [];
+      currentPage = 1;
+      renderProductTable();
+      renderPagination();
+    })
+    .catch((error) => {
+      console.error("Error loading products:", error);
+      const tbody = document.querySelector("#product-list-table tbody");
+      if (tbody)
+        tbody.innerHTML =
+          '<tr><td colspan="7" style="color:red;text-align:center;">Không thể tải danh sách sản phẩm</td></tr>';
+    });
+}
+
+function renderProductTable() {
+  const table = document.getElementById("product-list-table");
+  const emptyDiv = document.getElementById("product-list-empty");
+  if (!table) return;
+  const tbody = table.querySelector("tbody");
+  if (!allProducts || allProducts.length === 0) {
+    tbody.innerHTML = "";
+    if (emptyDiv) emptyDiv.style.display = "block";
+    return;
+  }
+  if (emptyDiv) emptyDiv.style.display = "none";
+
+  const start = (currentPage - 1) * pageSize;
+  const end = start + pageSize;
+  const pageProducts = allProducts.slice(start, end);
+
+  let html = "";
+  pageProducts.forEach((p, idx) => {
+    html += `
+      <tr>
+        <td>${start + idx + 1}</td>
+        <td title="${p.productName}">${p.productName}</td>
+        <td title="${p.productType}">${p.productType}</td>
+        <td title="${p.unit}">${p.unit}</td>
+        <td>
+          <div class="quantity-control" data-product-id="${p.productId}">
+            <button class="btn-qty btn-qty-minus" data-action="subtract">-</button>
+            <input type="number" class="input-qty" value="${p.quantity ?? 0}" min="0" style="width:60px;text-align:center;" />
+            <button class="btn-qty btn-qty-plus" data-action="add">+</button>
+          </div>
+        </td>
+        <td>${Number(p.price).toLocaleString("vi-VN")}</td>
+        <td title="${p.description || ''}">${p.description || ""}</td>
+        <td>
+          <div class="action-buttons">
+            <button class="btn-edit" onclick="editProduct(${p.productId})">Sửa</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  });
+  tbody.innerHTML = html;
+  attachQuantityEvents();
+}
+
+function renderPagination() {
+  const container = document.getElementById("product-list-pagination");
+  if (!container) return;
+  const totalPages = Math.ceil(allProducts.length / pageSize);
+  if (totalPages <= 1) {
+    container.innerHTML = '<span style="color: #718096; font-size: 14px; font-weight: 500;">Trang 1 / 1</span>';
+    return;
+  }
+  let html = "";
+  if (currentPage > 1) {
+    html += `<button class="pagination-btn" data-page="${currentPage - 1}">‹</button>`;
+  }
+  for (let i = 1; i <= totalPages; i++) {
+    html += `<button class="pagination-btn${i === currentPage ? " active" : ""}" data-page="${i}">${i}</button>`;
+  }
+  if (currentPage < totalPages) {
+    html += `<button class="pagination-btn" data-page="${currentPage + 1}">›</button>`;
+  }
+  container.innerHTML = html;
+  container.querySelectorAll(".pagination-btn").forEach((btn) => {
+    btn.addEventListener("click", function () {
+      const page = parseInt(this.getAttribute("data-page"));
+      if (page && page !== currentPage) {
+        currentPage = page;
+        renderProductTable();
+        renderPagination();
       }
     });
-
-    // Show "no results" message if no matches found
-    const storesContainer = document.querySelector(".list-stores");
-    const noResultsMsg = document.querySelector(".no-results-message");
-
-    if (matchCount === 0 && searchContent && storesContainer) {
-      // Create or show no results message
-      if (!noResultsMsg) {
-        const msgElem = document.createElement("div");
-        msgElem.className = "no-results-message";
-        msgElem.textContent = "Không tìm thấy nhà thuốc phù hợp";
-        storesContainer.appendChild(msgElem);
-      } else {
-        noResultsMsg.style.display = "block";
-      }
-    } else if (noResultsMsg) {
-      noResultsMsg.style.display = "none";
-    }
-
-    // Remove searching indicator
-    if (searchInput) {
-      searchInput.classList.remove("searching");
-    }
-  }, 300); // 300ms delay for better performance
+  });
 }
 
-// Function to highlight matched text in search results
-function highlightMatchedText(storeItem, pharmacy, searchType, searchTerm) {
-  if (!storeItem || !pharmacy) return;
+// Search products functionality
+function initializeProductSearch() {
+  const searchBtn = document.getElementById("product-search-btn");
+  const searchInput = document.getElementById("product-search-input");
+  const clearBtn = document.getElementById("product-clear-btn");
 
-  const nameElement = storeItem.querySelector(".store-info h4");
-  const addressElement = storeItem.querySelector(".store-info p:first-of-type");
-  const phoneElement = storeItem.querySelector(".store-info p:last-of-type");
+  if (searchBtn) {
+    searchBtn.addEventListener("click", performProductSearch);
+  }
 
-  // Helper function to highlight text
-  const highlight = (text, term) => {
-    if (!text) return "";
-    const regex = new RegExp(
-      `(${term.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&")})`,
-      "gi"
-    );
-    return text.replace(regex, '<span class="highlight">$1</span>');
-  };
+  if (searchInput) {
+    searchInput.addEventListener("keypress", function (e) {
+      if (e.key === "Enter") {
+        performProductSearch();
+      }
+    });
+  }
 
-  // Highlight based on search type
-  switch (searchType) {
-    case "all":
-      if (
-        nameElement &&
-        pharmacy.pharmacyName.toLowerCase().includes(searchTerm)
-      ) {
-        nameElement.innerHTML = highlight(pharmacy.pharmacyName, searchTerm);
-      }
-      if (
-        addressElement &&
-        pharmacy.address.toLowerCase().includes(searchTerm)
-      ) {
-        const addressText = addressElement.textContent;
-        addressElement.innerHTML = highlight(addressText, searchTerm);
-      }
-      if (phoneElement && pharmacy.phone.toLowerCase().includes(searchTerm)) {
-        const phoneText = phoneElement.textContent;
-        phoneElement.innerHTML = highlight(phoneText, searchTerm);
-      }
-      break;
-    case "name":
-      if (nameElement) {
-        nameElement.innerHTML = highlight(pharmacy.pharmacyName, searchTerm);
-      }
-      break;
-    case "address":
-      if (addressElement) {
-        const addressText = addressElement.textContent;
-        addressElement.innerHTML = highlight(addressText, searchTerm);
-      }
-      break;
-    case "phone":
-      if (phoneElement) {
-        const phoneText = phoneElement.textContent;
-        phoneElement.innerHTML = highlight(phoneText, searchTerm);
-      }
-      break;
+  if (clearBtn) {
+    clearBtn.addEventListener("click", clearProductSearch);
   }
 }
 
-// Variable to store user search timeout
-let userSearchTimeout = null;
+function performProductSearch() {
+  const keyword = document.getElementById("product-search-input")?.value?.trim() || "";
+  const searchType = document.getElementById("product-search-type")?.value || "all";
 
-// Perform user search functionality
-function performUserSearch() {
-  // Clear previous timeout
-  if (userSearchTimeout) {
-    clearTimeout(userSearchTimeout);
+  if (!keyword) {
+    renderListProducts();
+    return;
   }
 
-  // Set a delay to avoid excessive searching
-  userSearchTimeout = setTimeout(() => {
-    const searchType =
-      document.querySelector(".user-search-select")?.value || "all";
-    const searchContent =
-      document.querySelector(".user-search-input")?.value || "";
-
-    // Add searching indicator
-    const searchInput = document.querySelector(".user-search-input");
-    if (searchInput) {
-      searchInput.classList.add("searching");
+  fetch(
+    `http://localhost:8080/admin/search-products?keyword=${encodeURIComponent(
+      keyword
+    )}&type=${searchType}`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
     }
+  )
+    .then((response) => response.json())
+    .then((products) => {
+      allProducts = products || [];
+      currentPage = 1;
+      renderProductTable();
+      renderPagination();
+    })
+    .catch((error) => {
+      console.error("Error searching products:", error);
+      showToast("Có lỗi xảy ra khi tìm kiếm sản phẩm");
+    });
+}
 
-    // Get currently selected pharmacy
-    const selectedPharmacy = document.querySelector(".store-item.active");
-    if (!selectedPharmacy) {
-      if (searchInput) {
-        searchInput.classList.remove("searching");
-      }
-      return;
-    }
+function clearProductSearch() {
+  const searchInput = document.getElementById("product-search-input");
+  const searchType = document.getElementById("product-search-type");
+  if (searchInput) {
+    searchInput.value = "";
+  }
+  if (searchType) {
+    searchType.value = "all";
+  }
+  renderListProducts();
+}
 
-    const pharmacyId = selectedPharmacy.getAttribute("data-pharmacy-id");
-    if (!pharmacyId || !listUsersByPharmacy[pharmacyId]) {
-      if (searchInput) {
-        searchInput.classList.remove("searching");
-      }
-      return;
-    }
-
-    const users = listUsersByPharmacy[pharmacyId];
-    const usersList = document.querySelector(".list-users");
-
-    // Clear existing user items
-    if (usersList) {
-      usersList.innerHTML = "";
-
-      if (users.length === 0) {
-        usersList.innerHTML =
-          '<div style="text-align: center; color: #718096;">Không có nhân viên nào</div>';
-        if (searchInput) {
-          searchInput.classList.remove("searching");
-        }
-        return;
-      }
-
-      // Filter users
-      let matchCount = 0;
-      users.forEach((user) => {
-        let isMatch = false;
-        const searchTerm = searchContent.toLowerCase();
-
-        // If search term is empty, show all users
-        if (searchTerm === "") {
-          isMatch = true;
+// Edit product functionality
+function editProduct(productId) {
+  fetch(`http://localhost:8080/admin/product/${productId}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  })
+    .then((response) => {
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error("Sản phẩm không tồn tại");
         } else {
-          switch (searchType) {
-            case "all":
-              isMatch =
-                user.fullName.toLowerCase().includes(searchTerm) ||
-                user.email.toLowerCase().includes(searchTerm) ||
-                user.phone.toLowerCase().includes(searchTerm) ||
-                (user.role &&
-                  (user.role.toLowerCase().includes(searchTerm) ||
-                    (user.role === "manager" &&
-                      "quản lý".includes(searchTerm)) ||
-                    (user.role === "employee" &&
-                      "nhân viên".includes(searchTerm))));
-              break;
-            case "name":
-              isMatch = user.fullName.toLowerCase().includes(searchTerm);
-              break;
-            case "email":
-              isMatch = user.email.toLowerCase().includes(searchTerm);
-              break;
-            case "phone":
-              isMatch = user.phone.includes(searchContent);
-              break;
-            case "role":
-              const roleMap = { "quản lý": "manager", "nhân viên": "employee" };
-              const searchRole = roleMap[searchTerm] || searchTerm;
-              isMatch = user.role === searchRole;
-              break;
-          }
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
-
-        if (isMatch) {
-          matchCount++;
-
-          // Create user item
-          const userItem = document.createElement("div");
-          userItem.classList.add("user-item");
-
-          // Generate initials for avatar
-          const initials = user.fullName
-            .split(" ")
-            .map((name) => name.charAt(0))
-            .join("")
-            .substring(0, 2)
-            .toUpperCase();
-
-          // Create user HTML
-          let userHTML = `
-            <div class="user-avatar">${initials}</div>
-            <div class="user-info">
-              <h4>${user.fullName}</h4>
-              <p>${user.email}</p>
-              <p>${user.phone}</p>
-            </div>
-            <div class="user-role ${
-              user.role === "manager" ? "manager" : "employee"
-            }">
-              ${user.role === "manager" ? "Quản lý" : "Nhân viên"}
-            </div>
-          `;
-
-          userItem.innerHTML = userHTML;
-
-          // Highlight matched text if search term exists
-          if (searchTerm) {
-            highlightUserMatchedText(userItem, user, searchType, searchTerm);
-          }
-
-          // Add click handler
-          userItem.clickHandler = () => showUserDetails(user);
-          userItem.addEventListener("click", userItem.clickHandler);
-          usersList.appendChild(userItem);
-        }
-      });
-
-      // Show no results message if needed
-      if (matchCount === 0 && searchContent) {
-        usersList.innerHTML =
-          '<div style="text-align: center; color: #718096;">Không tìm thấy nhân viên phù hợp</div>';
       }
-    }
+      return response.json();
+    })
+    .then((product) => {
+      // Switch to edit panel
+      document.querySelectorAll(".panel").forEach((panel) => panel.classList.remove("active"));
+      document.getElementById("panel-edit-product").classList.add("active");
 
-    // Remove searching indicator
-    if (searchInput) {
-      searchInput.classList.remove("searching");
-    }
-  }, 300);
+      // Update sidebar
+      document.querySelectorAll(".nav-item").forEach((item) => item.classList.remove("active"));
+      document.querySelector('.nav-item[data-type="list-products"]').classList.add("active");
+
+      // Update header title
+      updateHeaderTitle("edit-product");
+
+      // Load product types and units first
+      loadProductTypes();
+      loadProductUnits();
+
+      // Fill form with product data after a short delay to ensure options are loaded
+      setTimeout(() => {
+        document.getElementById("edit-product-id").value = product.productId;
+        document.getElementById("edit-product-name").value = product.productName;
+        document.getElementById("edit-product-price").value = product.price;
+        document.getElementById("edit-product-description").value = product.description || "";
+
+        // Handle product type
+        const productTypeSelect = document.getElementById("edit-product-type");
+        const productTypeCustom = document.getElementById("edit-product-type-custom");
+
+        const typeOptions = Array.from(productTypeSelect.options).map((opt) => opt.value);
+        if (typeOptions.includes(product.productType)) {
+          productTypeSelect.value = product.productType;
+          productTypeCustom.style.display = "none";
+          productTypeCustom.classList.remove("show");
+          productTypeCustom.required = false;
+        } else {
+          productTypeSelect.value = "other";
+          productTypeCustom.style.display = "block";
+          productTypeCustom.classList.add("show");
+          productTypeCustom.required = true;
+          productTypeCustom.value = product.productType;
+        }
+
+        // Handle product unit
+        const productUnitSelect = document.getElementById("edit-product-unit");
+        const productUnitCustom = document.getElementById("edit-product-unit-custom");
+
+        const unitOptions = Array.from(productUnitSelect.options).map((opt) => opt.value);
+        if (unitOptions.includes(product.unit)) {
+          productUnitSelect.value = product.unit;
+          productUnitCustom.style.display = "none";
+          productUnitCustom.classList.remove("show");
+          productUnitCustom.required = false;
+        } else {
+          productUnitSelect.value = "other";
+          productUnitCustom.style.display = "block";
+          productUnitCustom.classList.add("show");
+          productUnitCustom.required = true;
+          productUnitCustom.value = product.unit;
+        }
+
+        // Initialize custom inputs for edit form
+        initializeEditProductCustomInputs();
+      }, 100);
+    })
+    .catch((error) => {
+      console.error("Error loading product:", error);
+      let errorMessage = "Không thể tải thông tin sản phẩm";
+      if (error.message.includes("Sản phẩm không tồn tại")) {
+        errorMessage = "Sản phẩm không tồn tại";
+      } else if (error.message.includes("Failed to fetch")) {
+        errorMessage = "Không thể kết nối đến server";
+      }
+      showToast(errorMessage);
+    });
 }
 
-// Function to highlight matched text in user search results
-function highlightUserMatchedText(userItem, user, searchType, searchTerm) {
-  if (!userItem || !user) return;
+function cancelEditProduct() {
+  // Switch back to product list
+  document.querySelectorAll(".panel").forEach((panel) => panel.classList.remove("active"));
+  document.getElementById("panel-list-products").classList.add("active");
 
-  const nameElement = userItem.querySelector(".user-info h4");
-  const emailElement = userItem.querySelector(".user-info p:first-of-type");
-  const phoneElement = userItem.querySelector(".user-info p:last-of-type");
-  const roleElement = userItem.querySelector(".user-role");
+  // Update navigation back to list-products
+  document.querySelectorAll(".nav-item").forEach((item) => item.classList.remove("active"));
+  document.querySelector('.nav-item[data-type="list-products"]').classList.add("active");
 
-  // Helper function to highlight text
-  const highlight = (text, term) => {
-    if (!text) return "";
-    const regex = new RegExp(
-      `(${term.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&")})`,
-      "gi"
-    );
-    return text.replace(regex, '<span class="highlight">$1</span>');
-  };
+  // Update header
+  updateHeaderTitle("list-products");
 
-  // Highlight based on search type
-  switch (searchType) {
-    case "all":
-      if (nameElement && user.fullName.toLowerCase().includes(searchTerm)) {
-        nameElement.innerHTML = highlight(user.fullName, searchTerm);
-      }
-      if (emailElement && user.email.toLowerCase().includes(searchTerm)) {
-        emailElement.innerHTML = highlight(user.email, searchTerm);
-      }
-      if (phoneElement && user.phone.toLowerCase().includes(searchTerm)) {
-        phoneElement.innerHTML = highlight(user.phone, searchTerm);
-      }
-
-      // For role, we need special handling due to translation
-      if (roleElement) {
-        const displayRole = user.role === "manager" ? "Quản lý" : "Nhân viên";
-        if (
-          displayRole.toLowerCase().includes(searchTerm) ||
-          user.role.toLowerCase().includes(searchTerm)
-        ) {
-          roleElement.innerHTML = highlight(displayRole, searchTerm);
-        }
-      }
-      break;
-    case "name":
-      if (nameElement) {
-        nameElement.innerHTML = highlight(user.fullName, searchTerm);
-      }
-      break;
-    case "email":
-      if (emailElement) {
-        emailElement.innerHTML = highlight(user.email, searchTerm);
-      }
-      break;
-    case "phone":
-      if (phoneElement) {
-        phoneElement.innerHTML = highlight(user.phone, searchTerm);
-      }
-      break;
-    case "role":
-      if (roleElement) {
-        const displayRole = user.role === "manager" ? "Quản lý" : "Nhân viên";
-        roleElement.innerHTML = highlight(displayRole, searchTerm);
-      }
-      break;
+  // Clear form and hide custom inputs
+  const form = document.getElementById("edit-product-form");
+  if (form) {
+    form.reset();
+    const customInputs = form.querySelectorAll(".custom-input");
+    customInputs.forEach((input) => {
+      input.style.display = "none";
+      input.classList.remove("show");
+      input.required = false;
+      input.value = "";
+    });
   }
 }
 
-// Placeholder functions for other panels
-function renderAddAccount() {
-  console.log("Add Account panel loaded");
-  // Load pharmacy options for the form
-  loadPharmacyOptions();
+function cancelEditStore() {
+  // Switch back to store list
+  document.querySelectorAll(".panel").forEach((panel) => panel.classList.remove("active"));
+  document.getElementById("panel-list-stores").classList.add("active");
+
+  // Update navigation back to list-stores
+  document.querySelectorAll(".nav-item").forEach((item) => item.classList.remove("active"));
+  document.querySelector('.nav-item[data-type="list-stores"]').classList.add("active");
+
+  // Update header
+  updateHeaderTitle("list-stores");
+
+  // Clear form
+  const form = document.querySelector("#panel-edit-store .panel-form");
+  if (form) {
+    form.reset();
+    document.getElementById("edit-store-id").value = "";
+  }
 }
 
-function renderCreateCategory() {
-  console.log("Create Category panel loaded");
+function initializeEditProductCustomInputs() {
+  const productTypeSelect = document.getElementById("edit-product-type");
+  const productTypeCustom = document.getElementById("edit-product-type-custom");
+  const productUnitSelect = document.getElementById("edit-product-unit");
+  const productUnitCustom = document.getElementById("edit-product-unit-custom");
+
+  if (productTypeSelect && productTypeCustom) {
+    productTypeSelect.removeEventListener("change", handleProductTypeChange);
+    productTypeSelect.addEventListener("change", handleProductTypeChange);
+  }
+
+  if (productUnitSelect && productUnitCustom) {
+    productUnitSelect.removeEventListener("change", handleProductUnitChange);
+    productUnitSelect.addEventListener("change", handleProductUnitChange);
+  }
 }
 
+function handleProductTypeChange() {
+  const productTypeCustom = document.getElementById("edit-product-type-custom");
+  if (this.value === "other") {
+    productTypeCustom.style.display = "block";
+    productTypeCustom.classList.add("show");
+    productTypeCustom.required = true;
+    productTypeCustom.focus();
+  } else {
+    productTypeCustom.classList.remove("show");
+    setTimeout(() => {
+      productTypeCustom.style.display = "none";
+      productTypeCustom.required = false;
+    }, 300);
+    productTypeCustom.value = "";
+  }
+}
+
+function handleProductUnitChange() {
+  const productUnitCustom = document.getElementById("edit-product-unit-custom");
+  if (this.value === "other") {
+    productUnitCustom.style.display = "block";
+    productUnitCustom.classList.add("show");
+    productUnitCustom.required = true;
+    productUnitCustom.focus();
+  } else {
+    productUnitCustom.classList.remove("show");
+    setTimeout(() => {
+      productUnitCustom.style.display = "none";
+      productUnitCustom.required = false;
+    }, 300);
+    productUnitCustom.value = "";
+  }
+}
+
+// Render add product panel
 function renderAddProduct() {
-  console.log("Add Product panel loaded");
-  // Load category options for the form
-  loadCategoryOptions();
+  loadProductTypes();
+  loadProductUnits();
+  initializeCustomInputs();
+  updateHeaderTitle("add-product");
 }
+
+// Initialize custom input handlers for product type and unit
+function initializeCustomInputs() {
+  const productTypeSelect = document.getElementById("product-type");
+  const productTypeCustom = document.getElementById("product-type-custom");
+  const productUnitSelect = document.getElementById("product-unit");
+  const productUnitCustom = document.getElementById("product-unit-custom");
+
+  if (productTypeSelect && productTypeCustom) {
+    productTypeSelect.addEventListener("change", function () {
+      if (this.value === "other") {
+        productTypeCustom.style.display = "block";
+        productTypeCustom.classList.add("show");
+        productTypeCustom.required = true;
+        productTypeCustom.focus();
+      } else {
+        productTypeCustom.classList.remove("show");
+        setTimeout(() => {
+          productTypeCustom.style.display = "none";
+          productTypeCustom.required = false;
+        }, 300);
+        productTypeCustom.value = "";
+      }
+    });
+  }
+
+  if (productUnitSelect && productUnitCustom) {
+    productUnitSelect.addEventListener("change", function () {
+      if (this.value === "other") {
+        productUnitCustom.style.display = "block";
+        productUnitCustom.classList.add("show");
+        productUnitCustom.required = true;
+        productUnitCustom.focus();
+      } else {
+        productUnitCustom.classList.remove("show");
+        setTimeout(() => {
+          productUnitCustom.style.display = "none";
+          productUnitCustom.required = false;
+        }, 300);
+        productUnitCustom.value = "";
+      }
+    });
+  }
+}
+
+// ========== STORES MANAGEMENT (SERVER-SIDE PAGINATION) =============
 
 function renderCreateStore() {
-  console.log("Create Store panel loaded");
-  // Load manager options for the form
   loadManagerOptions();
+  updateHeaderTitle("create-store");
 }
 
 function renderListStores() {
@@ -1380,9 +1540,19 @@ function renderListStores() {
 }
 
 function renderEditStore() {
-  console.log("Edit Store panel loaded");
+  const form = document.querySelector("#panel-edit-store .panel-form");
+  if (form) {
+    form.reset();
+    document.getElementById("edit-store-id").value = "";
+  }
+  updateHeaderTitle("edit-store");
 }
 
+// ============================================================================
+// REVENUE REPORT
+// ============================================================================
+
+// Render revenue report panel
 function renderRevenueReport() {
   console.log("Revenue Report panel loaded");
   // Load revenue data
@@ -1391,27 +1561,22 @@ function renderRevenueReport() {
 
 // Helper functions
 function loadPharmacyOptions() {
-  // Load pharmacy options for form selects
   const pharmacySelect = document.getElementById("pharmacy");
   if (pharmacySelect && listPharmacy.length > 0) {
     pharmacySelect.innerHTML = '<option value="">Chọn nhà thuốc</option>';
-    listPharmacy.forEach((pharmacy) => {
-      const option = document.createElement("option");
-      option.value = pharmacy.pharmacyId;
-      option.textContent = pharmacy.pharmacyName;
-      pharmacySelect.appendChild(option);
-    });
+    listPharmacy
+      .filter((pharmacy) => pharmacy.isActive)
+      .forEach((pharmacy) => {
+        const option = document.createElement("option");
+        option.value = pharmacy.pharmacyId;
+        option.textContent = pharmacy.pharmacyName;
+        pharmacySelect.appendChild(option);
+      });
   }
 }
 
-function loadCategoryOptions() {
-  // TODO: Implement category loading
-  console.log("Loading categories...");
-}
-
 function loadManagerOptions() {
-  // TODO: Implement manager loading
-  console.log("Loading managers...");
+  // Placeholder: Implement fetching managers if needed
 }
 
 function loadStoresData() {

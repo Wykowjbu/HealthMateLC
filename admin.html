@@ -42,9 +42,9 @@
 
           <div class="nav-group">
             <div class="nav-group-title">Quản lý kho thuốc</div>
-            <div class="nav-item" data-type="create-category">
-              <span class="material-icons">category</span>
-              Tạo danh mục thuốc
+            <div class="nav-item" data-type="list-products">
+              <span class="material-icons">list_alt</span>
+              Danh sách sản phẩm
             </div>
             <div class="nav-item" data-type="add-product">
               <span class="material-icons">add_box</span>
@@ -61,10 +61,6 @@
             <div class="nav-item" data-type="list-stores">
               <span class="material-icons">list</span>
               Danh sách nhà thuốc
-            </div>
-            <div class="nav-item" data-type="edit-store">
-              <span class="material-icons">edit</span>
-              Chỉnh sửa thông tin
             </div>
           </div>
 
@@ -246,10 +242,9 @@
                   </div>
                   <div class="form-group">
                     <label for="role">Vai trò</label>
-                    <select id="role" class="form-select">
-                      <option value="employee">Nhân viên</option>
-                      <option value="manager">Quản lý</option>
-                      <option value="admin">Quản trị viên</option>
+                    <select id="role" class="form-select" required>
+                      <option value="">Chọn vai trò</option>
+                      <!-- Danh sách vai trò sẽ được load từ admin.js -->
                     </select>
                   </div>
                 </div>
@@ -257,60 +252,80 @@
                   <label for="pharmacy">Nhà thuốc</label>
                   <select id="pharmacy" class="form-select">
                     <option value="">Chọn nhà thuốc</option>
+                    <!-- Danh sách nhà thuốc sẽ được load từ admin.js -->
                   </select>
                 </div>
                 <div class="form-actions">
                   <button type="submit" class="btn btn-primary">
                     Tạo tài khoản
                   </button>
-                  <button type="button" class="btn btn-secondary">Hủy</button>
                 </div>
               </form>
             </div>
           </div>
         </div>
 
-        <!-- Panel Tạo danh mục thuốc -->
-        <div class="panel" id="panel-create-category">
+        <!-- Panel Danh sách sản phẩm -->
+        <div class="panel" id="panel-list-products">
           <div class="panel-container">
             <div class="panel-header">
-              <h2>Tạo danh mục thuốc</h2>
+              <h2>Danh sách sản phẩm</h2>
             </div>
             <div class="panel-content">
-              <form class="panel-form">
-                <div class="form-group">
-                  <label for="category-name">Tên danh mục</label>
+              <div class="search-section">
+                <div class="search-container">
                   <input
                     type="text"
-                    id="category-name"
-                    class="form-input"
-                    required
+                    class="search-input"
+                    id="product-search-input"
+                    placeholder="Tìm kiếm sản phẩm..."
                   />
-                </div>
-                <div class="form-group">
-                  <label for="category-description">Mô tả</label>
-                  <textarea
-                    id="category-description"
-                    class="form-textarea"
-                    rows="4"
-                  ></textarea>
-                </div>
-                <div class="form-group">
-                  <label for="category-image">Hình ảnh danh mục</label>
-                  <input
-                    type="file"
-                    id="category-image"
-                    class="form-input"
-                    accept="image/*"
-                  />
-                </div>
-                <div class="form-actions">
-                  <button type="submit" class="btn btn-primary">
-                    Tạo danh mục
+                  <select class="search-select" id="product-search-type">
+                    <option value="all">Tất cả</option>
+                    <option value="name">Tên sản phẩm</option>
+                    <option value="type">Loại sản phẩm</option>
+                    <option value="description">Mô tả</option>
+                  </select>
+                  <button class="btn-search" id="product-search-btn">
+                    <span class="material-icons">search</span>
                   </button>
-                  <button type="button" class="btn btn-secondary">Hủy</button>
+                  <button class="btn-clear" id="product-clear-btn">
+                    <span class="material-icons">clear</span>
+                  </button>
                 </div>
-              </form>
+              </div>
+
+              <div class="table-wrapper">
+                <table class="data-table" id="product-list-table">
+                  <thead>
+                    <tr>
+                      <th title="STT">STT</th>
+                      <th title="Tên sản phẩm">Tên sản phẩm</th>
+                      <th title="Loại">Loại</th>
+                      <th title="Đơn vị">Đơn vị</th>
+                      <th title="Số lượng">Số lượng</th>
+                      <!-- Thêm cột số lượng -->
+                      <th title="Giá bán (VNĐ)">Giá bán (VNĐ)</th>
+                      <th title="Mô tả">Mô tả</th>
+                      <th title="Thao tác">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <!-- JS sẽ render các dòng sản phẩm vào đây -->
+                  </tbody>
+                </table>
+                <div
+                  id="product-list-empty"
+                  style="display: none; text-align: center; color: #718096"
+                >
+                  Chưa có sản phẩm nào
+                </div>
+              </div>
+              <div class="pagination-section">
+                <div class="pagination" id="product-list-pagination">
+                  <!-- Pagination buttons sẽ được render bằng JS -->
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -334,13 +349,49 @@
                     />
                   </div>
                   <div class="form-group">
-                    <label for="product-category">Danh mục</label>
-                    <select id="product-category" class="form-select">
-                      <option value="">Chọn danh mục</option>
+                    <label for="product-type">Loại sản phẩm</label>
+                    <select id="product-type" class="form-select" required>
+                      <option value="">Chọn loại sản phẩm</option>
+                      <option value="Thuốc">Thuốc</option>
+                      <option value="Thực phẩm chức năng">
+                        Thực phẩm chức năng
+                      </option>
+                      <option value="Mỹ phẩm">Mỹ phẩm</option>
+                      <option value="Dụng cụ y tế">Dụng cụ y tế</option>
+                      <option value="other">Khác</option>
                     </select>
+                    <label for="product-type-custom"></label
+                    ><input
+                      type="text"
+                      id="product-type-custom"
+                      class="form-input custom-input"
+                      placeholder="Nhập loại sản phẩm khác"
+                      style="display: none; margin-top: 5px"
+                    />
                   </div>
                 </div>
                 <div class="form-row">
+                  <div class="form-group">
+                    <label for="product-unit">Đơn vị</label>
+                    <select id="product-unit" class="form-select" required>
+                      <option value="">Chọn đơn vị</option>
+                      <option value="Hộp">Hộp</option>
+                      <option value="Viên">Viên</option>
+                      <option value="Chai">Chai</option>
+                      <option value="Túi">Túi</option>
+                      <option value="Cái">Cái</option>
+                      <option value="Gói">Gói</option>
+                      <option value="other">Khác</option>
+                    </select>
+                    <label for="product-unit-custom"></label
+                    ><input
+                      type="text"
+                      id="product-unit-custom"
+                      class="form-input custom-input"
+                      placeholder="Nhập đơn vị khác"
+                      style="display: none; margin-top: 5px"
+                    />
+                  </div>
                   <div class="form-group">
                     <label for="product-price">Giá bán (VNĐ)</label>
                     <input
@@ -356,6 +407,8 @@
                       type="number"
                       id="product-quantity"
                       class="form-input"
+                      min="0"
+                      value="0"
                       required
                     />
                   </div>
@@ -368,21 +421,119 @@
                     rows="4"
                   ></textarea>
                 </div>
-                <div class="form-group">
-                  <label for="product-image">Hình ảnh sản phẩm</label>
-                  <input
-                    type="file"
-                    id="product-image"
-                    class="form-input"
-                    accept="image/*"
-                    multiple
-                  />
-                </div>
                 <div class="form-actions">
                   <button type="submit" class="btn btn-primary">
                     Thêm sản phẩm
                   </button>
-                  <button type="button" class="btn btn-secondary">Hủy</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel Chỉnh sửa sản phẩm -->
+        <div class="panel" id="panel-edit-product">
+          <div class="panel-container">
+            <div class="panel-header">
+              <h2>Chỉnh sửa sản phẩm</h2>
+            </div>
+            <div class="panel-content">
+              <form class="panel-form" id="edit-product-form">
+                <input type="hidden" id="edit-product-id" name="productId" />
+                <div class="form-group">
+                  <label for="edit-product-name">Tên sản phẩm *</label>
+                  <input
+                    type="text"
+                    id="edit-product-name"
+                    name="productName"
+                    class="form-input"
+                    required
+                  />
+                </div>
+                <div class="form-group">
+                  <label for="edit-product-type">Loại sản phẩm *</label>
+                  <select
+                    id="edit-product-type"
+                    name="productType"
+                    class="form-select"
+                    required
+                  >
+                    <option value="">Chọn loại sản phẩm</option>
+                    <option value="Thuốc">Thuốc</option>
+                    <option value="Thực phẩm chức năng">
+                      Thực phẩm chức năng
+                    </option>
+                    <option value="Dụng cụ y tế">Dụng cụ y tế</option>
+                    <option value="Mỹ phẩm">Mỹ phẩm</option>
+                    <option value="other">Khác</option>
+                  </select>
+                  <input
+                    type="text"
+                    id="edit-product-type-custom"
+                    name="productTypeCustom"
+                    class="form-input custom-input"
+                    style="display: none"
+                    placeholder="Nhập loại sản phẩm"
+                  />
+                </div>
+                <div class="form-group">
+                  <label for="edit-product-unit">Đơn vị *</label>
+                  <select
+                    id="edit-product-unit"
+                    name="unit"
+                    class="form-select"
+                    required
+                  >
+                    <option value="">Chọn đơn vị</option>
+                    <option value="Viên">Viên</option>
+                    <option value="Hộp">Hộp</option>
+                    <option value="Chai">Chai</option>
+                    <option value="Tuýp">Tuýp</option>
+                    <option value="Cái">Cái</option>
+                    <option value="Vỉ">Vỉ</option>
+                    <option value="other">Khác</option>
+                  </select>
+                  <input
+                    type="text"
+                    id="edit-product-unit-custom"
+                    name="unitCustom"
+                    class="form-input custom-input"
+                    style="display: none"
+                    placeholder="Nhập đơn vị"
+                  />
+                </div>
+                <div class="form-group">
+                  <label for="edit-product-price">Giá bán (VNĐ) *</label>
+                  <input
+                    type="number"
+                    id="edit-product-price"
+                    name="price"
+                    class="form-input"
+                    min="0"
+                    step="0.01"
+                    required
+                  />
+                </div>
+                <div class="form-group">
+                  <label for="edit-product-description">Mô tả</label>
+                  <textarea
+                    id="edit-product-description"
+                    name="description"
+                    class="form-textarea"
+                    rows="3"
+                  ></textarea>
+                </div>
+                <div class="form-actions">
+                  <button type="submit" class="btn btn-primary">
+                    Cập nhật sản phẩm
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-secondary"
+                    onclick="cancelEditProduct()"
+                  >
+                    Hủy
+                  </button>
                 </div>
               </form>
             </div>
@@ -396,7 +547,7 @@
               <h2>Tạo nhà thuốc mới</h2>
             </div>
             <div class="panel-content">
-              <form class="panel-form">
+              <form class="panel-form" id="create-store-form">
                 <div class="form-group">
                   <label for="store-name">Tên nhà thuốc</label>
                   <input
@@ -408,12 +559,7 @@
                 </div>
                 <div class="form-group">
                   <label for="store-address">Địa chỉ</label>
-                  <input
-                    type="text"
-                    id="store-address"
-                    class="form-input"
-                    required
-                  />
+                  <input type="text" id="store-address" class="form-input" />
                 </div>
                 <div class="form-row">
                   <div class="form-group">
@@ -430,28 +576,14 @@
                     <input type="email" id="store-email" class="form-input" />
                   </div>
                 </div>
-                <div class="form-row">
-                  <div class="form-group">
-                    <label for="store-manager">Quản lý nhà thuốc</label>
-                    <select id="store-manager" class="form-select">
-                      <option value="">Chọn quản lý</option>
-                    </select>
-                  </div>
-                  <div class="form-group">
-                    <label for="store-status">Trạng thái</label>
-                    <select id="store-status" class="form-select">
-                      <option value="active">Hoạt động</option>
-                      <option value="inactive">Tạm ngừng</option>
-                    </select>
-                  </div>
-                </div>
+
                 <div class="form-actions">
                   <button type="submit" class="btn btn-primary">
                     Tạo nhà thuốc
                   </button>
-                  <button type="button" class="btn btn-secondary">Hủy</button>
                 </div>
               </form>
+              <div id="create-store-message"></div>
             </div>
           </div>
         </div>
@@ -469,34 +601,58 @@
               </div>
             </div>
             <div class="panel-content">
+              <div class="search-section">
+                <div class="search-container">
+                  <input
+                    type="text"
+                    class="search-input"
+                    id="store-search-input"
+                    placeholder="Tìm kiếm nhà thuốc..."
+                  />
+                  <select class="search-select" id="store-search-type">
+                    <option value="all">Tất cả</option>
+                    <option value="name">Tên nhà thuốc</option>
+                    <option value="phone">Số điện thoại</option>
+                    <option value="address">Địa chỉ</option>
+                  </select>
+                  <button class="btn-search" id="store-search-btn">
+                    <span class="material-icons">search</span>
+                  </button>
+                  <button class="btn-clear" id="store-clear-btn">
+                    <span class="material-icons">clear</span>
+                  </button>
+                </div>
+              </div>
+
               <div class="table-wrapper">
                 <table class="data-table">
                   <thead>
                     <tr>
-                      <th>ID</th>
-                      <th>Tên nhà thuốc</th>
-                      <th>Địa chỉ</th>
-                      <th>Số điện thoại</th>
-                      <th>Quản lý</th>
-                      <th>Trạng thái</th>
-                      <th>Thao tác</th>
+                      <th title="ID">ID</th>
+                      <th title="Tên nhà thuốc">Tên nhà thuốc</th>
+                      <th title="Địa chỉ">Địa chỉ</th>
+                      <th title="Số điện thoại">Số điện thoại</th>
+                      <th title="Email">Email</th>
+                      <th title="Quản lý">Quản lý</th>
+                      <th title="Trạng thái">Trạng thái</th>
+                      <th title="Thao tác">Thao tác</th>
                     </tr>
                   </thead>
-                  <tbody>
-                    <tr>
-                      <td>1</td>
-                      <td>Long Châu Quận 1</td>
-                      <td>123 Nguyễn Huệ, Q.1, TP.HCM</td>
-                      <td>0901234567</td>
-                      <td>Nguyễn Văn A</td>
-                      <td><span class="status active">Hoạt động</span></td>
-                      <td>
-                        <button class="btn-edit">Sửa</button>
-                        <button class="btn-delete">Xóa</button>
-                      </td>
-                    </tr>
+                  <tbody id="store-list-tbody">
+                    <!-- Dữ liệu sẽ được render bằng JS -->
                   </tbody>
                 </table>
+              </div>
+
+              <!-- Thêm pagination section cho stores -->
+              <div
+                class="pagination-section"
+                id="store-pagination-section"
+                style="display: none"
+              >
+                <div class="pagination" id="store-list-pagination">
+                  <!-- Pagination buttons sẽ được render bằng JS -->
+                </div>
               </div>
             </div>
           </div>
@@ -510,6 +666,7 @@
             </div>
             <div class="panel-content">
               <form class="panel-form">
+                <input type="hidden" id="edit-store-id" />
                 <div class="form-group">
                   <label for="edit-store-name">Tên nhà thuốc</label>
                   <input
@@ -551,7 +708,13 @@
                   <button type="submit" class="btn btn-primary">
                     Cập nhật
                   </button>
-                  <button type="button" class="btn btn-secondary">Hủy</button>
+                  <button
+                    type="button"
+                    class="btn btn-secondary"
+                    onclick="cancelEditStore()"
+                  >
+                    Hủy
+                  </button>
                 </div>
               </form>
             </div>

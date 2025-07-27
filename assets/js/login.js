@@ -38,6 +38,9 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
     // Log toàn bộ response để debug
     console.log("Login response data:", data);
 
+    // Log toàn bộ response để debug
+    console.log("Login response data:", data);
+
     if (response.ok && data.success) {
       messageDiv.innerHTML = '<div class="success">' + data.message + "</div>";
 
