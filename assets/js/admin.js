@@ -98,9 +98,6 @@ function loadInitialData() {
   renderListAccounts();
   document.querySelectorAll(".nav-item")[0].classList.add("active");
   document.querySelectorAll(".panel")[0].classList.add("active");
-  document.querySelector(".header-title").textContent = document
-    .querySelector(".nav-item")
-    .childNodes[2].textContent.trim();
 }
 
 // Render list accounts panel
@@ -231,6 +228,19 @@ function showUsersForPharmacy(users) {
   // Clear existing content
   usersList.innerHTML = "";
 
+  // Reset user search input
+  const userSearchInput = document.querySelector(".user-search-input");
+  if (userSearchInput) {
+    userSearchInput.value = "";
+    userSearchInput.classList.remove("searching");
+  }
+
+  // Reset user search select
+  const userSearchSelect = document.querySelector(".user-search-select");
+  if (userSearchSelect) {
+    userSearchSelect.value = "all";
+  }
+
   if (users.length === 0) {
     usersList.innerHTML =
       '<div style="text-align: center; color: #718096;">Không có nhân viên nào</div>';
@@ -273,6 +283,7 @@ function showUsersForPharmacy(users) {
 function showUserDetails(user) {
   const usersWrapper = document.querySelector(".list-users-wrapper");
   const detailsWrapper = document.querySelector(".user-details-wrapper");
+  console.log("Showing details for user:", user);
   if (!usersWrapper || !detailsWrapper) return;
   const initials = user.fullName
     .split(" ")
@@ -906,68 +917,437 @@ function closeEditUserModal() {
 
 // Initialize search functionality
 function initializeSearch() {
-  const searchBtn = document.querySelector(".btn-search");
   const searchInput = document.querySelector(".search-input");
+  const searchSelect = document.querySelector(".search-select");
 
-  if (searchBtn) {
-    searchBtn.addEventListener("click", performSearch);
+  // Initialize pharmacy search
+  if (searchInput) {
+    // Real-time search as the user types
+    searchInput.addEventListener("input", function () {
+      performSearch();
+    });
+  }
+  // Search when search type changes
+  if (searchSelect) {
+    searchSelect.addEventListener("change", function () {
+      performSearch();
+    });
   }
 
-  if (searchInput) {
-    searchInput.addEventListener("keypress", function (e) {
-      if (e.key === "Enter") {
-        performSearch();
-      }
+  // Initialize account search
+  const userSearchInput = document.querySelector(".user-search-input");
+  const userSearchSelect = document.querySelector(".user-search-select");
+
+  if (userSearchInput) {
+    userSearchInput.addEventListener("input", function () {
+      performUserSearch();
+    });
+  }
+
+  if (userSearchSelect) {
+    userSearchSelect.addEventListener("change", function () {
+      performUserSearch();
     });
   }
 }
 
+// Variable to store search timeout
+let searchTimeout = null;
+
 // Perform search functionality
 function performSearch() {
-  const searchType = document.querySelector(".search-select")?.value || "all";
-  const searchContent = document.querySelector(".search-input")?.value || "";
-
-  if (!listPharmacy.length) return;
-
-  // Hide all store items initially
-  document.querySelectorAll(".store-item").forEach((item) => {
-    item.style.display = "none";
-  });
-
-  // Clear user list
-  const usersList = document.querySelector(".list-users");
-  if (usersList) {
-    usersList.innerHTML = "Chọn nhà thuốc để xem nhân viên";
+  // Clear previous timeout to prevent multiple rapid searches
+  if (searchTimeout) {
+    clearTimeout(searchTimeout);
   }
 
-  // Filter and show matching pharmacies
-  listPharmacy.forEach((pharmacy, index) => {
-    let isMatch = false;
-    const searchTerm = searchContent.toLowerCase();
+  // Set a small delay to avoid excessive searching while typing
+  searchTimeout = setTimeout(() => {
+    const searchType = document.querySelector(".search-select")?.value || "all";
+    const searchContent = document.querySelector(".search-input")?.value || "";
 
-    switch (searchType) {
-      case "all":
-        isMatch =
-          pharmacy.pharmacyName.toLowerCase().includes(searchTerm) ||
-          pharmacy.address.toLowerCase().includes(searchTerm) ||
-          pharmacy.phone.toLowerCase().includes(searchTerm);
-        break;
-      case "name":
-        isMatch = pharmacy.pharmacyName.toLowerCase().includes(searchTerm);
-        break;
-      case "address":
-        isMatch = pharmacy.address.toLowerCase().includes(searchTerm);
-        break;
-      case "phone":
-        isMatch = pharmacy.phone.includes(searchContent);
-        break;
+    // Add searching indicator to search input
+    const searchInput = document.querySelector(".search-input");
+    if (searchInput) {
+      searchInput.classList.add("searching");
     }
 
-    const storeItem = document.querySelectorAll(".store-item")[index];
-    if (storeItem) {
-      storeItem.style.display = isMatch ? "flex" : "none";
+    if (!listPharmacy.length) {
+      if (searchInput) {
+        searchInput.classList.remove("searching");
+      }
+      return;
     }
-  });
+
+    // Hide all store items initially
+    document.querySelectorAll(".store-item").forEach((item) => {
+      item.style.display = "none";
+
+      // Remove any previously highlighted text
+      const nameElement = item.querySelector(".store-info h4");
+      const addressElement = item.querySelector(".store-info p:first-of-type");
+      const phoneElement = item.querySelector(".store-info p:last-of-type");
+
+      if (nameElement) nameElement.innerHTML = nameElement.textContent;
+      if (addressElement) addressElement.innerHTML = addressElement.textContent;
+      if (phoneElement) phoneElement.innerHTML = phoneElement.textContent;
+    });
+
+    // Clear user list
+    const usersList = document.querySelector(".list-users");
+    if (usersList) {
+      usersList.innerHTML = "Chọn nhà thuốc để xem nhân viên";
+    }
+
+    // Filter and show matching pharmacies
+    let matchCount = 0;
+
+    listPharmacy.forEach((pharmacy, index) => {
+      let isMatch = false;
+      const searchTerm = searchContent.toLowerCase();
+
+      // Skip filtering if search term is empty
+      if (searchTerm === "") {
+        isMatch = true;
+      } else {
+        switch (searchType) {
+          case "all":
+            isMatch =
+              pharmacy.pharmacyName.toLowerCase().includes(searchTerm) ||
+              pharmacy.address.toLowerCase().includes(searchTerm) ||
+              pharmacy.phone.toLowerCase().includes(searchTerm);
+            break;
+          case "name":
+            isMatch = pharmacy.pharmacyName.toLowerCase().includes(searchTerm);
+            break;
+          case "address":
+            isMatch = pharmacy.address.toLowerCase().includes(searchTerm);
+            break;
+          case "phone":
+            isMatch = pharmacy.phone.includes(searchContent);
+            break;
+        }
+      }
+
+      const storeItem = document.querySelectorAll(".store-item")[index];
+      if (storeItem) {
+        if (isMatch) {
+          matchCount++;
+          storeItem.style.display = "flex";
+
+          // Highlight matched text if there's a search term
+          if (searchTerm) {
+            highlightMatchedText(storeItem, pharmacy, searchType, searchTerm);
+          }
+        } else {
+          storeItem.style.display = "none";
+        }
+      }
+    });
+
+    // Show "no results" message if no matches found
+    const storesContainer = document.querySelector(".list-stores");
+    const noResultsMsg = document.querySelector(".no-results-message");
+
+    if (matchCount === 0 && searchContent && storesContainer) {
+      // Create or show no results message
+      if (!noResultsMsg) {
+        const msgElem = document.createElement("div");
+        msgElem.className = "no-results-message";
+        msgElem.textContent = "Không tìm thấy nhà thuốc phù hợp";
+        storesContainer.appendChild(msgElem);
+      } else {
+        noResultsMsg.style.display = "block";
+      }
+    } else if (noResultsMsg) {
+      noResultsMsg.style.display = "none";
+    }
+
+    // Remove searching indicator
+    if (searchInput) {
+      searchInput.classList.remove("searching");
+    }
+  }, 300); // 300ms delay for better performance
+}
+
+// Function to highlight matched text in search results
+function highlightMatchedText(storeItem, pharmacy, searchType, searchTerm) {
+  if (!storeItem || !pharmacy) return;
+
+  const nameElement = storeItem.querySelector(".store-info h4");
+  const addressElement = storeItem.querySelector(".store-info p:first-of-type");
+  const phoneElement = storeItem.querySelector(".store-info p:last-of-type");
+
+  // Helper function to highlight text
+  const highlight = (text, term) => {
+    if (!text) return "";
+    const regex = new RegExp(
+      `(${term.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&")})`,
+      "gi"
+    );
+    return text.replace(regex, '<span class="highlight">$1</span>');
+  };
+
+  // Highlight based on search type
+  switch (searchType) {
+    case "all":
+      if (
+        nameElement &&
+        pharmacy.pharmacyName.toLowerCase().includes(searchTerm)
+      ) {
+        nameElement.innerHTML = highlight(pharmacy.pharmacyName, searchTerm);
+      }
+      if (
+        addressElement &&
+        pharmacy.address.toLowerCase().includes(searchTerm)
+      ) {
+        const addressText = addressElement.textContent;
+        addressElement.innerHTML = highlight(addressText, searchTerm);
+      }
+      if (phoneElement && pharmacy.phone.toLowerCase().includes(searchTerm)) {
+        const phoneText = phoneElement.textContent;
+        phoneElement.innerHTML = highlight(phoneText, searchTerm);
+      }
+      break;
+    case "name":
+      if (nameElement) {
+        nameElement.innerHTML = highlight(pharmacy.pharmacyName, searchTerm);
+      }
+      break;
+    case "address":
+      if (addressElement) {
+        const addressText = addressElement.textContent;
+        addressElement.innerHTML = highlight(addressText, searchTerm);
+      }
+      break;
+    case "phone":
+      if (phoneElement) {
+        const phoneText = phoneElement.textContent;
+        phoneElement.innerHTML = highlight(phoneText, searchTerm);
+      }
+      break;
+  }
+}
+
+// Variable to store user search timeout
+let userSearchTimeout = null;
+
+// Perform user search functionality
+function performUserSearch() {
+  // Clear previous timeout
+  if (userSearchTimeout) {
+    clearTimeout(userSearchTimeout);
+  }
+
+  // Set a delay to avoid excessive searching
+  userSearchTimeout = setTimeout(() => {
+    const searchType =
+      document.querySelector(".user-search-select")?.value || "all";
+    const searchContent =
+      document.querySelector(".user-search-input")?.value || "";
+
+    // Add searching indicator
+    const searchInput = document.querySelector(".user-search-input");
+    if (searchInput) {
+      searchInput.classList.add("searching");
+    }
+
+    // Get currently selected pharmacy
+    const selectedPharmacy = document.querySelector(".store-item.active");
+    if (!selectedPharmacy) {
+      if (searchInput) {
+        searchInput.classList.remove("searching");
+      }
+      return;
+    }
+
+    const pharmacyId = selectedPharmacy.getAttribute("data-pharmacy-id");
+    if (!pharmacyId || !listUsersByPharmacy[pharmacyId]) {
+      if (searchInput) {
+        searchInput.classList.remove("searching");
+      }
+      return;
+    }
+
+    const users = listUsersByPharmacy[pharmacyId];
+    const usersList = document.querySelector(".list-users");
+
+    // Clear existing user items
+    if (usersList) {
+      usersList.innerHTML = "";
+
+      if (users.length === 0) {
+        usersList.innerHTML =
+          '<div style="text-align: center; color: #718096;">Không có nhân viên nào</div>';
+        if (searchInput) {
+          searchInput.classList.remove("searching");
+        }
+        return;
+      }
+
+      // Filter users
+      let matchCount = 0;
+      users.forEach((user) => {
+        let isMatch = false;
+        const searchTerm = searchContent.toLowerCase();
+
+        // If search term is empty, show all users
+        if (searchTerm === "") {
+          isMatch = true;
+        } else {
+          switch (searchType) {
+            case "all":
+              isMatch =
+                user.fullName.toLowerCase().includes(searchTerm) ||
+                user.email.toLowerCase().includes(searchTerm) ||
+                user.phone.toLowerCase().includes(searchTerm) ||
+                (user.role &&
+                  (user.role.toLowerCase().includes(searchTerm) ||
+                    (user.role === "manager" &&
+                      "quản lý".includes(searchTerm)) ||
+                    (user.role === "employee" &&
+                      "nhân viên".includes(searchTerm))));
+              break;
+            case "name":
+              isMatch = user.fullName.toLowerCase().includes(searchTerm);
+              break;
+            case "email":
+              isMatch = user.email.toLowerCase().includes(searchTerm);
+              break;
+            case "phone":
+              isMatch = user.phone.includes(searchContent);
+              break;
+            case "role":
+              const roleMap = { "quản lý": "manager", "nhân viên": "employee" };
+              const searchRole = roleMap[searchTerm] || searchTerm;
+              isMatch = user.role === searchRole;
+              break;
+          }
+        }
+
+        if (isMatch) {
+          matchCount++;
+
+          // Create user item
+          const userItem = document.createElement("div");
+          userItem.classList.add("user-item");
+
+          // Generate initials for avatar
+          const initials = user.fullName
+            .split(" ")
+            .map((name) => name.charAt(0))
+            .join("")
+            .substring(0, 2)
+            .toUpperCase();
+
+          // Create user HTML
+          let userHTML = `
+            <div class="user-avatar">${initials}</div>
+            <div class="user-info">
+              <h4>${user.fullName}</h4>
+              <p>${user.email}</p>
+              <p>${user.phone}</p>
+            </div>
+            <div class="user-role ${
+              user.role === "manager" ? "manager" : "employee"
+            }">
+              ${user.role === "manager" ? "Quản lý" : "Nhân viên"}
+            </div>
+          `;
+
+          userItem.innerHTML = userHTML;
+
+          // Highlight matched text if search term exists
+          if (searchTerm) {
+            highlightUserMatchedText(userItem, user, searchType, searchTerm);
+          }
+
+          // Add click handler
+          userItem.clickHandler = () => showUserDetails(user);
+          userItem.addEventListener("click", userItem.clickHandler);
+          usersList.appendChild(userItem);
+        }
+      });
+
+      // Show no results message if needed
+      if (matchCount === 0 && searchContent) {
+        usersList.innerHTML =
+          '<div style="text-align: center; color: #718096;">Không tìm thấy nhân viên phù hợp</div>';
+      }
+    }
+
+    // Remove searching indicator
+    if (searchInput) {
+      searchInput.classList.remove("searching");
+    }
+  }, 300);
+}
+
+// Function to highlight matched text in user search results
+function highlightUserMatchedText(userItem, user, searchType, searchTerm) {
+  if (!userItem || !user) return;
+
+  const nameElement = userItem.querySelector(".user-info h4");
+  const emailElement = userItem.querySelector(".user-info p:first-of-type");
+  const phoneElement = userItem.querySelector(".user-info p:last-of-type");
+  const roleElement = userItem.querySelector(".user-role");
+
+  // Helper function to highlight text
+  const highlight = (text, term) => {
+    if (!text) return "";
+    const regex = new RegExp(
+      `(${term.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&")})`,
+      "gi"
+    );
+    return text.replace(regex, '<span class="highlight">$1</span>');
+  };
+
+  // Highlight based on search type
+  switch (searchType) {
+    case "all":
+      if (nameElement && user.fullName.toLowerCase().includes(searchTerm)) {
+        nameElement.innerHTML = highlight(user.fullName, searchTerm);
+      }
+      if (emailElement && user.email.toLowerCase().includes(searchTerm)) {
+        emailElement.innerHTML = highlight(user.email, searchTerm);
+      }
+      if (phoneElement && user.phone.toLowerCase().includes(searchTerm)) {
+        phoneElement.innerHTML = highlight(user.phone, searchTerm);
+      }
+
+      // For role, we need special handling due to translation
+      if (roleElement) {
+        const displayRole = user.role === "manager" ? "Quản lý" : "Nhân viên";
+        if (
+          displayRole.toLowerCase().includes(searchTerm) ||
+          user.role.toLowerCase().includes(searchTerm)
+        ) {
+          roleElement.innerHTML = highlight(displayRole, searchTerm);
+        }
+      }
+      break;
+    case "name":
+      if (nameElement) {
+        nameElement.innerHTML = highlight(user.fullName, searchTerm);
+      }
+      break;
+    case "email":
+      if (emailElement) {
+        emailElement.innerHTML = highlight(user.email, searchTerm);
+      }
+      break;
+    case "phone":
+      if (phoneElement) {
+        phoneElement.innerHTML = highlight(user.phone, searchTerm);
+      }
+      break;
+    case "role":
+      if (roleElement) {
+        const displayRole = user.role === "manager" ? "Quản lý" : "Nhân viên";
+        roleElement.innerHTML = highlight(displayRole, searchTerm);
+      }
+      break;
+  }
 }
 
 // Placeholder functions for other panels

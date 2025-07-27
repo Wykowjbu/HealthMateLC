@@ -151,9 +151,6 @@
                     <option value="address">Địa chỉ</option>
                     <option value="phone">Số điện thoại</option>
                   </select>
-                  <button class="btn-search">
-                    <span class="material-symbols-outlined">search</span>
-                  </button>
                 </div>
               </div>
               <div class="content-list list-stores"></div>
@@ -162,6 +159,23 @@
             <div class="content-container">
               <div class="content-header">
                 <h3 class="content-title">Tài khoản</h3>
+                <div class="search-controls account-search">
+                  <input
+                    type="text"
+                    class="search-input user-search-input"
+                    placeholder="Tìm kiếm tài khoản..."
+                    aria-label="Tìm kiếm tài khoản"
+                  />
+                  <select
+                    class="search-select user-search-select"
+                    aria-label="Tiêu chí tìm kiếm tài khoản"
+                  >
+                    <option value="all">Tất cả</option>
+                    <option value="name">Tên</option>
+                    <option value="email">Email</option>
+                    <option value="phone">Số điện thoại</option>
+                  </select>
+                </div>
               </div>
               <div class="user-container">
                 <div class="list-users-wrapper">
@@ -702,8 +716,17 @@
             <div class="form-group">
               <label for="new-password">Mật khẩu mới</label>
               <div class="password-input-wrapper">
-                <input type="password" id="new-password" class="form-input" required />
-                <button type="button" class="password-toggle" onclick="togglePasswordVisibility('new-password')">
+                <input
+                  type="password"
+                  id="new-password"
+                  class="form-input"
+                  required
+                />
+                <button
+                  type="button"
+                  class="password-toggle"
+                  onclick="togglePasswordVisibility('new-password')"
+                >
                   <span class="material-icons">visibility</span>
                 </button>
               </div>
@@ -723,7 +746,11 @@
                   class="form-input"
                   required
                 />
-                <button type="button" class="password-toggle" onclick="togglePasswordVisibility('confirm-password')">
+                <button
+                  type="button"
+                  class="password-toggle"
+                  onclick="togglePasswordVisibility('confirm-password')"
+                >
                   <span class="material-icons">visibility</span>
                 </button>
               </div>
