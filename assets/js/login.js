@@ -1,23 +1,22 @@
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
-  
+
   const username = document.getElementById("username").value.trim();
   const password = document.getElementById("password").value.trim();
-  const messageDiv = document.getElementById("message");
-  const loadingDiv = document.getElementById("loading");
   const loginButton = document.getElementById("loginButton");
 
   // Validate input
   if (!username || !password) {
-    messageDiv.innerHTML =
-      '<div class="error">Vui lòng nhập đầy đủ tên người dùng và mật khẩu!</div>';
-    return;
+    const apiStatusElement = document.createElement("div");
+    apiStatusElement.className = "api-status ";
+    apiStatusElement.innerHTML = `
+        <div class="status-icon">
+          <span class="material-icons"></span>
+        </div>
+        <div class="status-text">Vui lòng nhập đầy đủ tên người dùng và mật khẩu!</div>
+      `;
   }
-
-  // Show loading
-  loadingDiv.style.display = "block";
   loginButton.disabled = true;
-  messageDiv.innerHTML = "<p>Đang xử lý...</p>";
 
   try {
     const response = await fetch("http://localhost:8080/api/auth/login", {
@@ -34,20 +33,31 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
 
     // Parse JSON response
     const data = await response.json();
-    
+
     // Log toàn bộ response để debug
     console.log("Login response data:", data);
 
     if (response.ok && data.success) {
-      messageDiv.innerHTML = '<div class="success">' + data.message + "</div>";
+      // Hiển thị thông báo đăng nhập thành công dạng popup ở góc phải trên
+      const apiStatusElement = document.createElement("div");
+      apiStatusElement.className = "api-status connected";
+      apiStatusElement.innerHTML = `
+        <div class="status-icon">
+          <span class="material-icons"></span>
+        </div>
+        <div class="status-text">Đăng nhập thành công!</div>
+      `;
+      document.body.appendChild(apiStatusElement);
+      setTimeout(() => {
+        apiStatusElement.classList.add("fade-out");
+        setTimeout(() => apiStatusElement.remove(), 2000);
+      }, 2000);
 
       // Hiển thị userId trên console
       if (data.userId) {
         console.log("User ID từ backend:", data.userId);
         localStorage.setItem("currentUserId", data.userId);
       }
-
-      // Store session info in localStorage (optional, for debugging)
       if (data.sessionId) {
         localStorage.setItem("sessionId", data.sessionId);
         console.log("Session ID:", data.sessionId);
@@ -56,24 +66,43 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
         localStorage.setItem("userRole", data.role);
         console.log("User Role:", data.role);
       }
-
-      // Chuyển hướng sau 1 giây
       setTimeout(() => {
         window.location.href = data.redirectUrl;
       }, 1000);
     } else {
-      messageDiv.innerHTML =
-        '<div class="error">' +
-        (data.message || "Đăng nhập thất bại!") +
-        "</div>";
+      // Hiển thị thông báo đăng nhập thất bại dạng popup ở góc phải trên
+      const apiStatusElement = document.createElement("div");
+      apiStatusElement.className = "api-status disconnected";
+      apiStatusElement.innerHTML = `
+        <div class="status-icon">
+          <span class="material-icons"></span>
+        </div>
+        <div class="status-text">Đăng nhập thất bại! ${
+          data.message ? data.message : ""
+        }</div>
+      `;
+      document.body.appendChild(apiStatusElement);
+      setTimeout(() => {
+        apiStatusElement.classList.add("fade-out");
+        setTimeout(() => apiStatusElement.remove(), 500);
+      }, 2500);
     }
   } catch (error) {
-    console.error("Login error:", error);
-    messageDiv.innerHTML =
-      '<div class="error">Có lỗi xảy ra khi kết nối đến server. Vui lòng thử lại!</div>';
+    // Hiển thị thông báo lỗi kết nối dạng popup ở góc phải trên
+    const apiStatusElement = document.createElement("div");
+    apiStatusElement.className = "api-status disconnected";
+    apiStatusElement.innerHTML = `
+      <div class="status-icon">
+        <span class="material-icons"></span>
+      </div>
+      <div class="status-text">Có lỗi xảy ra khi kết nối đến server. Vui lòng thử lại!</div>
+    `;
+    document.body.appendChild(apiStatusElement);
+    setTimeout(() => {
+      apiStatusElement.classList.add("fade-out");
+      setTimeout(() => apiStatusElement.remove(), 500);
+    }, 2500);
   } finally {
-    // Hide loading
-    loadingDiv.style.display = "none";
     loginButton.disabled = false;
   }
 });
@@ -95,14 +124,4 @@ window.addEventListener("load", () => {
       '<div class="error">' + decodeURIComponent(message) + "</div>";
   }
 });
-// Thêm đoạn code này vào phần <script> hiện có hoặc tạo một <script> mới
-document.getElementById("showPassword").addEventListener("change", function () {
-  const passwordInput = document.getElementById("password");
-  if (this.checked) {
-    // Nếu checkbox được chọn, đổi type của input thành "text" để hiện mật khẩu
-    passwordInput.type = "text";
-  } else {
-    // Nếu checkbox không được chọn, đổi type của input trở lại thành "password"
-    passwordInput.type = "password";
-  }
-});
+
