@@ -2373,6 +2373,12 @@ function getRoleDisplayName(role) {
   };
   return roleNames[role] || role;
 }
+// Render add account panel
+function renderAddAccount() {
+  loadPharmacyOptions();
+  loadRoles();
+  updateHeaderTitle("add-account");
+}
 
 function showToast(message, type = 'info', callback = null) {
   let toastContainer = document.querySelector(".toast-container");
