@@ -6,7 +6,7 @@ let panelItems = document.querySelectorAll(".panel");
 let listPharmacy = [];
 let allProducts = [];
 let allStores = [];
-let currentPage = 0; // dùng cho nhà thuốc
+let currentPage = 1; // dùng cho sản phẩm (1-based), stores sẽ convert về 0-based khi cần
 const pageSize = 6; // dùng cho nhà thuốc, mỗi trang 6 nhà thuốc
 let totalPages = 0;
 let isSearching = false;
@@ -1287,7 +1287,7 @@ function renderPagination() {
       const page = parseInt(this.getAttribute("data-page"));
       if (page && page !== currentPage) {
         currentPage = page;
-        renderListProducts(); // Gọi lại API thay vì chỉ render table
+        renderListProducts(); // Gọi lại API để load dữ liệu mới
       }
     });
   });
@@ -1396,7 +1396,7 @@ function editProduct(productId) {
       loadProductTypes();
       loadProductUnits();
 
-      // Fill form with product data after a short delay to ensure options are loaded
+      // Fill form with product data after a longer delay to ensure options are loaded
       setTimeout(() => {
         document.getElementById("edit-product-id").value = product.productId;
         document.getElementById("edit-product-name").value = product.productName;
@@ -1452,7 +1452,7 @@ function editProduct(productId) {
           editImagePreview.style.display = "none";
           editPreviewImg.src = "";
         }
-      }, 100);
+      }, 300);
     })
     .catch((error) => {
       console.error("Error loading product:", error);
@@ -1623,8 +1623,8 @@ function renderCreateStore() {
 }
 
 function renderListStores(keepPage = false) {
-  if (!keepPage) currentPage = 0;
-  loadStoresFromAPI(currentPage, pageSize);
+  if (!keepPage) currentPage = 1;
+  loadStoresFromAPI(currentPage - 1, pageSize); // Convert to 0-based for API
   const paginationSection = document.getElementById('store-pagination-section');
   if (paginationSection) {
     paginationSection.style.display = 'block';
@@ -1732,14 +1732,14 @@ function performStoreSearch() {
   const searchType = document.getElementById("store-search-type")?.value || "all";
   if (!keyword) {
     isSearching = false;
-    currentPage = 0;
-    loadStoresFromAPI(currentPage, pageSize);
+    currentPage = 1;
+    loadStoresFromAPI(currentPage - 1, pageSize); // Convert to 0-based for API
     return;
   }
   isSearching = true;
   currentSearchParams = { keyword, type: searchType };
-  currentPage = 0;
-  loadStoresFromAPI(currentPage, pageSize);
+  currentPage = 1;
+  loadStoresFromAPI(currentPage - 1, pageSize); // Convert to 0-based for API
 }
 
 function clearStoreSearch() {
@@ -1748,8 +1748,8 @@ function clearStoreSearch() {
   if (searchInput) searchInput.value = "";
   if (searchType) searchType.value = "all";
   isSearching = false;
-  currentPage = 0;
-  loadStoresFromAPI(currentPage, pageSize);
+  currentPage = 1;
+  loadStoresFromAPI(currentPage - 1, pageSize); // Convert to 0-based for API
 }
 
 function attachStoreActionEvents() {
@@ -2441,20 +2441,23 @@ function showToast(message, type = 'info', callback = null) {
 }
 
 function attachAddStoreButtonEvent() {
-  if (form) {
-    form.reset();
-    const customInputs = form.querySelectorAll(".custom-input");
-    customInputs.forEach((input) => {
-      input.style.display = "none";
-      input.classList.remove("show");
-      input.required = false;
-      input.value = "";
-    });
+  // Gắn sự kiện cho nút "Thêm nhà thuốc" trong panel list-stores
+  const addBtn = document.querySelector('#panel-list-stores .panel-header .btn.btn-primary');
+  if (addBtn) {
+    addBtn.onclick = function() {
+      // Ẩn tất cả panel
+      document.querySelectorAll('.panel').forEach(panel => panel.classList.remove('active'));
+      // Hiện panel tạo nhà thuốc
+      document.getElementById('panel-create-store').classList.add('active');
+      // Cập nhật sidebar
+      document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+      document.querySelector('.nav-item[data-type="create-store"]').classList.add('active');
+      // Cập nhật header
+      updateHeaderTitle('create-store');
+      // Render lại nội dung nếu cần
+      renderCreateStore();
+    };
   }
-  loadProductTypes();
-  loadProductUnits();
-  initializeEditProductCustomInputs();
-  updateHeaderTitle("edit-product");
 }
 
 function loadProductTypes() {
