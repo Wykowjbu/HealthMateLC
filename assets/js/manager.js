@@ -610,7 +610,76 @@ async function exportAttendance() {
     }
 }
 
+//#region History Empployee 
+async function initEmployeeHistorySection() {
+  const historyList = document.getElementById("employeeHistoryList");
+  const searchInput = document.getElementById("employeeHistorySearch");
+  historyList.innerHTML = "<p>Đang tải lịch sử làm việc...</p>";
 
+  let allHistories = [];
+
+  try {
+    const response = await fetch("http://localhost:8080/manager/history/all", {
+      method: "GET",
+      credentials: "include",
+      headers: { Accept: "application/json" },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP error! status: ${response.status}, Details: ${errorText}`);
+    }
+
+    allHistories = await response.json();
+    renderHistoryList(allHistories);
+
+    if (searchInput) {
+      searchInput.value = "";
+      searchInput.oninput = function () {
+        const keyword = this.value.trim().toLowerCase();
+        const filtered = allHistories.filter(h => (h.fullName || h.username).toLowerCase().includes(keyword));
+        renderHistoryList(filtered);
+      };
+    }
+  } catch (error) {
+    console.error("Lỗi khi tải lịch sử nhân viên:", error);
+    historyList.innerHTML = "<p>Không thể tải lịch sử làm việc.</p>";
+  }
+
+  function renderHistoryList(list) {
+    if (list.length > 0) {
+      historyList.innerHTML = list.map(h => `
+        <div class="employee-shift">
+          <strong>Nhân viên:</strong> ${h.fullName || h.username}<br>
+          <strong>Chi nhánh:</strong> ${h.pharmacyName || h.pharmacyId}<br>
+          <strong>Bắt đầu:</strong> ${h.startTime}<br>
+          <strong>Kết thúc:</strong> ${h.endTime || "Đang làm việc"}
+        </div>
+      `).join("");
+    } else {
+      historyList.innerHTML = "<p>Không có lịch sử làm việc.</p>";
+    }
+  }
+}
+
+// Gọi khi chuyển sang tab employee_history
+document.addEventListener("DOMContentLoaded", () => {
+  document
+    .getElementById("historyEmployeeSelect")
+    ?.addEventListener("change", function () {
+      loadEmployeeHistory(this.value);
+    });
+});
+
+// Thêm vào hàm navigate để khởi tạo khi chuyển tab
+const oldNavigate = navigate;
+navigate = function (section) {
+  oldNavigate(section);
+  if (section === "employee_history") {
+    initEmployeeHistorySection();
+  }
+};
+//#endregion
 document.addEventListener('DOMContentLoaded', () => {
   handleUserProfile();
   initializeUserDropdown();
