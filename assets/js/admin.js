@@ -1228,8 +1228,8 @@ function renderProductTable() {
   allProducts.forEach((p, idx) => {
     // Tạo HTML cho ảnh sản phẩm
     let imageHtml = '';
-    if (p.imageBase64) {
-      imageHtml = `<img src="${p.imageBase64}" alt="${p.productName}" class="product-image" title="${p.productName}" onclick="openImageModal('${p.imageBase64}', '${p.productName}')" />`;
+    if (p.imageUrl) {
+      imageHtml = `<img src="http://localhost:8080${p.imageUrl}" alt="${p.productName}" class="product-image" title="${p.productName}" onclick="openImageModal('http://localhost:8080${p.imageUrl}', '${p.productName}')" />`;
     } else {
       imageHtml = `<div class="product-image-placeholder">No img</div>`;
     }
@@ -1445,8 +1445,8 @@ function editProduct(productId) {
         // Handle image display
         const editImagePreview = document.getElementById("edit-image-preview");
         const editPreviewImg = document.getElementById("edit-preview-img");
-        if (product.imageBase64) {
-          editPreviewImg.src = product.imageBase64;
+        if (product.imageUrl) {
+          editPreviewImg.src = "http://localhost:8080" + product.imageUrl;
           editImagePreview.style.display = "block";
         } else {
           editImagePreview.style.display = "none";
