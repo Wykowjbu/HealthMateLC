@@ -658,120 +658,123 @@
           </div>
         </div>
 
-        <!-- Panel Chỉnh sửa thông tin -->
-        <div class="panel" id="panel-edit-store">
-          <div class="panel-container">
-            <div class="panel-header">
-              <h2>Chỉnh sửa thông tin nhà thuốc</h2>
-            </div>
-            <div class="panel-content">
-              <form class="panel-form">
+    <!-- Panel Chỉnh sửa thông tin -->
+    <div class="panel" id="panel-edit-store">
+      <div class="panel-container">
+        <div class="panel-header">
+          <h2>Chỉnh sửa thông tin nhà thuốc</h2>
+        </div>
+        <div class="panel-content">
+          <form class="panel-form">
                 <input type="hidden" id="edit-store-id" />
-                <div class="form-group">
-                  <label for="edit-store-name">Tên nhà thuốc</label>
-                  <input
-                    type="text"
-                    id="edit-store-name"
-                    class="form-input"
-                    required
-                  />
-                </div>
-                <div class="form-group">
-                  <label for="edit-store-address">Địa chỉ</label>
-                  <input
-                    type="text"
-                    id="edit-store-address"
-                    class="form-input"
-                    required
-                  />
-                </div>
-                <div class="form-row">
-                  <div class="form-group">
-                    <label for="edit-store-phone">Số điện thoại</label>
-                    <input
-                      type="tel"
-                      id="edit-store-phone"
-                      class="form-input"
-                      required
-                    />
-                  </div>
-                  <div class="form-group">
-                    <label for="edit-store-email">Email</label>
-                    <input
-                      type="email"
-                      id="edit-store-email"
-                      class="form-input"
-                    />
-                  </div>
-                </div>
-                <div class="form-actions">
-                  <button type="submit" class="btn btn-primary">
-                    Cập nhật
-                  </button>
-                  <button
+            <input type="hidden" id="edit-store-id" />
+            <div class="form-group">
+              <label for="edit-store-name">Tên nhà thuốc</label>
+              <input type="text" id="edit-store-name" class="form-input" required />
+            </div>
+            <div class="form-group">
+              <label for="edit-store-address">Địa chỉ</label>
+              <input type="text" id="edit-store-address" class="form-input" required />
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="edit-store-phone">Số điện thoại</label>
+                <input type="tel" id="edit-store-phone" class="form-input" required />
+              </div>
+              <div class="form-group">
+                <label for="edit-store-email">Email</label>
+                <input type="email" id="edit-store-email" class="form-input" />
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Cập nhật</button>
+              <button
                     type="button"
-                    class="btn btn-secondary"
+                    class="btn btn-secondary" onclick="cancelEditStore()"
                     onclick="cancelEditStore()"
                   >
                     Hủy
                   </button>
-                </div>
-              </form>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel Báo cáo doanh thu -->
+    <div class="panel" id="panel-revenue-report">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-header">
+            <div class="stat-icon revenue">
+              <span class="material-icons">trending_up</span>
+            </div>
+            <div class="stat-label">Doanh thu tháng này</div>
+          </div>
+          <div class="stat-value">₫50M</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header">
+            <div class="stat-icon customers">
+              <span class="material-icons">shopping_cart</span>
+            </div>
+            <div class="stat-label">Đơn hàng</div>
+          </div>
+          <div class="stat-value">1,234</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header">
+            <div class="stat-icon stores">
+              <span class="material-icons">inventory</span>
+            </div>
+            <div class="stat-label">Sản phẩm bán</div>
+          </div>
+          <div class="stat-value">5,678</div>
+        </div>
+      </div>
+
+      <div class="content-grid">
+        <div class="content-container">
+          <div class="content-header">
+            <h3 class="content-title">Doanh thu theo nhà thuốc</h3>
+          </div>
+          <div class="content-list">
+            <div class="revenue-item">
+              <div class="revenue-info">
+                <h4>Long Châu Quận 1</h4>
+                <p>123 Nguyễn Huệ, Q.1, TP.HCM</p>
+              </div>
+              <div class="revenue-stats">
+                <div class="revenue-amount">₫15,500,000</div>
+                <div class="revenue-orders">245 đơn hàng</div>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Panel Báo cáo doanh thu -->
-        <div class="panel" id="panel-revenue-report">
-          <div class="stats-grid">
-            <div class="stat-card">
-              <div class="stat-header">
-                <div class="stat-icon revenue">
-                  <span class="material-icons">trending_up</span>
-                </div>
-                <div class="stat-label">Doanh thu tháng này</div>
+        <div class="content-container">
+          <div class="content-header">
+            <h3 class="content-title">Sản phẩm bán chạy</h3>
+          </div>
+          <div class="content-list">
+            <div class="product-item">
+              <div class="product-info">
+                <h4>Paracetamol 500mg</h4>
+                <p>Thuốc giảm đau, hạ sốt</p>
               </div>
-              <div class="stat-value">₫50M</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-header">
-                <div class="stat-icon customers">
-                  <span class="material-icons">shopping_cart</span>
-                </div>
-                <div class="stat-label">Đơn hàng</div>
+              <div class="product-stats">
+                <div class="product-sold">1,234 hộp</div>
+                <div class="product-revenue">₫2,468,000</div>
               </div>
-              <div class="stat-value">1,234</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-header">
-                <div class="stat-icon stores">
-                  <span class="material-icons">inventory</span>
-                </div>
-                <div class="stat-label">Sản phẩm bán</div>
-              </div>
-              <div class="stat-value">5,678</div>
             </div>
           </div>
-
-          <div class="content-grid">
-            <div class="content-container">
-              <div class="content-header">
-                <h3 class="content-title">Doanh thu theo nhà thuốc</h3>
-              </div>
-              <div class="content-list">
-                <div class="revenue-item">
-                  <div class="revenue-info">
-                    <h4>Long Châu Quận 1</h4>
-                    <p>123 Nguyễn Huệ, Q.1, TP.HCM</p>
-                  </div>
-                  <div class="revenue-stats">
-                    <div class="revenue-amount">₫15,500,000</div>
-                    <div class="revenue-orders">245 đơn hàng</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+<script src="assets/js/admin.js"></script>
+</body>
             <div class="content-container">
               <div class="content-header">
                 <h3 class="content-title">Sản phẩm bán chạy</h3>

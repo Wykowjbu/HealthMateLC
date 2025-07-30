@@ -32,6 +32,53 @@ document.addEventListener("DOMContentLoaded", function () {
   initializeModals();
 });
 
+window.addEventListener("pageshow", function (event) {
+  checkSessionOnLoad();
+});
+
+// Form submission handlers
+document.addEventListener("DOMContentLoaded", function () {
+  // Add Account form
+  const addAccountForm = document.querySelector(
+    "#panel-add-account .panel-form"
+  );
+  if (addAccountForm) {
+    addAccountForm.addEventListener("submit", handleAddAccount);
+  }
+
+  // Add Product form
+  const addProductForm = document.querySelector(
+    "#panel-add-product .panel-form"
+  );
+  if (addProductForm) {
+    addProductForm.addEventListener("submit", handleAddProduct);
+  }
+
+  // Edit Product form
+  const editProductForm = document.querySelector(
+    "#panel-edit-product .panel-form"
+  );
+  if (editProductForm) {
+    editProductForm.addEventListener("submit", handleEditProduct);
+  }
+
+  // Create Store form
+  const createStoreForm = document.querySelector(
+    "#panel-create-store .panel-form"
+  );
+  if (createStoreForm) {
+    createStoreForm.addEventListener("submit", handleCreateStore);
+  }
+
+  // Edit Store form
+  const editStoreForm = document.querySelector("#panel-edit-store .panel-form");
+  if (editStoreForm) {
+    editStoreForm.addEventListener("submit", handleEditStore);
+  }
+});
+
+// NAVIGATION & UI COMPONENTS
+
 // Navigation handling
 function initializeNavigation() {
   navItems.forEach((item) => {
@@ -135,6 +182,11 @@ function initializeStoreSearch() {
 
 // Content rendering based on panel type
 function renderContent(type) {
+  // Ẩn tất cả pagination sections trước
+  document.querySelectorAll(".pagination-section").forEach((section) => {
+    section.style.display = "none";
+  });
+
   switch (type) {
     case "list-accounts":
       renderListAccounts();
@@ -142,8 +194,18 @@ function renderContent(type) {
     case "add-account":
       renderAddAccount();
       break;
-    case "create-category":
-      renderCreateCategory();
+    case "list-products":
+      renderListProducts();
+      // Hiện pagination-section cho sản phẩm
+      const productPagSection = document.querySelector(
+        "#product-list-pagination"
+      )?.parentElement;
+      if (
+        productPagSection &&
+        productPagSection.classList.contains("pagination-section")
+      ) {
+        productPagSection.style.display = "block";
+      }
       break;
     case "add-product":
       renderAddProduct();
@@ -341,7 +403,9 @@ function showUsersForPharmacy(users) {
         <p>${user.email}</p>
         <p>${user.phone}</p>
       </div>
-      <div class="user-role ${user.role === "manager" ? "manager" : "employee"}">
+      <div class="user-role ${
+        user.role === "manager" ? "manager" : "employee"
+      }">
         ${user.role === "manager" ? "Quản lý" : "Nhân viên"}
       </div>
     `;
@@ -351,6 +415,640 @@ function showUsersForPharmacy(users) {
     userItem.addEventListener("click", userItem.clickHandler);
     usersList.appendChild(userItem);
   });
+}
+
+function showUserDetails(user) {
+  const usersWrapper = document.querySelector(".list-users-wrapper");
+  const detailsWrapper = document.querySelector(".user-details-wrapper");
+  if (!usersWrapper || !detailsWrapper) return;
+  const initials = user.fullName
+    .split(" ")
+    .map((name) => name.charAt(0))
+    .join("")
+    .substring(0, 2)
+    .toUpperCase();
+  detailsWrapper.innerHTML = `
+    <div class="back-button">
+      <span class="material-icons">arrow_back</span>
+      <span>Quay lại</span>
+    </div>
+    <div class="user-details">
+      <div class="user-details-header">
+        <div class="user-details-avatar">${initials}</div>
+        <div class="user-details-info">
+          <h2>${user.fullName}</h2>
+          <div class="user-details-role ${
+            user.role === "manager" ? "manager" : "employee"
+          }">
+            ${user.role === "manager" ? "Quản lý" : "Nhân viên"}
+          </div>
+        </div>
+      </div>
+      
+      <div class="user-details-field">
+        <label>Email</label>
+        <p>${user.email}</p>
+      </div>
+      
+      <div class="user-details-field">
+        <label>Số điện thoại</label>
+        <p>${user.phone}</p>
+      </div>
+      
+      <div class="user-details-field">
+        <label>Tên đăng nhập</label>
+        <p>${user.username || "N/A"}</p>
+      </div>
+      
+      <div class="user-details-field">
+        <label>Trạng thái</label>
+        <p>${user.active ? "Hoạt động" : "Vô hiệu hóa"}</p>
+      </div>
+      
+      <div class="user-actions">
+        <button id="edit-user-btn" class="btn btn-primary">
+          <span class="material-icons">edit</span>
+          Sửa thông tin
+        </button>
+        <button id="reset-password-btn" class="btn btn-secondary">
+          <span class="material-icons">lock</span>
+          Đặt lại mật khẩu
+        </button>
+      </div>
+    </div>
+  `;
+  //Add back button event listener
+  detailsWrapper.querySelector(".back-button").addEventListener("click", () => {
+    usersWrapper.classList.remove("slide-left");
+    detailsWrapper.classList.remove("slide-right");
+  });
+
+  // Add edit user button event listener
+  const editBtn = detailsWrapper.querySelector("#edit-user-btn");
+  if (editBtn) {
+    editBtn.clickHandler = () => openEditUserModal(user);
+    editBtn.addEventListener("click", editBtn.clickHandler);
+  }
+
+  // Add reset password button event listener
+  const resetPasswordBtn = detailsWrapper.querySelector("#reset-password-btn");
+  if (resetPasswordBtn) {
+    resetPasswordBtn.addEventListener("click", () => {
+      openResetPasswordModal(user);
+    });
+  }
+  // Apply sliding effect
+  usersWrapper.classList.add("slide-left");
+  detailsWrapper.classList.add("slide-right");
+}
+
+function initializeModals() {
+  // Close modal when clicking X or cancel button
+  document
+    .querySelectorAll(".close-modal, .close-modal-btn")
+    .forEach((element) => {
+      element.addEventListener("click", function () {
+        document.querySelectorAll(".modal").forEach((modal) => {
+          modal.style.display = "none";
+        });
+        // Reset current editing user when closing modal
+        currentEditingUser = null;
+      });
+    });
+
+  // Close modal when clicking outside
+  window.addEventListener("click", function (event) {
+    document.querySelectorAll(".modal").forEach((modal) => {
+      if (event.target === modal) {
+        modal.style.display = "none";
+        // Reset current editing user when closing modal
+        currentEditingUser = null;
+      }
+    });
+  });
+
+  // Handle edit user form submission
+  document
+    .getElementById("editUserForm")
+    .addEventListener("submit", handleEditUser);
+
+  // Handle reset password form submission
+  document
+    .getElementById("resetPasswordForm")
+    .addEventListener("submit", handleResetPassword);
+}
+
+// Open edit user modal
+function openEditUserModal(user) {
+  // Store the user being edited
+  currentEditingUser = { ...user };
+
+  const modal = document.querySelector("#editUserModal");
+  modal.style.display = "block";
+
+  // Add form submission handler
+  const editUserForm = document.getElementById("editUserForm");
+  if (editUserForm) {
+    editUserForm.addEventListener("submit", handleEditUser);
+  }
+
+  // Populate form fields
+  document.getElementById("edit-user-id").value = user.userId;
+  document.getElementById("edit-username").value = user.username || "";
+  document.getElementById("edit-fullname").value = user.fullName || "";
+  document.getElementById("edit-email").value = user.email || "";
+  document.getElementById("edit-phone").value = user.phone || "";
+  document.getElementById("edit-role").value = user.role;
+  document.getElementById("edit-status").value = user.active
+    ? "active"
+    : "inactive";
+}
+
+// Initialize password validation when modal opens
+function openResetPasswordModal(user) {
+  const modal = document.querySelector("#resetPasswordModal");
+  modal.style.display = "block";
+
+  // Populate form fields
+  document.getElementById("reset-user-id").value = user.userId;
+  document.getElementById("user-display").value = `${user.fullName} (${
+    user.username || user.email
+  })`;
+
+  // Clear password fields
+  document.getElementById("new-password").value = "";
+  document.getElementById("confirm-password").value = "";
+
+  // Reset field styles
+  document.getElementById("new-password").style.borderColor = "";
+  document.getElementById("confirm-password").style.borderColor = "";
+
+  // Reset password strength indicator
+  const strengthIndicator = document.getElementById("password-strength");
+  const strengthBar = document.querySelector(".strength-bar");
+  const strengthText = document.querySelector(".strength-text");
+
+  if (strengthIndicator) {
+    strengthIndicator.classList.remove("show");
+  }
+  if (strengthBar) {
+    strengthBar.className = "strength-bar";
+  }
+  if (strengthText) {
+    strengthText.className = "strength-text";
+    strengthText.textContent = "";
+  }
+
+  // Clear any previous error messages
+  const errorDiv = document.querySelector("#resetPasswordForm .error-message");
+  if (errorDiv) {
+    errorDiv.style.display = "none";
+  }
+
+  // Initialize password validation
+  initializePasswordValidation();
+}
+
+// Toggle password visibility
+function togglePasswordVisibility(inputId) {
+  const input = document.getElementById(inputId);
+  const button = input.parentElement.querySelector(".password-toggle");
+  const icon = button.querySelector(".material-icons");
+
+  if (input.type === "password") {
+    input.type = "text";
+    icon.textContent = "visibility_off";
+  } else {
+    input.type = "password";
+    icon.textContent = "visibility";
+  }
+}
+
+// Add password validation and UX improvements
+function initializePasswordValidation() {
+  const newPasswordInput = document.getElementById("new-password");
+  const confirmPasswordInput = document.getElementById("confirm-password");
+  const strengthIndicator = document.getElementById("password-strength");
+  const strengthBar = document.querySelector(".strength-bar");
+  const strengthText = document.querySelector(".strength-text");
+
+  if (newPasswordInput && confirmPasswordInput) {
+    // Real-time password matching validation
+    confirmPasswordInput.addEventListener("input", function () {
+      const newPassword = newPasswordInput.value;
+      const confirmPassword = confirmPasswordInput.value;
+
+      if (confirmPassword && newPassword !== confirmPassword) {
+        confirmPasswordInput.setCustomValidity("Mật khẩu xác nhận không khớp");
+        confirmPasswordInput.style.borderColor = "#e53e3e";
+      } else {
+        confirmPasswordInput.setCustomValidity("");
+        confirmPasswordInput.style.borderColor = "";
+      }
+    });
+
+    // Password strength validation
+    newPasswordInput.addEventListener("input", function () {
+      const password = newPasswordInput.value;
+
+      if (password.length === 0) {
+        strengthIndicator.classList.remove("show");
+        newPasswordInput.setCustomValidity("");
+        newPasswordInput.style.borderColor = "";
+        return;
+      }
+
+      // Show strength indicator
+      strengthIndicator.classList.add("show");
+
+      // Calculate password strength
+      const strength = calculatePasswordStrength(password);
+
+      // Update strength bar and text
+      strengthBar.className = "strength-bar";
+      strengthText.className = "strength-text";
+
+      if (strength.score < 30) {
+        strengthBar.classList.add("weak");
+        strengthText.classList.add("weak");
+        strengthText.textContent = "Yếu - " + strength.feedback;
+        newPasswordInput.setCustomValidity("Mật khẩu quá yếu");
+        newPasswordInput.style.borderColor = "#e53e3e";
+      } else if (strength.score < 70) {
+        strengthBar.classList.add("medium");
+        strengthText.classList.add("medium");
+        strengthText.textContent = "Trung bình - " + strength.feedback;
+        newPasswordInput.setCustomValidity("");
+        newPasswordInput.style.borderColor = "#f6ad55";
+      } else {
+        strengthBar.classList.add("strong");
+        strengthText.classList.add("strong");
+        strengthText.textContent = "Mạnh - Mật khẩu tốt";
+        newPasswordInput.setCustomValidity("");
+        newPasswordInput.style.borderColor = "#38a169";
+      }
+
+      // Recheck confirm password when new password changes
+      if (confirmPasswordInput.value) {
+        confirmPasswordInput.dispatchEvent(new Event("input"));
+      }
+    });
+  }
+}
+
+// Calculate password strength
+function calculatePasswordStrength(password) {
+  let score = 0;
+  let feedback = "";
+
+  // Length check
+  if (password.length >= 8) {
+    score += 25;
+  } else if (password.length >= 6) {
+    score += 10;
+    feedback = "Nên dài hơn 8 ký tự";
+  } else {
+    feedback = "Quá ngắn";
+    return { score, feedback };
+  }
+
+  // Character variety checks
+  if (/[a-z]/.test(password)) score += 15;
+  if (/[A-Z]/.test(password)) score += 15;
+  if (/[0-9]/.test(password)) score += 15;
+  if (/[^A-Za-z0-9]/.test(password)) score += 20;
+
+  // Additional complexity
+  if (password.length >= 12) score += 10;
+
+  // Feedback based on missing elements
+  const missing = [];
+  if (!/[a-z]/.test(password)) missing.push("chữ thường");
+  if (!/[A-Z]/.test(password)) missing.push("chữ hoa");
+  if (!/[0-9]/.test(password)) missing.push("số");
+  if (!/[^A-Za-z0-9]/.test(password)) missing.push("ký tự đặc biệt");
+
+  if (missing.length > 0 && feedback === "") {
+    feedback = "Thêm " + missing.join(", ");
+  }
+
+  if (feedback === "") {
+    feedback = "Mật khẩu mạnh";
+  }
+
+  return { score: Math.min(score, 100), feedback };
+}
+
+// Handle edit user form submission
+function handleEditUser(e) {
+  e.preventDefault();
+
+  // Get form data
+  const userId = document.getElementById("edit-user-id").value;
+  const userData = {
+    fullName: document.getElementById("edit-fullname").value,
+    email: document.getElementById("edit-email").value,
+    phone: document.getElementById("edit-phone").value,
+    role: document.getElementById("edit-role").value,
+    isActive: document.getElementById("edit-status").value === "active",
+  };
+  console.log("User data:", userData);
+
+  // Validate form data
+  if (!userData.fullName || !userData.email || !userData.phone) {
+    showFormError("editUserForm", "Vui lòng nhập đầy đủ thông tin");
+    return;
+  }
+  // Send API request to update user
+  updateUser(userId, userData);
+}
+
+// Update user via API
+function updateUser(userId, userData) {
+  showLoading("editUserModal");
+
+  fetch(`http://localhost:8080/admin/update-account/${userId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(userData),
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error("Lỗi khi cập nhật thông tin tài khoản");
+      }
+      return response.json();
+    })
+    .then((data) => {
+      // Close modal
+      document.getElementById("editUserModal").style.display = "none";
+
+      // Show success message
+      showToast("Cập nhật thông tin tài khoản thành công");
+
+      // Update user info in real-time instead of reloading all data
+      updateUserInRealTime(userId, userData);
+    })
+    .catch((error) => {
+      console.error("Error updating user:", error);
+      showFormError("editUserForm", "Lỗi khi cập nhật thông tin tài khoản");
+    })
+    .finally(() => {
+      hideLoading("editUserModal");
+    });
+}
+
+// Update user info in real-time without reloading
+function updateUserInRealTime(userId, updatedData) {
+  if (!currentEditingUser) return;
+
+  // Update user data in the global cache
+  updateUserInCache(userId, updatedData);
+
+  // Update pharmacy employee count display
+  updatePharmacyEmployeeCount();
+
+  // Store the updated user info for reference
+  let updatedUser = null;
+
+  // Find the current user details view to get original data
+  const userDetailsWrapper = document.querySelector(".user-details-wrapper");
+  if (
+    userDetailsWrapper &&
+    userDetailsWrapper.classList.contains("slide-right")
+  ) {
+    // Create updated user object with all necessary data
+    updatedUser = {
+      userId: userId,
+      fullName: updatedData.fullName,
+      email: updatedData.email,
+      phone: updatedData.phone,
+      role: updatedData.role,
+      username: currentEditingUser.username || "",
+      status: updatedData.isActive ? "active" : "inactive",
+    };
+
+    // Update the user details view
+    updateUserDetailsView(updatedUser);
+  }
+
+  // Find and update user in the currently displayed user list
+  // Use the original user data before update to find the correct user
+  const userItems = document.querySelectorAll(".user-item");
+  userItems.forEach((userItem) => {
+    const userInfo = userItem.querySelector(".user-info");
+    const emailElement = userInfo?.querySelector("p:first-of-type");
+    const nameElement = userInfo?.querySelector("h4");
+
+    // Find user by original email and name combination
+    if (
+      emailElement &&
+      nameElement &&
+      emailElement.textContent === currentEditingUser.email &&
+      nameElement.textContent === currentEditingUser.fullName
+    ) {
+      // Update user info in the list
+      nameElement.textContent = updatedData.fullName;
+      emailElement.textContent = updatedData.email;
+
+      // Update phone
+      const phoneElement = userInfo.querySelector("p:last-of-type");
+      if (phoneElement) phoneElement.textContent = updatedData.phone;
+
+      // Update role
+      const roleElement = userItem.querySelector(".user-role");
+      if (roleElement) {
+        roleElement.textContent =
+          updatedData.role === "manager" ? "Quản lý" : "Nhân viên";
+        roleElement.className = `user-role ${updatedData.role}`;
+      }
+
+      // Update avatar
+      const avatarElement = userItem.querySelector(".user-avatar");
+      if (avatarElement) {
+        const initials = updatedData.fullName
+          .split(" ")
+          .map((name) => name.charAt(0))
+          .join("")
+          .substring(0, 2)
+          .toUpperCase();
+        avatarElement.textContent = initials;
+      }
+
+      // Update the click handler with new user data
+      if (updatedUser) {
+        userItem.removeEventListener("click", userItem.clickHandler);
+        userItem.clickHandler = () => showUserDetails(updatedUser);
+        userItem.addEventListener("click", userItem.clickHandler);
+      }
+    }
+  });
+
+  // Clear the current editing user
+  currentEditingUser = null;
+}
+
+// Helper function to update user details view
+function updateUserDetailsView(updatedUser) {
+  const userDetails = document.querySelector(".user-details");
+  if (!userDetails) return;
+
+  // Update name and avatar
+  const nameElement = userDetails.querySelector(".user-details-info h2");
+  const avatarElement = userDetails.querySelector(".user-details-avatar");
+
+  if (nameElement) nameElement.textContent = updatedUser.fullName;
+  if (avatarElement) {
+    const initials = updatedUser.fullName
+      .split(" ")
+      .map((name) => name.charAt(0))
+      .join("")
+      .substring(0, 2)
+      .toUpperCase();
+    avatarElement.textContent = initials;
+  }
+
+  // Update role
+  const roleElement = userDetails.querySelector(".user-details-role");
+  if (roleElement) {
+    roleElement.textContent =
+      updatedUser.role === "manager" ? "Quản lý" : "Nhân viên";
+    roleElement.className = `user-details-role ${updatedUser.role}`;
+  }
+
+  // Update contact info
+  const emailField = userDetails.querySelector(
+    ".user-details-field:nth-child(3) p"
+  );
+  const phoneField = userDetails.querySelector(
+    ".user-details-field:nth-child(4) p"
+  );
+
+  if (emailField) emailField.textContent = updatedUser.email;
+  if (phoneField) phoneField.textContent = updatedUser.phone;
+
+  // Update the edit button click handler with new user data
+  const editBtn = userDetails.querySelector("#edit-user-btn");
+  if (editBtn) {
+    editBtn.removeEventListener("click", editBtn.clickHandler);
+    editBtn.clickHandler = () => openEditUserModal(updatedUser);
+    editBtn.addEventListener("click", editBtn.clickHandler);
+  }
+}
+
+// Update user data in the global cache
+function updateUserInCache(userId, updatedData) {
+  // Find and update user in all pharmacy caches
+  Object.keys(listUsersByPharmacy).forEach((pharmacyId) => {
+    const users = listUsersByPharmacy[pharmacyId];
+    const userIndex = users.findIndex((user) => user.userId === userId);
+
+    if (userIndex !== -1) {
+      // Update user data in cache
+      listUsersByPharmacy[pharmacyId][userIndex] = {
+        ...listUsersByPharmacy[pharmacyId][userIndex],
+        fullName: updatedData.fullName,
+        email: updatedData.email,
+        phone: updatedData.phone,
+        role: updatedData.role,
+        status: updatedData.isActive ? "active" : "inactive",
+      };
+    }
+  });
+}
+
+// Show loading state in modal
+function showLoading(modalId) {
+  const modal = document.getElementById(modalId);
+  const submitBtn = modal.querySelector('button[type="submit"]');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML =
+      '<span class="material-icons spinning">refresh</span> Đang xử lý...';
+  }
+}
+
+// Hide loading state in modal
+function hideLoading(modalId) {
+  const modal = document.getElementById(modalId);
+  const submitBtn = modal.querySelector('button[type="submit"]');
+
+  if (submitBtn) {
+    submitBtn.disabled = false;
+
+    if (modalId === "editUserModal") {
+      submitBtn.innerHTML = "Lưu thay đổi";
+    } else if (modalId === "resetPasswordModal") {
+      submitBtn.innerHTML = "Đặt lại mật khẩu";
+    }
+  }
+}
+
+// Toast notification
+function showToast(message) {
+  // Create toast container if it doesn't exist
+  let toastContainer = document.querySelector(".toast-container");
+
+  if (!toastContainer) {
+    toastContainer = document.createElement("div");
+    toastContainer.className = "toast-container";
+    document.body.appendChild(toastContainer);
+  }
+
+  // Create toast
+  const toast = document.createElement("div");
+  toast.className = "toast";
+  toast.innerHTML = `
+    <div class="toast-content">
+      <span class="material-icons toast-icon">check_circle</span>
+      <span class="toast-message">${message}</span>
+    </div>
+    <span class="toast-close">&times;</span>
+  `;
+
+  // Add toast to container
+  toastContainer.appendChild(toast);
+
+  // Animation
+  setTimeout(() => toast.classList.add("show"), 10);
+
+  // Close button functionality
+  toast.querySelector(".toast-close").addEventListener("click", () => {
+    toast.classList.remove("show");
+    setTimeout(() => toast.remove(), 300);
+  });
+
+  setTimeout(() => {
+    toast.classList.remove("show");
+    setTimeout(() => toast.remove(), 300);
+  }, 5000);
+}
+
+// Utility functions for handling forms
+function showFormError(formId, message) {
+  const form = document.getElementById(formId);
+  let errorDiv = form.querySelector(".error-message");
+
+  if (!errorDiv) {
+    errorDiv = document.createElement("div");
+    errorDiv.className = "error-message";
+    form.insertBefore(errorDiv, form.firstChild);
+  }
+
+  errorDiv.textContent = message;
+  errorDiv.style.display = "block";
+
+  // Hide error after 5 seconds
+  setTimeout(() => {
+    errorDiv.style.display = "none";
+  }, 5000);
+}
+
+// close edit user modal
+function closeEditUserModal() {
+  const modal = document.querySelector("#editUserModal");
+  modal.style.display = "none";
 }
 
 function showUserDetails(user) {
@@ -988,7 +1686,17 @@ function closeEditUserModal() {
   modal.style.display = "none";
 }
 
-// Initialize search functionality
+// Render add account panel
+function renderAddAccount() {
+  loadPharmacyOptions();
+  loadRoles();
+}
+
+// ============================================================================
+// SEARCH FUNCTIONALITY
+// ============================================================================
+
+// Initialize search functionality for accounts
 function initializeSearch() {
   const searchInput = document.querySelector(".search-input");
   const searchSelect = document.querySelector(".search-select");
@@ -1167,15 +1875,19 @@ function renderProductTable() {
         <td>
           <div class="quantity-control" data-product-id="${p.productId}">
             <button class="btn-qty btn-qty-minus" data-action="subtract">-</button>
-            <input type="number" class="input-qty" value="${p.quantity ?? 0}" min="0" style="width:60px;text-align:center;" />
+            <input type="number" class="input-qty" value="${
+              p.quantity ?? 0
+            }" min="0" style="width:60px;text-align:center;" />
             <button class="btn-qty btn-qty-plus" data-action="add">+</button>
           </div>
         </td>
         <td>${Number(p.price).toLocaleString("vi-VN")}</td>
-        <td title="${p.description || ''}">${p.description || ""}</td>
+        <td title="${p.description || ""}">${p.description || ""}</td>
         <td>
           <div class="action-buttons">
-            <button class="btn-edit" onclick="editProduct(${p.productId})">Sửa</button>
+            <button class="btn-edit" onclick="editProduct(${
+              p.productId
+            })">Sửa</button>
           </div>
         </td>
       </tr>
@@ -1190,18 +1902,25 @@ function renderPagination() {
   if (!container) return;
   const totalPages = Math.ceil(allProducts.length / pageSize);
   if (totalPages <= 1) {
-    container.innerHTML = '<span style="color: #718096; font-size: 14px; font-weight: 500;">Trang 1 / 1</span>';
+    container.innerHTML =
+      '<span style="color: #718096; font-size: 14px; font-weight: 500;">Trang 1 / 1</span>';
     return;
   }
   let html = "";
   if (currentPage > 1) {
-    html += `<button class="pagination-btn" data-page="${currentPage - 1}">‹</button>`;
+    html += `<button class="pagination-btn" data-page="${
+      currentPage - 1
+    }">‹</button>`;
   }
   for (let i = 1; i <= totalPages; i++) {
-    html += `<button class="pagination-btn${i === currentPage ? " active" : ""}" data-page="${i}">${i}</button>`;
+    html += `<button class="pagination-btn${
+      i === currentPage ? " active" : ""
+    }" data-page="${i}">${i}</button>`;
   }
   if (currentPage < totalPages) {
-    html += `<button class="pagination-btn" data-page="${currentPage + 1}">›</button>`;
+    html += `<button class="pagination-btn" data-page="${
+      currentPage + 1
+    }">›</button>`;
   }
   container.innerHTML = html;
   container.querySelectorAll(".pagination-btn").forEach((btn) => {
@@ -1240,8 +1959,10 @@ function initializeProductSearch() {
 }
 
 function performProductSearch() {
-  const keyword = document.getElementById("product-search-input")?.value?.trim() || "";
-  const searchType = document.getElementById("product-search-type")?.value || "all";
+  const keyword =
+    document.getElementById("product-search-input")?.value?.trim() || "";
+  const searchType =
+    document.getElementById("product-search-type")?.value || "all";
 
   if (!keyword) {
     renderListProducts();
@@ -1304,12 +2025,18 @@ function editProduct(productId) {
     })
     .then((product) => {
       // Switch to edit panel
-      document.querySelectorAll(".panel").forEach((panel) => panel.classList.remove("active"));
+      document
+        .querySelectorAll(".panel")
+        .forEach((panel) => panel.classList.remove("active"));
       document.getElementById("panel-edit-product").classList.add("active");
 
       // Update sidebar
-      document.querySelectorAll(".nav-item").forEach((item) => item.classList.remove("active"));
-      document.querySelector('.nav-item[data-type="list-products"]').classList.add("active");
+      document
+        .querySelectorAll(".nav-item")
+        .forEach((item) => item.classList.remove("active"));
+      document
+        .querySelector('.nav-item[data-type="list-products"]')
+        .classList.add("active");
 
       // Update header title
       updateHeaderTitle("edit-product");
@@ -1321,15 +2048,21 @@ function editProduct(productId) {
       // Fill form with product data after a short delay to ensure options are loaded
       setTimeout(() => {
         document.getElementById("edit-product-id").value = product.productId;
-        document.getElementById("edit-product-name").value = product.productName;
+        document.getElementById("edit-product-name").value =
+          product.productName;
         document.getElementById("edit-product-price").value = product.price;
-        document.getElementById("edit-product-description").value = product.description || "";
+        document.getElementById("edit-product-description").value =
+          product.description || "";
 
         // Handle product type
         const productTypeSelect = document.getElementById("edit-product-type");
-        const productTypeCustom = document.getElementById("edit-product-type-custom");
+        const productTypeCustom = document.getElementById(
+          "edit-product-type-custom"
+        );
 
-        const typeOptions = Array.from(productTypeSelect.options).map((opt) => opt.value);
+        const typeOptions = Array.from(productTypeSelect.options).map(
+          (opt) => opt.value
+        );
         if (typeOptions.includes(product.productType)) {
           productTypeSelect.value = product.productType;
           productTypeCustom.style.display = "none";
@@ -1345,9 +2078,13 @@ function editProduct(productId) {
 
         // Handle product unit
         const productUnitSelect = document.getElementById("edit-product-unit");
-        const productUnitCustom = document.getElementById("edit-product-unit-custom");
+        const productUnitCustom = document.getElementById(
+          "edit-product-unit-custom"
+        );
 
-        const unitOptions = Array.from(productUnitSelect.options).map((opt) => opt.value);
+        const unitOptions = Array.from(productUnitSelect.options).map(
+          (opt) => opt.value
+        );
         if (unitOptions.includes(product.unit)) {
           productUnitSelect.value = product.unit;
           productUnitCustom.style.display = "none";
@@ -1379,12 +2116,18 @@ function editProduct(productId) {
 
 function cancelEditProduct() {
   // Switch back to product list
-  document.querySelectorAll(".panel").forEach((panel) => panel.classList.remove("active"));
+  document
+    .querySelectorAll(".panel")
+    .forEach((panel) => panel.classList.remove("active"));
   document.getElementById("panel-list-products").classList.add("active");
 
   // Update navigation back to list-products
-  document.querySelectorAll(".nav-item").forEach((item) => item.classList.remove("active"));
-  document.querySelector('.nav-item[data-type="list-products"]').classList.add("active");
+  document
+    .querySelectorAll(".nav-item")
+    .forEach((item) => item.classList.remove("active"));
+  document
+    .querySelector('.nav-item[data-type="list-products"]')
+    .classList.add("active");
 
   // Update header
   updateHeaderTitle("list-products");
@@ -1405,12 +2148,18 @@ function cancelEditProduct() {
 
 function cancelEditStore() {
   // Switch back to store list
-  document.querySelectorAll(".panel").forEach((panel) => panel.classList.remove("active"));
+  document
+    .querySelectorAll(".panel")
+    .forEach((panel) => panel.classList.remove("active"));
   document.getElementById("panel-list-stores").classList.add("active");
 
   // Update navigation back to list-stores
-  document.querySelectorAll(".nav-item").forEach((item) => item.classList.remove("active"));
-  document.querySelector('.nav-item[data-type="list-stores"]').classList.add("active");
+  document
+    .querySelectorAll(".nav-item")
+    .forEach((item) => item.classList.remove("active"));
+  document
+    .querySelector('.nav-item[data-type="list-stores"]')
+    .classList.add("active");
 
   // Update header
   updateHeaderTitle("list-stores");
@@ -1533,12 +2282,300 @@ function renderCreateStore() {
   updateHeaderTitle("create-store");
 }
 
-function renderListStores() {
-  console.log("List Stores panel loaded");
-  // Load stores data
-  loadStoresData();
+function renderListStores(keepPage = false) {
+  if (!keepPage) currentPage = 0;
+  loadStoresFromAPI(currentPage, pageSize);
+  const paginationSection = document.getElementById("store-pagination-section");
+  if (paginationSection) {
+    paginationSection.style.display = "block";
+  }
+  updateHeaderTitle("list-stores");
+  attachAddStorePanelButtonEvent();
 }
 
+function loadStoresFromAPI(page, size) {
+  const url = isSearching
+    ? `http://localhost:8080/admin/search-pharmacies-paginated?keyword=${encodeURIComponent(
+        currentSearchParams.keyword
+      )}&type=${currentSearchParams.type}&page=${page}&size=${size}`
+    : `http://localhost:8080/admin/list-pharmacies-paginated?page=${page}&size=${size}`;
+
+  fetch(url, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      allStores = data.pharmacies || [];
+      totalPages = data.totalPages || 0;
+      currentPage = data.currentPage || 0;
+      renderStoreTable();
+      renderStorePagination();
+    })
+    .catch((error) => {
+      const tbody = document.getElementById("store-list-tbody");
+      if (tbody)
+        tbody.innerHTML =
+          '<tr><td colspan="8" style="color:red;text-align:center;">Không thể tải danh sách nhà thuốc (API lỗi)</td></tr>';
+    });
+}
+
+function renderStoreTable() {
+  const tbody = document.getElementById("store-list-tbody");
+  if (!tbody) return;
+  if (!allStores || allStores.length === 0) {
+    tbody.innerHTML =
+      '<tr><td colspan="8" style="text-align:center;color:#888;">Không có nhà thuốc nào</td></tr>';
+    return;
+  }
+  let html = "";
+  allStores.forEach((store, idx) => {
+    const globalIndex = currentPage * pageSize + idx + 1;
+    html += `
+      <tr>
+        <td>${globalIndex}</td>
+        <td title="${store.pharmacyName}"><span title="${store.pharmacyName}">${
+      store.pharmacyName
+    }</span></td>
+        <td title="${store.address || ""}"><span title="${
+      store.address || ""
+    }">${store.address || ""}</span></td>
+        <td title="${store.phone || ""}"><span title="${store.phone || ""}">${
+      store.phone || ""
+    }</span></td>
+        <td title="${store.email || ""}"><span title="${store.email || ""}">${
+      store.email || ""
+    }</span></td>
+        <td title="${store.manager || "Chưa gán"}"><span title="${
+      store.manager || "Chưa gán"
+    }">${store.manager || "Chưa gán"}</span></td>
+        <td>
+          <span class="status ${
+            store.isActive ? "active" : "inactive"
+          }" title="${store.isActive ? "Hoạt động" : "Ngừng hoạt động"}">
+            ${store.isActive ? "Hoạt động" : "Ngừng hoạt động"}
+          </span>
+        </td>
+        <td>
+          <div class="action-buttons">
+            ${
+              store.isActive
+                ? `<button class="btn-edit" data-id="${store.pharmacyId}">Sửa</button>`
+                : ""
+            }
+            ${
+              store.isActive
+                ? `<button class="btn-disable" data-id="${store.pharmacyId}">Vô hiệu hóa</button>`
+                : `<button class="btn-enable" data-id="${store.pharmacyId}">Kích hoạt</button>`
+            }
+          </div>
+        </td>
+      </tr>
+    `;
+  });
+  tbody.innerHTML = html;
+  attachStoreActionEvents();
+}
+
+function renderStorePagination() {
+  const container = document.getElementById("store-list-pagination");
+  if (!container) return;
+  if (totalPages <= 1) {
+    container.innerHTML = `<span style="color: #718096; font-size: 14px; font-weight: 500;">Trang ${
+      currentPage + 1
+    } / ${totalPages || 1}</span>`;
+    return;
+  }
+  let html = "";
+  if (currentPage > 0) {
+    html += `<button class="pagination-btn" data-page="${
+      currentPage - 1
+    }">‹</button>`;
+  }
+  for (let i = 0; i < totalPages; i++) {
+    html += `<button class="pagination-btn${
+      i === currentPage ? " active" : ""
+    }" data-page="${i}">${i + 1}</button>`;
+  }
+  if (currentPage < totalPages - 1) {
+    html += `<button class="pagination-btn" data-page="${
+      currentPage + 1
+    }">›</button>`;
+  }
+  container.innerHTML = html;
+  container.querySelectorAll(".pagination-btn").forEach((btn) => {
+    btn.addEventListener("click", function () {
+      const page = parseInt(this.getAttribute("data-page"));
+      if (page !== null && page !== currentPage) {
+        currentPage = page;
+        loadStoresFromAPI(currentPage, pageSize);
+      }
+    });
+  });
+}
+
+function performStoreSearch() {
+  const keyword =
+    document.getElementById("store-search-input")?.value?.trim() || "";
+  const searchType =
+    document.getElementById("store-search-type")?.value || "all";
+  if (!keyword) {
+    isSearching = false;
+    currentPage = 0;
+    loadStoresFromAPI(currentPage, pageSize);
+    return;
+  }
+  isSearching = true;
+  currentSearchParams = { keyword, type: searchType };
+  currentPage = 0;
+  loadStoresFromAPI(currentPage, pageSize);
+}
+
+function clearStoreSearch() {
+  const searchInput = document.getElementById("store-search-input");
+  const searchType = document.getElementById("store-search-type");
+  if (searchInput) searchInput.value = "";
+  if (searchType) searchType.value = "all";
+  isSearching = false;
+  currentPage = 0;
+  loadStoresFromAPI(currentPage, pageSize);
+}
+
+function attachStoreActionEvents() {
+  document.querySelectorAll(".btn-edit").forEach((btn) => {
+    btn.addEventListener("click", function () {
+      const id = this.getAttribute("data-id");
+      showEditStorePanel(id);
+    });
+  });
+
+  document.querySelectorAll(".btn-disable").forEach((btn) => {
+    btn.addEventListener("click", function () {
+      const id = this.getAttribute("data-id");
+      const confirmDialog = document.createElement("div");
+      confirmDialog.className = "confirm-dialog";
+      confirmDialog.innerHTML = `
+        <div class="confirm-content">
+          <h3>Xác nhận vô hiệu hóa</h3>
+          <p>Bạn có chắc chắn muốn vô hiệu hóa nhà thuốc này?</p>
+          <div class="confirm-actions"></div>
+            <button class="btn btn-secondary btn-cancel-disable">Hủy</button>
+            <button class="btn btn-danger btn-confirm-disable">Vô hiệu hóa</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(confirmDialog);
+
+      confirmDialog
+        .querySelector(".btn-cancel-disable")
+        .addEventListener("click", closeConfirmDialog);
+      confirmDialog
+        .querySelector(".btn-confirm-disable")
+        .addEventListener("click", function () {
+          closeConfirmDialog();
+          updatePharmacyStatus(id, false);
+        });
+    });
+  });
+
+  document.querySelectorAll(".btn-enable").forEach((btn) => {
+    btn.addEventListener("click", function () {
+      const id = this.getAttribute("data-id");
+      updatePharmacyStatus(id, true);
+    });
+  });
+}
+
+function showEditStorePanel(id) {
+  document
+    .querySelectorAll(".panel")
+    .forEach((panel) => panel.classList.remove("active"));
+  document.getElementById("panel-edit-store").classList.add("active");
+  document.getElementById("panel-edit-store").setAttribute("data-edit-id", id);
+
+  document
+    .querySelectorAll(".nav-item")
+    .forEach((item) => item.classList.remove("active"));
+  document
+    .querySelector('.nav-item[data-type="list-stores"]')
+    .classList.add("active");
+
+  updateHeaderTitle("edit-store");
+
+  fetch(`http://localhost:8080/admin/pharmacy/${id}`)
+    .then((res) => res.json())
+    .then((store) => {
+      document.getElementById("edit-store-id").value = store.pharmacyId;
+      document.getElementById("edit-store-name").value =
+        store.pharmacyName || "";
+      document.getElementById("edit-store-address").value = store.address || "";
+      document.getElementById("edit-store-phone").value = store.phone || "";
+      document.getElementById("edit-store-email").value = store.email || "";
+
+      const isActive = store.isActive === true || store.isActive === "true";
+      if (!isActive) {
+        document
+          .querySelectorAll(
+            "#panel-edit-store .form-input, #panel-edit-store .form-select"
+          )
+          .forEach((input) => (input.disabled = true));
+        document.querySelector(
+          "#panel-edit-store button[type='submit']"
+        ).disabled = true;
+      } else {
+        document
+          .querySelectorAll(
+            "#panel-edit-store .form-input, #panel-edit-store .form-select"
+          )
+          .forEach((input) => (input.disabled = false));
+        document.querySelector(
+          "#panel-edit-store button[type='submit']"
+        ).disabled = false;
+      }
+    })
+    .catch((error) => {
+      console.error("Error loading pharmacy:", error);
+      showToast("Không thể tải thông tin nhà thuốc");
+    });
+}
+
+function updatePharmacyStatus(id, isActive) {
+  fetch(`http://localhost:8080/admin/update-pharmacy/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ isActive }),
+  })
+    .then((res) => res.json())
+    .then((res) => {
+      showToast(
+        res.message ||
+          (isActive ? "Kích hoạt thành công!" : "Vô hiệu hóa thành công!")
+      );
+      renderListStores(true);
+      fetch("http://localhost:8080/admin/list-pharmacies")
+        .then((res) => res.json())
+        .then((pharmacies) => {
+          listPharmacy = pharmacies || [];
+          if (
+            document
+              .getElementById("panel-add-account")
+              .classList.contains("active")
+          ) {
+            loadPharmacyOptions();
+          }
+        });
+      document
+        .querySelectorAll(".nav-item")
+        .forEach((item) => item.classList.remove("active"));
+      document
+        .querySelector('.nav-item[data-type="list-stores"]')
+        .classList.add("active");
+      updateHeaderTitle("list-stores");
+    })
+    .catch(() => showToast("Có lỗi xảy ra khi cập nhật trạng thái!"));
+}
+
+// Render edit store panel
 function renderEditStore() {
   const form = document.querySelector("#panel-edit-store .panel-form");
   if (form) {
@@ -1554,12 +2591,364 @@ function renderEditStore() {
 
 // Render revenue report panel
 function renderRevenueReport() {
-  console.log("Revenue Report panel loaded");
-  // Load revenue data
+  document
+    .querySelectorAll(".panel")
+    .forEach((panel) => panel.classList.remove("active"));
+  document.getElementById("panel-revenue-report").classList.add("active");
+  updateHeaderTitle("revenue-report");
   loadRevenueData();
 }
 
-// Helper functions
+// ============================================================================
+// FORM SUBMISSION HANDLERS
+// ============================================================================
+
+function handleAddAccount(e) {
+  e.preventDefault();
+  const username = document.getElementById("username").value.trim();
+  const password = document.getElementById("password").value.trim();
+  const fullName = document.getElementById("fullname").value.trim();
+  const phone = document.getElementById("phone").value.trim();
+  const email = document.getElementById("email").value.trim();
+  const role = document.getElementById("role").value;
+  const pharmacyId = Number(document.getElementById("pharmacy").value);
+
+  if (!username || !password || !fullName || !role || !pharmacyId) {
+    showToast("Vui lòng điền đầy đủ thông tin bắt buộc");
+    return;
+  }
+
+  const formData = {
+    username: username,
+    password: password,
+    role: role,
+    isActive: true,
+    fullName: fullName,
+    phone: phone,
+    email: email,
+    pharmacyId: pharmacyId,
+  };
+
+  fetch(`http://localhost:8080/admin/add-account`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(formData),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.message) {
+        showToast(data.message);
+        if (data.message.includes("thành công")) {
+          e.target.reset();
+          renderListAccounts();
+        }
+      }
+    })
+    .catch((error) => {
+      console.error("Error creating account:", error);
+      showToast("Có lỗi xảy ra khi tạo tài khoản");
+    });
+}
+
+function handleAddProduct(e) {
+  e.preventDefault();
+  const productNameInput = document.getElementById("product-name");
+  const productTypeSelect = document.getElementById("product-type");
+  const productTypeCustom = document.getElementById("product-type-custom");
+  const productUnitSelect = document.getElementById("product-unit");
+  const productUnitCustom = document.getElementById("product-unit-custom");
+  const productPriceInput = document.getElementById("product-price");
+  const productQuantityInput = document.getElementById("product-quantity"); // Lấy input số lượng
+  const productDescriptionInput = document.getElementById(
+    "product-description"
+  );
+  const productName = productNameInput.value.trim();
+
+  if (!productName) {
+    showToast("Vui lòng nhập tên sản phẩm");
+    productNameInput.focus();
+    return;
+  }
+
+  let productType = productTypeSelect.value;
+  if (productType === "other") {
+    productType = productTypeCustom.value.trim();
+    if (!productType) {
+      showToast("Vui lòng nhập loại sản phẩm khi chọn 'Khác'");
+      productTypeCustom.focus();
+      return;
+    }
+  } else if (!productType) {
+    showToast("Vui lòng chọn loại sản phẩm");
+    productTypeSelect.focus();
+    return;
+  }
+
+  let productUnit = productUnitSelect.value;
+  if (productUnit === "other") {
+    productUnit = productUnitCustom.value.trim();
+    if (!productUnit) {
+      showToast("Vui lòng nhập đơn vị khi chọn 'Khác'");
+      productUnitCustom.focus();
+      return;
+    }
+  } else if (!productUnit) {
+    showToast("Vui lòng chọn đơn vị");
+    productUnitSelect.focus();
+    return;
+  }
+
+  const price = parseFloat(productPriceInput.value);
+  if (!price || price <= 0) {
+    showToast("Vui lòng nhập giá bán hợp lệ (phải lớn hơn 0)");
+    productPriceInput.focus();
+    return;
+  }
+
+  const quantity = parseInt(productQuantityInput.value) || 0;
+  if (quantity < 0) {
+    showToast("Số lượng không được âm");
+    productQuantityInput.focus();
+    return;
+  }
+
+  const description = productDescriptionInput.value.trim();
+  const formData = {
+    productName: productName,
+    productType: productType,
+    unit: productUnit,
+    description: description,
+    price: price.toFixed(2),
+    quantity: quantity, // Gửi số lượng lên backend
+  };
+
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+  const originalText = submitBtn.textContent;
+  submitBtn.textContent = "Đang thêm...";
+  submitBtn.disabled = true;
+
+  fetch(`http://localhost:8080/admin/add-product`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(formData),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.message) {
+        showToast(data.message);
+        if (data.message.includes("thành công")) {
+          e.target.reset();
+          if (productTypeCustom) {
+            productTypeCustom.style.display = "none";
+            productTypeCustom.required = false;
+          }
+          if (productUnitCustom) {
+            productUnitCustom.style.display = "none";
+            productUnitCustom.required = false;
+          }
+        }
+      }
+    })
+    .catch((error) => {
+      console.error("Error creating product:", error);
+      showToast("Có lỗi xảy ra khi thêm sản phẩm. Vui lòng thử lại.");
+    })
+    .finally(() => {
+      submitBtn.textContent = originalText;
+      submitBtn.disabled = false;
+    });
+}
+
+function handleEditProduct(e) {
+  e.preventDefault();
+  const productId = document.getElementById("edit-product-id").value;
+  const productName = document.getElementById("edit-product-name").value.trim();
+  const productTypeSelect = document.getElementById("edit-product-type");
+  const productTypeCustom = document.getElementById("edit-product-type-custom");
+  const productUnitSelect = document.getElementById("edit-product-unit");
+  const productUnitCustom = document.getElementById("edit-product-unit-custom");
+  const productPrice = parseFloat(
+    document.getElementById("edit-product-price").value
+  );
+  const productDescription = document
+    .getElementById("edit-product-description")
+    .value.trim();
+
+  if (!productName) {
+    showToast("Vui lòng nhập tên sản phẩm");
+    return;
+  }
+
+  let productType = productTypeSelect.value;
+  if (productType === "other") {
+    productType = productTypeCustom.value.trim();
+    if (!productType) {
+      showToast("Vui lòng nhập loại sản phẩm khi chọn 'Khác'");
+      return;
+    }
+  }
+
+  let productUnit = productUnitSelect.value;
+  if (productUnit === "other") {
+    productUnit = productUnitCustom.value.trim();
+    if (!productUnit) {
+      showToast("Vui lòng nhập đơn vị khi chọn 'Khác'");
+      return;
+    }
+  }
+
+  if (!productPrice || productPrice <= 0) {
+    showToast("Vui lòng nhập giá bán hợp lệ");
+    return;
+  }
+
+  const formData = {
+    productName: productName,
+    productType: productType,
+    unit: productUnit,
+    price: productPrice,
+    description: productDescription,
+  };
+
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+  const originalText = submitBtn.textContent;
+  submitBtn.textContent = "Đang cập nhật...";
+  submitBtn.disabled = true;
+
+  fetch(`http://localhost:8080/admin/edit-product/${productId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(formData),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      showToast(data.message);
+      if (data.message.includes("thành công")) {
+        cancelEditProduct();
+        renderListProducts();
+      }
+    })
+    .catch((error) => {
+      console.error("Error updating product:", error);
+      showToast("Có lỗi xảy ra khi cập nhật sản phẩm");
+    })
+    .finally(() => {
+      submitBtn.textContent = originalText;
+      submitBtn.disabled = false;
+    });
+}
+
+function handleCreateStore(e) {
+  e.preventDefault();
+  const name = document.getElementById("store-name").value.trim();
+  const address = document.getElementById("store-address").value.trim();
+  const phone = document.getElementById("store-phone").value.trim();
+  const email = document.getElementById("store-email").value.trim();
+
+  if (!name || !phone) {
+    showToast("Vui lòng nhập đầy đủ thông tin bắt buộc");
+    return;
+  }
+
+  const data = {
+    pharmacyName: name,
+    address: address,
+    phone: phone,
+    email: email,
+  };
+
+  const btn = e.target.querySelector('button[type="submit"]');
+  btn.disabled = true;
+  btn.textContent = "Đang tạo...";
+
+  fetch("http://localhost:8080/admin/create-pharmacy", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  })
+    .then((res) => res.json())
+    .then((res) => {
+      showToast(
+        res.message ||
+          (res.message && res.message.includes("thành công")
+            ? res.message
+            : "Có lỗi xảy ra")
+      );
+      if (res.message && res.message.includes("thành công")) {
+        e.target.reset();
+        document
+          .querySelectorAll(".panel")
+          .forEach((panel) => panel.classList.remove("active"));
+        document.getElementById("panel-list-stores").classList.add("active");
+        document
+          .querySelectorAll(".nav-item")
+          .forEach((item) => item.classList.remove("active"));
+        document
+          .querySelector('.nav-item[data-type="list-stores"]')
+          .classList.add("active");
+        updateHeaderTitle("list-stores");
+        renderListStores();
+      }
+    })
+    .catch(() => showToast("Có lỗi xảy ra, vui lòng thử lại"))
+    .finally(() => {
+      btn.disabled = false;
+      btn.textContent = "Tạo nhà thuốc";
+    });
+}
+
+function handleEditStore(e) {
+  e.preventDefault();
+  const id = document.getElementById("edit-store-id").value;
+  if (!id) {
+    showToast("Vui lòng tìm và chọn nhà thuốc trước khi cập nhật!", "warning");
+    return;
+  }
+
+  const data = {
+    pharmacyName: document.getElementById("edit-store-name").value.trim(),
+    address: document.getElementById("edit-store-address").value.trim(),
+    phone: document.getElementById("edit-store-phone").value.trim(),
+    email: document.getElementById("edit-store-email").value.trim(),
+  };
+
+  fetch(`http://localhost:8080/admin/update-pharmacy/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  })
+    .then(async (res) => {
+      const result = await res.json();
+      if (res.ok) {
+        showToast(result.message || "Cập nhật thành công!");
+        document.getElementById("panel-edit-store").classList.remove("active");
+        document.getElementById("panel-list-stores").classList.add("active");
+        document
+          .querySelectorAll(".nav-item")
+          .forEach((item) => item.classList.remove("active"));
+        document
+          .querySelector('.nav-item[data-type="list-stores"]')
+          .classList.add("active");
+        updateHeaderTitle("list-stores");
+        renderListStores();
+        document.getElementById("edit-store-id").value = "";
+        document.getElementById("edit-store-name").value = "";
+        document.getElementById("edit-store-address").value = "";
+        document.getElementById("edit-store-phone").value = "";
+        document.getElementById("edit-store-email").value = "";
+      } else {
+        showToast(result.message || "Có lỗi xảy ra khi cập nhật!");
+      }
+    })
+    .catch(() => showToast("Có lỗi xảy ra khi cập nhật!"));
+}
+
 function loadPharmacyOptions() {
   const pharmacySelect = document.getElementById("pharmacy");
   if (pharmacySelect && listPharmacy.length > 0) {
@@ -1579,98 +2968,542 @@ function loadManagerOptions() {
   // Placeholder: Implement fetching managers if needed
 }
 
-function loadStoresData() {
-  // TODO: Implement stores data loading
-  console.log("Loading stores data...");
-}
-
 function loadRevenueData() {
-  // TODO: Implement revenue data loading
-  console.log("Loading revenue data...");
+  // Placeholder: Implement fetching revenue data if needed
 }
 
-function showErrorMessage(message) {
-  // TODO: Implement proper error handling UI
-  console.error(message);
+async function logout() {
+  showToast("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+  const response = await fetch("http://localhost:8080/api/auth/logout", {
+    method: "POST",
+    credentials: "include",
+  });
+
+  const data = await response.json();
+  console.log("Logout response:", data);
+
+  // Controller trả về JSON, JS phải tự redirect
+  if (data.success) {
+    window.location.href = data.redirectUrl || "/HealthMateLC/index.html";
+  }
 }
 
-// User profile functions
-function showUserInfo() {
-  // TODO: Implement user info modal
-  console.log("Show user info");
-}
-
-function logout() {
-  // Clear session/local storage
+async function checkSessionOrRedirect() {
   try {
-    localStorage.clear();
-    sessionStorage.clear();
+    const response = await fetch("http://localhost:8080/admin/profile", {
+      method: "GET",
+      credentials: "include",
+    });
+
+    // Nếu server trả về 401
+    if (response.status === 401) {
+      showToast("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+      console.log("Redirecting to login (401)...");
+      setTimeout(() => {
+        window.location.replace("/HealthMateLC/index.html");
+      }, 1000);
+      return false;
+    }
+
+    // Nếu server trả về 200 nhưng nội dung báo lỗi
+    if (response.ok) {
+      const data = await response.json();
+      if (
+        data &&
+        (data.error === "Unauthorized access" ||
+          (data.message && data.message.includes("hết hạn")))
+      ) {
+        showToast("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+        console.log("Redirecting to login (expired session in JSON)...");
+        setTimeout(() => {
+          window.location.replace("/HealthMateLC/index.html");
+        }, 1000);
+        return false;
+      }
+    }
+
+    return true;
   } catch (e) {
-    console.error("Error clearing storage:", e);
+    // Lỗi mạng hoặc fetch lỗi
+    showToast("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+    console.log("Redirecting to login (network error)...");
+    setTimeout(() => {
+      window.location.replace("/HealthMateLC/index.html");
+    }, 1000);
+    return false;
   }
-
-  // Redirect to login page
-  window.location.href = "index.html";
 }
 
-// Form submission handlers
-document.addEventListener("DOMContentLoaded", function () {
-  // Add Account form
-  const addAccountForm = document.querySelector(
-    "#panel-add-account .panel-form"
-  );
-  if (addAccountForm) {
-    addAccountForm.addEventListener("submit", handleAddAccount);
+function loadRoles() {
+  const roleSelect = document.getElementById("role");
+  if (roleSelect) {
+    fetch(`http://localhost:8080/admin/list-roles`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then((response) => response.json())
+      .then((roles) => {
+        roleSelect.innerHTML = '<option value="">Chọn vai trò</option>';
+        const filteredRoles = roles.filter((role) => role !== "admin");
+        filteredRoles.forEach((role) => {
+          const option = document.createElement("option");
+          option.value = role;
+          option.textContent = getRoleDisplayName(role);
+          roleSelect.appendChild(option);
+        });
+      })
+      .catch((error) => {
+        console.error("Error loading roles:", error);
+        const fallbackRoles = ["manager", "employee", "customer-service"];
+        roleSelect.innerHTML = '<option value="">Chọn vai trò</option>';
+        fallbackRoles.forEach((role) => {
+          const option = document.createElement("option");
+          option.value = role;
+          option.textContent = getRoleDisplayName(role);
+          roleSelect.appendChild(option);
+        });
+      });
   }
-
-  // Create Category form
-  const createCategoryForm = document.querySelector(
-    "#panel-create-category .panel-form"
-  );
-  if (createCategoryForm) {
-    createCategoryForm.addEventListener("submit", handleCreateCategory);
-  }
-
-  // Add Product form
-  const addProductForm = document.querySelector(
-    "#panel-add-product .panel-form"
-  );
-  if (addProductForm) {
-    addProductForm.addEventListener("submit", handleAddProduct);
-  }
-
-  // Create Store form
-  const createStoreForm = document.querySelector(
-    "#panel-create-store .panel-form"
-  );
-  if (createStoreForm) {
-    createStoreForm.addEventListener("submit", handleCreateStore);
-  }
-});
-
-// Form handlers
-function handleAddAccount(e) {
-  e.preventDefault();
-  // TODO: Implement add account logic
-  console.log("Add account form submitted");
 }
 
-function handleCreateCategory(e) {
-  e.preventDefault();
-  // TODO: Implement create category logic
-  console.log("Create category form submitted");
+function getRoleDisplayName(role) {
+  const roleNames = {
+    manager: "Quản lý",
+    employee: "Nhân viên",
+    "customer-service": "Chăm sóc khách hàng",
+  };
+  return roleNames[role] || role;
 }
 
-function handleAddProduct(e) {
-  e.preventDefault();
-  // TODO: Implement add product logic
-  console.log("Add product form submitted");
+function showToast(message) {
+  let toastContainer = document.querySelector(".toast-container");
+  if (!toastContainer) {
+    toastContainer = document.createElement("div");
+    toastContainer.className = "toast-container";
+    document.body.appendChild(toastContainer);
+  }
+
+  const toast = document.createElement("div");
+  toast.className = "toast";
+  toast.innerHTML = `
+    <div class="toast-content">
+      <span class="material-icons toast-icon">check_circle</span>
+      <span class="toast-message">${message}</span>
+    </div>
+    <span class="toast-close">×</span>
+  `;
+
+  toastContainer.appendChild(toast);
+  setTimeout(() => toast.classList.add("show"), 10);
+
+  toast.querySelector(".toast-close").addEventListener("click", () => {
+    toast.classList.remove("show");
+    setTimeout(() => toast.remove(), 300);
+  });
+
+  setTimeout(() => {
+    toast.classList.remove("show");
+    setTimeout(() => toast.remove(), 300);
+  }, 5000);
 }
 
-function handleCreateStore(e) {
+function attachAddStoreButtonEvent() {
+  if (form) {
+    form.reset();
+    const customInputs = form.querySelectorAll(".custom-input");
+    customInputs.forEach((input) => {
+      input.style.display = "none";
+      input.classList.remove("show");
+      input.required = false;
+      input.value = "";
+    });
+  }
+  loadProductTypes();
+  loadProductUnits();
+  initializeEditProductCustomInputs();
+  updateHeaderTitle("edit-product");
+}
+
+function loadProductTypes() {
+  fetch("http://localhost:8080/admin/list-products")
+    .then((response) => response.json())
+    .then((products) => {
+      const types = [...new Set(products.map((p) => p.productType))];
+      updateProductTypeOptions(types);
+    })
+    .catch((error) => {
+      console.error("Error loading product types:", error);
+      const fallbackTypes = [
+        "Thuốc",
+        "Thực phẩm chức năng",
+        "Dụng cụ y tế",
+        "Mỹ phẩm",
+      ];
+      updateProductTypeOptions(fallbackTypes);
+    });
+}
+
+function loadProductUnits() {
+  fetch("http://localhost:8080/admin/list-products")
+    .then((response) => response.json())
+    .then((products) => {
+      const units = [...new Set(products.map((p) => p.unit))];
+      updateProductUnitOptions(units);
+    })
+    .catch((error) => {
+      console.error("Error loading product units:", error);
+      const fallbackUnits = ["Viên", "Hộp", "Chai", "Tuýp", "Cái", "Vỉ"];
+      updateProductUnitOptions(fallbackUnits);
+    });
+}
+
+function updateProductTypeOptions(types) {
+  const addProductTypeSelect = document.getElementById("product-type");
+  if (addProductTypeSelect) {
+    addProductTypeSelect.innerHTML =
+      '<option value="">Chọn loại sản phẩm</option>';
+    types.forEach((type) => {
+      const option = document.createElement("option");
+      option.value = type;
+      option.textContent = type;
+      addProductTypeSelect.appendChild(option);
+    });
+    addProductTypeSelect.innerHTML += '<option value="other">Khác</option>';
+  }
+
+  const editProductTypeSelect = document.getElementById("edit-product-type");
+  if (editProductTypeSelect) {
+    editProductTypeSelect.innerHTML =
+      '<option value="">Chọn loại sản phẩm</option>';
+    types.forEach((type) => {
+      const option = document.createElement("option");
+      option.value = type;
+      option.textContent = type;
+      editProductTypeSelect.appendChild(option);
+    });
+    editProductTypeSelect.innerHTML += '<option value="other">Khác</option>';
+  }
+}
+
+function updateProductUnitOptions(units) {
+  const addProductUnitSelect = document.getElementById("product-unit");
+  if (addProductUnitSelect) {
+    addProductUnitSelect.innerHTML = '<option value="">Chọn đơn vị</option>';
+    units.forEach((unit) => {
+      const option = document.createElement("option");
+      option.value = unit;
+      option.textContent = unit;
+      addProductUnitSelect.appendChild(option);
+    });
+    addProductUnitSelect.innerHTML += '<option value="other">Khác</option>';
+  }
+
+  const editProductUnitSelect = document.getElementById("edit-product-unit");
+  if (editProductUnitSelect) {
+    editProductUnitSelect.innerHTML = '<option value="">Chọn đơn vị</option>';
+    units.forEach((unit) => {
+      const option = document.createElement("option");
+      option.value = unit;
+      option.textContent = unit;
+      editProductUnitSelect.appendChild(option);
+    });
+    editProductUnitSelect.innerHTML += '<option value="other">Khác</option>';
+  }
+}
+
+function closeConfirmDialog() {
+  const dialog = document.querySelector(".confirm-dialog");
+  if (dialog) dialog.remove();
+}
+
+// Sau khi renderListStores, gắn lại sự kiện cho nút Thêm nhà thuốc
+function attachAddStorePanelButtonEvent() {
+  const addBtn = document.querySelector(
+    "#panel-list-stores .panel-header .btn.btn-primary"
+  );
+  if (addBtn) {
+    addBtn.onclick = function () {
+      // Ẩn tất cả panel
+      document
+        .querySelectorAll(".panel")
+        .forEach((panel) => panel.classList.remove("active"));
+      // Hiện panel tạo nhà thuốc
+      document.getElementById("panel-create-store").classList.add("active");
+      // Cập nhật sidebar
+      document
+        .querySelectorAll(".nav-item")
+        .forEach((item) => item.classList.remove("active"));
+      document
+        .querySelector('.nav-item[data-type="create-store"]')
+        .classList.add("active");
+      // Cập nhật header
+      updateHeaderTitle("create-store");
+      // Render lại nội dung nếu cần
+      renderCreateStore();
+    };
+  }
+}
+
+function attachQuantityEvents() {
+  document.querySelectorAll(".quantity-control").forEach((container) => {
+    const productId = container.getAttribute("data-product-id");
+    const input = container.querySelector(".input-qty");
+    const btnMinus = container.querySelector(".btn-qty-minus");
+    const btnPlus = container.querySelector(".btn-qty-plus");
+
+    btnMinus.onclick = function () {
+      let val = parseInt(input.value) || 0;
+      if (val > 0) {
+        updateProductQuantity(productId, 1, "subtract", input);
+      }
+    };
+    btnPlus.onclick = function () {
+      updateProductQuantity(productId, 1, "add", input);
+    };
+    input.onchange = function () {
+      let val = parseInt(input.value) || 0;
+      updateProductQuantity(productId, val, "set", input);
+    };
+  });
+}
+
+function updateProductQuantity(productId, quantity, operation, inputEl) {
+  fetch("http://localhost:8080/admin/update-product-quantity", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      productId: Number(productId),
+      quantity: Number(quantity),
+      operation,
+    }),
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      showToast(data.message || "Cập nhật số lượng thành công");
+      // Lưu trang hiện tại
+      const currentPageBefore = currentPage;
+      // Reload lại danh sách sản phẩm để đồng bộ số lượng
+      fetch("http://localhost:8080/admin/list-products", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+        .then((response) => response.json())
+        .then((products) => {
+          allProducts = products || [];
+          // Khôi phục lại trang hiện tại
+          currentPage = currentPageBefore;
+          renderProductTable();
+          renderPagination();
+        })
+        .catch((error) => {
+          console.error("Error reloading products:", error);
+          // Nếu reload thất bại, vẫn giữ nguyên trang hiện tại
+          currentPage = currentPageBefore;
+          renderProductTable();
+          renderPagination();
+        });
+    })
+    .catch(() => {
+      showToast("Có lỗi xảy ra khi cập nhật số lượng!");
+      if (inputEl) inputEl.value = inputEl.defaultValue;
+    });
+}
+
+async function handleUserProfile() {
+  console.log("Đang hiển thị thông tin user...");
+  try {
+    const response = await fetch(
+      "http://localhost:8080/admin/profile?detail=true",
+      {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          Accept: "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        showToast("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+        window.location.href = "/HealthMateLC/index.html";
+        return;
+      }
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log("Dữ liệu user profile:", data);
+
+    const userFullNameElement = document.getElementById("userFullName");
+    if (userFullNameElement && data.fullName) {
+      userFullNameElement.textContent = data.fullName;
+    }
+
+    console.log("Thông tin người dùng đã được tải và hiển thị.");
+  } catch (error) {
+    console.error("Lỗi khi lấy thông tin user profile:", error);
+    alert(
+      "Không thể tải thông tin người dùng. Vui lòng thử lại. Lỗi: " +
+        error.message
+    );
+    window.location.href = "/HealthMateLC/index.html";
+  }
+}
+
+async function showUserInfo() {
+  try {
+    const response = await fetch("http://localhost:8080/admin/showprofile", {
+      method: "GET",
+      credentials: "include",
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        showToast("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+        window.location.href = "/HealthMateLC/index.html";
+        return;
+      }
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log("Dữ liệu hồ sơ đầy đủ:", data);
+
+    let modal = document.getElementById("userInfoModal");
+    if (!modal) {
+      modal = document.createElement("div");
+      modal.id = "userInfoModal";
+      modal.className = "modal";
+      modal.innerHTML = `
+                <div class="modal-content">
+                    <span class="close">×</span>
+                    <h2>Thông tin cá nhân</h2>
+                    <div id="userInfoContent"></div>
+                </div>
+            `;
+      document.body.appendChild(modal);
+    }
+
+    const userInfoContent = document.getElementById("userInfoContent");
+    userInfoContent.innerHTML = `
+                <p><strong>Họ và tên:</strong> ${
+                  data.fullName || "Chưa cập nhật"
+                }</p>
+            <p><strong>Số điện thoại:</strong> ${
+              data.phone || "Chưa cập nhật"
+            }</p>
+            <p><strong>Email:</strong> ${data.email || "Chưa cập nhật"}</p>
+        `;
+
+    modal.style.display = "block";
+
+    const closeBtn = modal.querySelector(".close");
+    closeBtn.onclick = () => {
+      modal.style.display = "none";
+    };
+
+    window.onclick = (event) => {
+      if (event.target === modal) {
+        modal.style.display = "none";
+      }
+    };
+
+    console.log("Thông tin cá nhân đã được hiển thị.");
+  } catch (error) {
+    console.error("Lỗi khi lấy thông tin cá nhân:", error);
+    showToast(
+      "Không thể tải thông tin cá nhân. Vui lòng thử lại. Lỗi: " + error.message
+    );
+    window.location.href = "/HealthMateLC/index.html";
+  }
+}
+
+// Handle reset password form submission
+function handleResetPassword(e) {
   e.preventDefault();
-  // TODO: Implement create store logic
-  console.log("Create store form submitted");
+
+  // Get form data
+  const userId = document.getElementById("reset-user-id").value;
+  const newPassword = document.getElementById("new-password").value;
+  const confirmPassword = document.getElementById("confirm-password").value;
+
+  // Validate form data
+  if (!newPassword || !confirmPassword) {
+    showFormError("resetPasswordForm", "Vui lòng nhập đầy đủ thông tin");
+    return;
+  }
+
+  if (newPassword.length < 6) {
+    showFormError("resetPasswordForm", "Mật khẩu phải có ít nhất 6 ký tự");
+    return;
+  }
+
+  if (newPassword !== confirmPassword) {
+    showFormError("resetPasswordForm", "Mật khẩu xác nhận không khớp");
+    return;
+  }
+
+  // Check password strength
+  const strength = calculatePasswordStrength(newPassword);
+  if (strength.score < 30) {
+    showFormError(
+      "resetPasswordForm",
+      "Mật khẩu quá yếu. Vui lòng chọn mật khẩu mạnh hơn."
+    );
+    return;
+  }
+
+  // Send API request to reset password
+  resetUserPassword(userId, newPassword);
+}
+
+// Reset user password via API
+function resetUserPassword(userId, newPassword) {
+  showLoading("resetPasswordModal");
+
+  fetch(`http://localhost:8080/admin/reset-password/${userId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      newPassword: newPassword,
+    }),
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error("Lỗi khi đặt lại mật khẩu");
+      }
+      return response.json();
+    })
+    .then((data) => {
+      // Close modal
+      document.getElementById("resetPasswordModal").style.display = "none";
+
+      // Show success message
+      showToast(data.message || "Đặt lại mật khẩu thành công");
+
+      // Clear form
+      document.getElementById("new-password").value = "";
+      document.getElementById("confirm-password").value = "";
+    })
+    .catch((error) => {
+      showFormError(
+        "resetPasswordForm",
+        error.message || "Lỗi khi đặt lại mật khẩu"
+      );
+    })
+    .finally(() => {
+      hideLoading("resetPasswordModal");
+    });
 }
 
 // Handle reset password form submission
