@@ -9,6 +9,7 @@ let allStores = [];
 let currentPage = 1; // dùng cho sản phẩm (1-based), stores sẽ convert về 0-based khi cần
 const pageSize = 6; // dùng cho nhà thuốc, mỗi trang 6 nhà thuốc
 let totalPages = 0;
+let totalProducts = 0;
 let isSearching = false;
 let currentSearchParams = {};
 let listUsersByPharmacy = {}; // Store users data by pharmacy
@@ -2605,16 +2606,18 @@ function updateProductQuantity(productId, quantity, operation, inputEl) {
       showToast(data.message || "Cập nhật số lượng thành công");
       // Lưu trang hiện tại
       const currentPageBefore = currentPage;
-      // Reload lại danh sách sản phẩm để đồng bộ số lượng
-      fetch("http://localhost:8080/admin/list-products", {
+      // Reload lại danh sách sản phẩm với phân trang để đồng bộ số lượng
+      fetch(`http://localhost:8080/admin/list-products-paginated?page=${currentPageBefore - 1}&size=6`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
         },
       })
         .then((response) => response.json())
-        .then((products) => {
-          allProducts = products || [];
+        .then((data) => {
+          allProducts = data.products || [];
+          totalPages = data.totalPages || 0;
+          totalProducts = data.totalProducts || 0;
           // Khôi phục lại trang hiện tại
           currentPage = currentPageBefore;
           renderProductTable();
