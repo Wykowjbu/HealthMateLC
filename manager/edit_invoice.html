@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chỉnh sửa hóa đơn - Long Châu</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Inter', sans-serif;
+        background-color: #f5f7fa;
+        color: #333;
+    }
+
+    .dashboard {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        grid-template-rows: 70px 1fr;
+        height: 100vh;
+        grid-template-areas:
+            "sidebar header"
+            "sidebar main";
+    }
+
+    .sidebar {
+        grid-area: sidebar;
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        overflow-y: auto;
+    }
+
+    .sidebar-header {
+        padding: 20px;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .logo {
+        font-size: 24px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .nav-menu {
+        padding: 20px 0;
+    }
+
+    .nav-group {
+        margin-bottom: 30px;
+    }
+
+    .nav-group-title {
+        padding: 0 20px 10px;
+        font-size: 12px;
+        text-transform: uppercase;
+        opacity: 0.7;
+        font-weight: 600;
+    }
+
+    .nav-item {
+        padding: 12px 20px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .nav-item:hover {
+        background: rgba(255,255,255,0.1);
+    }
+
+    .nav-item.active {
+        background: rgba(255,255,255,0.2);
+        border-right: 3px solid white;
+    }
+
+    .header {
+        grid-area: header;
+        background: white;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 30px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        z-index: 100;
+    }
+
+    .header-title {
+        font-size: 24px;
+        font-weight: 600;
+        color: #2d3748;
+    }
+
+    .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .user-profile {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        cursor: pointer;
+        padding: 8px 16px;
+        border-radius: 8px;
+        transition: background 0.3s ease;
+    }
+
+    .user-profile:hover {
+        background: #f7fafc;
+    }
+
+    .avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+    }
+
+    .main-content {
+        grid-area: main;
+        padding: 30px;
+        overflow-y: auto;
+    }
+
+    .form-container {
+        background: white;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        font-weight: 500;
+        color: #2d3748;
+        margin-bottom: 8px;
+    }
+
+    .form-group input,
+    .form-group select {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        font-size: 14px;
+    }
+
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+    }
+
+    .table th,
+    .table td {
+        padding: 15px 25px;
+        text-align: left;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .table th {
+        background: #f8fafc;
+        font-weight: 600;
+        color: #2d3748;
+    }
+
+    .table td {
+        color: #4a5568;
+    }
+
+    .btn {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 15px rgba(240, 147, 251, 0.4);
+    }
+
+    @media (max-width: 768px) {
+        .dashboard {
+            grid-template-columns: 1fr;
+            grid-template-areas:
+                "header"
+                "main";
+        }
+
+        .sidebar {
+            display: none;
+        }
+    }
+     .nav-item a {
+text-decoration: none;
+color: inherit;
+display: flex;
+align-items: center;
+gap: 12px;
+width: 100%;
+.nav-item.active {
+background: rgba(255,255,255,0.2);
+border-right: 3px solid white;
+}
+  </style>
+</head>
+<body>
+<div class="dashboard">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <span class="material-icons">store</span>
+        Long Châu Manager
+      </div>
+    </div>
+    <nav class="nav-menu">
+      <div class="nav-group">
+        <div class="nav-group-title">Báo cáo</div>
+        <div class="nav-item active">
+          <a href="/HealthMateLC/manager/manager.html">
+            <span class="material-icons">analytics</span>
+            Báo cáo doanh thu
+          </a>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-group-title">Quản lý nhân viên</div>
+        <div class="nav-item">
+          <a href="/HealthMateLC/manager/work_schedule.html">
+            <span class="material-icons">schedule</span>
+            Lịch làm việc
+          </a>
+        </div>
+        <div class="nav-item">
+          <a href="/HealthMateLC/manager/edit_schedule.html">
+            <span class="material-icons">edit_calendar</span>
+            Chỉnh sửa lịch
+          </a>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-group-title">Quản lý hóa đơn</div>
+        <div class="nav-item">
+          <a href="/HealthMateLC/manager/view_invoices.html">
+            <span class="material-icons">receipt</span>
+            Xem hóa đơn
+          </a>
+        </div>
+        <div class="nav-item">
+          <a href="/HealthMateLC/manager/edit_invoice.html">
+            <span class="material-icons">edit</span>
+            Chỉnh sửa hóa đơn
+          </a>
+        </div>
+        <div class="nav-item">
+          <a href="/HealthMateLC/manager/delete_invoice.html">
+            <span class="material-icons">delete</span>
+            Xóa hóa đơn
+          </a>
+        </div>
+        <div class="nav-item">
+          <a href="/HealthMateLC/manager/export_vat.html">
+            <span class="material-icons">print</span>
+            Xuất VAT
+          </a>
+        </div>
+      </div>
+    </nav>
+  </aside>
+
+  <header class="header">
+    <h1 class="header-title">Chỉnh sửa hóa đơn - Chi nhánh Quận 1</h1>
+    <div class="header-actions">
+      <button class="btn btn-primary">
+        <span class="material-icons">add</span>
+        Tạo hóa đơn mới
+      </button>
+      <div class="user-profile">
+        <div class="avatar">QL</div>
+        <div>
+          <div style="font-weight: 500;">Nguyễn Thị Lan</div>
+          <div style="font-size: 12px; color: #718096;">Quản lý chi nhánh</div>
+        </div>
+        <span class="material-icons">expand_more</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="form-container">
+      <h3 class="chart-title" style="margin-bottom: 20px;">Chỉnh sửa hóa đơn #1</h3>
+      <div class="form-group">
+        <label for="customer">Khách hàng</label>
+        <select id="customer">
+          <option value="1" selected>Nguyễn Thị Hoa</option>
+          <option value="2">Trần Văn Nam</option>
+          <option value="3">Lê Thị Lan</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="invoiceDate">Ngày hóa đơn</label>
+        <input type="date" id="invoiceDate" value="2025-06-11">
+      </div>
+      <div class="form-group">
+        <label for="payment">Phương thức thanh toán</label>
+        <select id="payment">
+          <option value="Cash" selected>Tiền mặt</option>
+          <option value="Card">Thẻ</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="status">Trạng thái</label>
+        <select id="status">
+          <option value="paid" selected>Hoàn thành</option>
+          <option value="cancelled">Hủy</option>
+        </select>
+      </div>
+      <h4 style="margin-bottom: 10px;">Chi tiết hóa đơn</h4>
+      <table class="table">
+        <thead>
+        <tr>
+          <th>Sản phẩm</th>
+          <th>Số lượng</th>
+          <th>Đơn giá</th>
+          <th>Thành tiền</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td>Paracetamol 500mg</td>
+          <td><input type="number" value="3" style="width: 60px;"></td>
+          <td>5,000đ</td>
+          <td>15,000đ</td>
+        </tr>
+        <tr>
+          <td>Vitamin C 1000mg</td>
+          <td><input type="number" value="1" style="width: 60px;"></td>
+          <td>10,000đ</td>
+          <td>10,000đ</td>
+        </tr>
+        </tbody>
+      </table>
+      <div class="form-group">
+        <label for="totalAmount">Tổng tiền</label>
+        <input type="text" id="totalAmount" value="25,000đ" readonly>
+      </div>
+      <button class="btn btn-primary">
+        <span class="material-icons">save</span>
+        Lưu hóa đơn
+      </button>
+    </div>
+  </main>
+</div>
+</body>
+</html>
