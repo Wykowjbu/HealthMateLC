@@ -307,7 +307,7 @@ body {
 
 .search-input {
   font-size: 14px;
-  min-width: 200px;
+  min-width: 350px;
   height: 40px;
   border: 1px solid #e2e8f0;
   border-radius: 6px;
@@ -321,6 +321,14 @@ body {
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
+.search-input.searching {
+  background-image: url('data:image/svg+xml;charset=utf8,%3Csvg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"%3E%3Cstyle type="text/css"%3E@keyframes spinner { to { transform: rotate(360deg); } }%3C/style%3E%3Cpath style="animation: spinner 0.8s linear infinite; transform-origin: center;" fill="%23667eea" d="M12,1A11,11,0,1,0,23,12,11,11,0,0,0,12,1Zm0,19a8,8,0,1,1,8-8A8,8,0,0,1,12,20Z" opacity=".25"/%3E%3Cpath fill="%23667eea" d="M12,4a8,8,0,0,1,7.89,6.7A1.53,1.53,0,0,0,21.38,12h0a1.5,1.5,0,0,0,1.48-1.75,11,11,0,0,0-21.72,0A1.5,1.5,0,0,0,2.62,12h0a1.53,1.53,0,0,0,1.49-1.3A8,8,0,0,1,12,4Z"/%3E%3C/svg%3E');
+  background-position: right 10px center;
+  background-repeat: no-repeat;
+  background-size: 20px;
+  padding-right: 40px;
+}
+
 .search-select {
   font-size: 14px;
   width: 120px;
@@ -332,22 +340,36 @@ body {
   cursor: pointer;
 }
 
-.btn-search {
-  height: 40px;
-  width: 40px;
-  border: none;
-  background: #667eea;
-  color: white;
-  border-radius: 6px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
+/* Search button removed as it's no longer needed with real-time search */
+
+/* Highlight for search matches */
+.highlight {
+  background-color: rgba(102, 126, 234, 0.2);
+  border-radius: 2px;
+  padding: 0 2px;
+  font-weight: bold;
+  color: #4c51bf;
 }
 
-.btn-search:hover {
-  background: #5a67d8;
+/* No results message */
+.no-results-message {
+  text-align: center;
+  padding: 20px;
+  color: #718096;
+  font-style: italic;
+}
+
+/* Account search */
+.account-search {
+  margin-top: 10px;
+}
+
+.account-search .search-input {
+  min-width: 250px;
+}
+
+.account-search .search-select {
+  width: 100px;
 }
 
 .content-list {
@@ -1783,7 +1805,10 @@ body {
   font-size: 14px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .modal-content strong {

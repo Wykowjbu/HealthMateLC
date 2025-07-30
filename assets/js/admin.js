@@ -235,9 +235,6 @@ function loadInitialData() {
   renderListAccounts();
   document.querySelectorAll(".nav-item")[0].classList.add("active");
   document.querySelectorAll(".panel")[0].classList.add("active");
-  document.querySelector(".header-title").textContent = document
-    .querySelector(".nav-item")
-    .childNodes[2].textContent.trim();
 }
 
 // ============================================================================
@@ -368,6 +365,19 @@ function showUsersForPharmacy(users) {
 
   // Clear existing content
   usersList.innerHTML = "";
+
+  // Reset user search input
+  const userSearchInput = document.querySelector(".user-search-input");
+  if (userSearchInput) {
+    userSearchInput.value = "";
+    userSearchInput.classList.remove("searching");
+  }
+
+  // Reset user search select
+  const userSearchSelect = document.querySelector(".user-search-select");
+  if (userSearchSelect) {
+    userSearchSelect.value = "all";
+  }
 
   if (users.length === 0) {
     usersList.innerHTML =
@@ -1044,6 +1054,7 @@ function closeEditUserModal() {
 function showUserDetails(user) {
   const usersWrapper = document.querySelector(".list-users-wrapper");
   const detailsWrapper = document.querySelector(".user-details-wrapper");
+  console.log("Showing details for user:", user);
   if (!usersWrapper || !detailsWrapper) return;
   const initials = user.fullName
     .split(" ")
@@ -1687,62 +1698,120 @@ function renderAddAccount() {
 
 // Initialize search functionality for accounts
 function initializeSearch() {
-  const searchBtn = document.querySelector(".btn-search");
   const searchInput = document.querySelector(".search-input");
+  const searchSelect = document.querySelector(".search-select");
 
   if (searchBtn) {
     searchBtn.addEventListener("click", performSearch);
   }
 
   if (searchInput) {
-    searchInput.addEventListener("keypress", function (e) {
-      if (e.key === "Enter") {
-        performSearch();
-      }
+    // Real-time search as the user types
+    searchInput.addEventListener("input", function () {
+      performSearch();
+    });
+  }
+  // Search when search type changes
+  if (searchSelect) {
+    searchSelect.addEventListener("change", function () {
+      performSearch();
+    });
+  }
+
+  // Initialize account search
+  const userSearchInput = document.querySelector(".user-search-input");
+  const userSearchSelect = document.querySelector(".user-search-select");
+
+  if (userSearchInput) {
+    userSearchInput.addEventListener("input", function () {
+      performUserSearch();
+    });
+  }
+
+  if (userSearchSelect) {
+    userSearchSelect.addEventListener("change", function () {
+      performUserSearch();
     });
   }
 }
 
+// Variable to store search timeout
+let searchTimeout = null;
+
 // Perform search functionality for accounts
 function performSearch() {
-  const searchType = document.querySelector(".search-select")?.value || "all";
-  const searchContent = document.querySelector(".search-input")?.value || "";
-
-  if (!listPharmacy.length) return;
-
-  // Hide all store items initially
-  document.querySelectorAll(".store-item").forEach((item) => {
-    item.style.display = "none";
-  });
-
-  // Clear user list
-  const usersList = document.querySelector(".list-users");
-  if (usersList) {
-    usersList.innerHTML = "Chọn nhà thuốc để xem nhân viên";
+  // Clear previous timeout to prevent multiple rapid searches
+  if (searchTimeout) {
+    clearTimeout(searchTimeout);
   }
 
-  // Filter and show matching pharmacies
-  listPharmacy.forEach((pharmacy, index) => {
-    let isMatch = false;
-    const searchTerm = searchContent.toLowerCase();
+  // Set a small delay to avoid excessive searching while typing
+  searchTimeout = setTimeout(() => {
+    const searchType = document.querySelector(".search-select")?.value || "all";
+    const searchContent = document.querySelector(".search-input")?.value || "";
 
-    switch (searchType) {
-      case "all":
-        isMatch =
-          pharmacy.pharmacyName.toLowerCase().includes(searchTerm) ||
-          pharmacy.address.toLowerCase().includes(searchTerm) ||
-          pharmacy.phone.toLowerCase().includes(searchTerm);
-        break;
-      case "name":
-        isMatch = pharmacy.pharmacyName.toLowerCase().includes(searchTerm);
-        break;
-      case "address":
-        isMatch = pharmacy.address.toLowerCase().includes(searchTerm);
-        break;
-      case "phone":
-        isMatch = pharmacy.phone.includes(searchContent);
-        break;
+    // Add searching indicator to search input
+    const searchInput = document.querySelector(".search-input");
+    if (searchInput) {
+      searchInput.classList.add("searching");
     }
+
+    if (!listPharmacy.length) {
+      if (searchInput) {
+        searchInput.classList.remove("searching");
+      }
+      return;
+    }
+
+    // Hide all store items initially
+    document.querySelectorAll(".store-item").forEach((item) => {
+      item.style.display = "none";
+
+      // Remove any previously highlighted text
+      const nameElement = item.querySelector(".store-info h4");
+      const addressElement = item.querySelector(".store-info p:first-of-type");
+      const phoneElement = item.querySelector(".store-info p:last-of-type");
+
+      if (nameElement) nameElement.innerHTML = nameElement.textContent;
+      if (addressElement) addressElement.innerHTML = addressElement.textContent;
+      if (phoneElement) phoneElement.innerHTML = phoneElement.textContent;
+    });
+
+    // Clear user list
+    const usersList = document.querySelector(".list-users");
+    if (usersList) {
+      usersList.innerHTML = "Chọn nhà thuốc để xem nhân viên";
+    }
+
+    // Filter and show matching pharmacies
+    let matchCount = 0;
+
+    listPharmacy.forEach((pharmacy, index) => {
+      let isMatch = false;
+      const searchTerm = searchContent.toLowerCase();
+
+      // Skip filtering if search term is empty
+      if (searchTerm === "") {
+        isMatch = true;
+      } else {
+        switch (searchType) {
+          case "all":
+            isMatch =
+              pharmacy.pharmacyName.toLowerCase().includes(searchTerm) ||
+              pharmacy.address.toLowerCase().includes(searchTerm) ||
+              pharmacy.phone.toLowerCase().includes(searchTerm);
+            break;
+          case "name":
+            isMatch = pharmacy.pharmacyName.toLowerCase().includes(searchTerm);
+            break;
+          case "address":
+            isMatch = pharmacy.address.toLowerCase().includes(searchTerm);
+            break;
+          case "phone":
+            isMatch = pharmacy.phone.includes(searchContent);
+            break;
+        }
+      }
 
     const storeItem = document.querySelectorAll(".store-item")[index];
     if (storeItem) {
