@@ -1,7 +1,6 @@
-/**
- * Customer Service - UI Module
- * Quản lý các thao tác người dùng và giao diện
- */
+// ====================================
+// #region IMPORTS & GLOBAL VARIABLES
+// ====================================
 
 // Import các API từ module API
 import {
@@ -15,17 +14,17 @@ import {
   userAPI,
 } from "./customer-service-api.js";
 
-// Import các hàm từ customer-service.js
 import { showCustomerInfo } from "./customer-service.js";
-
-// Các biến UI
 let currentPage = 1;
 const reviewsPerPage = 5;
-// Use the selectedCustomerId variable from customer-service.js
-window.currentReviewId = null; // ID của đánh giá đang được xử lý
-
-// Biến để lưu trữ dữ liệu từ API
+window.currentReviewId = null; 
 let reviewsData = [];
+
+//#endregion
+
+// ====================================
+// #region INIT & DOM READY
+// ====================================
 
 // Khởi tạo khi DOM load xong
 document.addEventListener("DOMContentLoaded", function () {
@@ -48,13 +47,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Hiển thị thông tin người đăng nhập lên header
   displayCurrentUserHeader();
-
-  // Tải lịch sử tin nhắn
-  loadMessageHistory();
 });
 
+//#endregion
+
 // ====================================
-//#region INIT & GLOBAL UI HANDLERS
+// #region HEADER & USER INFO
 // ====================================
 
 // Hiển thị thông tin người đăng nhập lên header
@@ -212,86 +210,7 @@ closeButtons.forEach((button) => {
 //#endregion
 
 // ====================================
-//#region USER INFO & LOGOUT
-// ====================================
-
-// Hiển thị thông tin người dùng
-export async function showUserInfo() {
-  // Hiển thị modal
-  const modal = document.getElementById("userInfoModal");
-  if (!modal) {
-    console.error("Không tìm thấy element với ID 'userInfoModal'");
-    return;
-  }
-  modal.classList.add("show");
-
-  // Xóa thông báo lỗi cũ nếu có
-  const oldError = document.querySelector("#modalEmployeeError");
-  if (oldError) {
-    oldError.style.display = "none";
-    oldError.textContent = "";
-  }
-
-  try {
-    // Lấy thông tin người dùng từ API
-    const currentUser = await userAPI.getCurrentUser();
-    console.log("[showUserInfo] currentUser từ backend:", currentUser);
-    if (!currentUser || typeof currentUser !== "object")
-      throw new Error("Không có dữ liệu người dùng từ backend");
-
-    // Cập nhật thông tin cơ bản
-    document.getElementById("modalEmployeeName").textContent =
-      currentUser.name || "";
-    document.getElementById("modalEmployeeRole").textContent =
-      currentUser.role || "";
-    document.getElementById("modalEmployeeEmail").textContent =
-      currentUser.email || "";
-    document.getElementById("modalEmployeePhone").textContent =
-      currentUser.phone || "";
-    document.getElementById("modalEmployeeUsername").textContent =
-      currentUser.username || "";
-    // Cập nhật trạng thái
-    const statusElement = document.getElementById("modalEmployeeStatus");
-    if (currentUser.isActive) {
-      statusElement.className = "status-badge active";
-      statusElement.innerHTML =
-        '<span class="status-dot"></span>Đang hoạt động';
-    } else {
-      statusElement.className = "status-badge inactive";
-      statusElement.innerHTML =
-        '<span class="status-dot"></span>Không hoạt động';
-    }
-  } catch (error) {
-    console.error("Lỗi khi tải thông tin người dùng (showUserInfo):", error);
-    // Hiển thị thông báo lỗi rõ ràng
-    const errorDiv = document.getElementById("modalEmployeeError");
-    if (errorDiv) {
-      errorDiv.style.display = "block";
-      errorDiv.textContent =
-        "Không thể tải thông tin người dùng. Vui lòng thử lại sau.";
-    }
-  }
-}
-
-// Đóng modal thông tin cá nhân
-export function closeUserInfoModal() {
-  const modal = document.getElementById("userInfoModal");
-  if (!modal) {
-    console.error("Không tìm thấy element với ID 'userInfoModal'");
-    return;
-  }
-  modal.classList.remove("show");
-}
-
-// Đăng xuất
-export function logout() {
-  if (confirm("Bạn có chắc muốn đăng xuất?")) {
-    window.location.href = "index.html"; // Chuyển về trang đăng nhập
-  }
-}
-
-// ====================================
-//#region INITIAL DISPLAY & EVENT LISTENERS
+// #region INITIAL DISPLAY & EVENT LISTENERS
 // ====================================
 
 // Thiết lập hiển thị ban đầu
@@ -351,6 +270,14 @@ function setupEventListeners() {
       e.preventDefault();
       sendMessage();
     });
+
+  // Tìm kiếm khách hàng cho tin nhắn riêng tư
+  const customerSearchInput = document.getElementById("customerSearch");
+  if (customerSearchInput) {
+    customerSearchInput.addEventListener("input", (e) => {
+      searchCustomers(e.target.value);
+    });
+  }
 
   // Thêm sự kiện click cho các đánh giá để hiển thị thông tin khách hàng
   document.addEventListener("click", function (e) {
@@ -496,56 +423,44 @@ function setupEventListeners() {
 async function updateDashboardStats() {
   try {
     // Số tin nhắn đã gửi
-    const messagesSent = await statsAPI.getMessagesSent();
-    document.getElementById("statMessagesSent").textContent = messagesSent;
+    const messagesSentRes = await statsAPI.getMessagesSent();
+    const statMessagesSentEl = document.getElementById("statMessagesSent");
+    if (statMessagesSentEl) {
+      // Nếu backend trả về { count: ... }
+      statMessagesSentEl.textContent =
+        messagesSentRes?.count ?? messagesSentRes ?? "0";
+    }
 
     // Số đánh giá cần xử lý (tổng đánh giá từ 3 sao trở xuống)
-    const allReviews = await reviewAPI.getAll();
-    const reviewsPending = allReviews.filter((r) => {
-      const rating = parseInt(r.rating);
-      return !isNaN(rating) && rating <= 3;
-    }).length;
-    document.getElementById("statReviewsPending").textContent = reviewsPending;
+    const reviewsPendingRes = await statsAPI.getReviewsPending();
+    const statReviewsPendingEl = document.getElementById("statReviewsPending");
+    if (statReviewsPendingEl) {
+      statReviewsPendingEl.textContent =
+        reviewsPendingRes?.count ?? reviewsPendingRes ?? "0";
+    }
 
     // Tổng số khách hàng đã được chăm sóc
-    const customersServed = await statsAPI.getCustomersServed();
-    document.getElementById("statCustomersServed").textContent =
-      customersServed;
+    const customersServedRes = await statsAPI.getCustomersServed();
+    const statCustomersServedEl = document.getElementById(
+      "statCustomersServed"
+    );
+    if (statCustomersServedEl) {
+      statCustomersServedEl.textContent =
+        customersServedRes?.count ?? customersServedRes ?? "0";
+    }
 
     // Tỷ lệ hài lòng tính từ điểm trung bình
-    const avgRating = await statsAPI.getAverageRating();
+    const avgRatingRes = await statsAPI.getAverageRating();
+    let avgRating = avgRatingRes?.average ?? avgRatingRes ?? 0;
     const satisfactionRate = Math.round((avgRating / 5) * 100);
-    document.getElementById("statSatisfactionRate").textContent =
-      satisfactionRate + "%";
+    const statSatisfactionRateEl = document.getElementById(
+      "statSatisfactionRate"
+    );
+    if (statSatisfactionRateEl) {
+      statSatisfactionRateEl.textContent = satisfactionRate + "%";
+    }
   } catch (error) {
     console.error("Error updating dashboard stats:", error);
-  } finally {
-    // Reload message history as well
-    loadMessageHistory();
-  }
-}
-
-// Load message history and render into table
-async function loadMessageHistory() {
-  try {
-    const messages = await messageAPI.getAllMessages();
-    const tbody = document.getElementById("messageHistoryBody");
-    tbody.innerHTML = "";
-    messages.forEach((msg) => {
-      const tr = document.createElement("tr");
-      const timeTd = document.createElement("td");
-      timeTd.textContent = new Date(msg.sentAt).toLocaleString();
-      const channelTd = document.createElement("td");
-      channelTd.textContent = msg.channel;
-      const contentTd = document.createElement("td");
-      contentTd.textContent = msg.messageText;
-      const customerTd = document.createElement("td");
-      customerTd.textContent = msg.targetCustomerId || "Tất cả";
-      tr.append(timeTd, channelTd, contentTd, customerTd);
-      tbody.appendChild(tr);
-    });
-  } catch (error) {
-    console.error("Error loading message history:", error);
   }
 }
 
@@ -590,7 +505,7 @@ function setupGlobalHandlers() {
 //#endregion
 
 // ====================================
-//#region PHARMACY FILTER & DROPDOWN
+// #region PHARMACY FILTER & DROPDOWN
 // ====================================
 
 // Toggle hiển thị input tìm kiếm khách hàng
@@ -650,7 +565,7 @@ async function populatePharmacies(selectElement) {
 //#endregion
 
 // ====================================
-//#region REVIEWS (LOAD, FILTER, PAGINATION)
+// #region REVIEWS (LOAD, FILTER, PAGINATION)
 // ====================================
 
 // Lọc đánh giá theo từ khóa, cửa hàng, số sao và trạng thái xử lý
@@ -711,18 +626,20 @@ async function getFilteredReviews(forceNoCache = false) {
 
   // Chuẩn hóa searchTerm
   const normTermWord = searchTerm.trim().toLowerCase();
+  const normTermClean = normTermWord
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
   const normTermNumber = searchTerm.replace(/\D/g, "");
   const isNumberQuery = /^\d{1,}$/.test(normTermNumber); // Cho phép tìm số từ 1 ký tự
 
   // Thực hiện lọc
   const filteredReviews = allReviews.filter((review) => {
-    // Lọc theo từng từ trong fullname
-    let name = "";
-    if (review.customer) {
-      name = review.customer.fullname || "";
-    }
-    // Tách tên thành từng từ, kiểm tra từng từ (cho phép tìm 1 ký tự)
-    const allNameWords = name.toLowerCase().split(/\s+/).filter(Boolean);
+    let name = review.customer ? review.customer.fullname || "" : "";
+    // Remove accents and lowercase
+    const nameClean = name
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
     const phone =
       review.customer && review.customer.phone ? review.customer.phone : "";
     const normPhone = phone.replace(/\D/g, "");
@@ -730,8 +647,8 @@ async function getFilteredReviews(forceNoCache = false) {
     let match = false;
     if (isNumberQuery && normTermNumber.length > 0) {
       match = normPhone.includes(normTermNumber);
-    } else if (normTermWord.length > 0) {
-      match = allNameWords.some((word) => word.includes(normTermWord));
+    } else if (normTermClean.length > 0) {
+      match = nameClean.includes(normTermClean);
     }
 
     // Lọc theo cửa hàng
@@ -844,7 +761,6 @@ async function loadReviews(forceNoCache = false) {
       // Cột trạng thái
       const statusCell = document.createElement("td");
       let statusText = review.status || "Không rõ";
-      console.log("statusText:", statusText);
       let statusClass = "status-badge ";
       if (statusText === "APPROVED") {
         statusText = "Đã xử lý";
@@ -916,7 +832,7 @@ function updatePagination(totalReviews) {
 //#endregion
 
 // ====================================
-//#region CUSTOMER SEARCH & SELECTION
+// #region CUSTOMER SEARCH & SELECTION
 // ====================================
 
 // Tìm kiếm khách hàng
@@ -937,20 +853,30 @@ async function searchCustomers(query) {
   const customers = window.customers;
 
   // Chuẩn hóa query: bỏ khoảng trắng, về chữ thường, loại bỏ ký tự không phải số nếu là số điện thoại
-  const normQuery = query.replace(/\s+/g, "").toLowerCase();
+  // Normalize query: lowercase, remove diacritics, trim for multi-word matching
+  const normQueryRaw = query
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
   const normQueryNumber = query.replace(/\D/g, "");
-  const isNumberQuery = /^\d{4,}$/.test(normQueryNumber); // Query là số có ít nhất 4 ký tự
+  const isNumberQuery = /^\d{4,}$/.test(normQueryNumber);
+  const tokens = normQueryRaw.split(/\s+/).filter((tok) => tok);
 
-  // Lọc theo tên hoặc số điện thoại
+  // Lọc theo tên (multi-word, accent-insensitive) hoặc số điện thoại
   const filteredCustomers = customers.filter((customer) => {
-    const name = (customer.name || customer.fullname || "")
-      .replace(/\s+/g, "")
-      .toLowerCase();
+    const nameRaw = customer.name || customer.fullname || "";
+    const nameClean = nameRaw
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
     const phone = (customer.phone || "").replace(/\D/g, "");
     if (isNumberQuery) {
       return phone.includes(normQueryNumber);
     } else {
-      return name.includes(normQuery) || phone.includes(normQueryNumber);
+      const nameMatch = tokens.every((tok) => nameClean.includes(tok));
+      const phoneMatch = phone.includes(normQueryNumber);
+      return nameMatch || phoneMatch;
     }
   });
 
@@ -965,9 +891,7 @@ async function searchCustomers(query) {
       const item = document.createElement("div");
       item.classList.add("suggestion-item");
       item.innerHTML = `
-        <div class="customer-name">${
-          customer.name || customer.fullname || "(Không tên)"
-        }</div>
+        <div class="customer-name">${customer.fullName || "(Không tên)"}</div>
         <div class="customer-phone">${customer.phone || ""}</div>
       `;
       item.addEventListener("click", function () {
@@ -987,7 +911,7 @@ function selectCustomer(customer) {
   // Hiển thị thông tin khách hàng đã chọn
   document.getElementById("selectedCustomer").style.display = "";
   document.getElementById("selectedCustomerName").textContent =
-    customer.name || customer.fullname || "(Không tên)";
+    customer.fullName || customer.fullname || "(Không tên)";
   document.getElementById("selectedCustomerPhone").textContent =
     customer.phone || "";
   document.getElementById("selectedCustomerEmail").textContent =
@@ -1013,7 +937,7 @@ window.clearSelectedCustomer = clearSelectedCustomer;
 //#endregion
 
 // ====================================
-//#region MESSAGING & NOTIFICATIONS
+// #region MESSAGING & NOTIFICATIONS
 // ====================================
 
 // Tải template tin nhắn dựa theo loại
@@ -1068,9 +992,9 @@ async function sendMessage() {
   ).value;
 
   // Determine selected channels
-  const channels = Array.from(document.querySelectorAll('input[name="sendChannel"]:checked')).map(
-    (cb) => cb.value
-  );
+  const channels = Array.from(
+    document.querySelectorAll('input[name="sendChannel"]:checked')
+  ).map((cb) => cb.value);
 
   // If reminder type, send based on target: individual or all
   if (messageType === "reminder") {
@@ -1170,7 +1094,6 @@ async function sendMessage() {
     // Nếu đang trả lời đánh giá, cập nhật trạng thái đánh giá thành "Đã xử lý"
     if (window.currentReviewId) {
       await reviewAPI.updateStatus(window.currentReviewId, "APPROVED");
-      console.log("Đánh giá đã được cập nhật thành công.");
       // Update status in local data and directly update DOM row without full reload
       if (Array.isArray(reviewsData)) {
         const idx = reviewsData.findIndex(
@@ -1310,13 +1233,12 @@ toggleBulkReminderButton();
 //#endregion
 
 // ====================================
-//#region CHARTS & DASHBOARD
+// #region CHARTS & DASHBOARD
 // ====================================
 
 // Khởi tạo biểu đồ
 var satisfactionChart;
 async function initSatisfactionChart(days = 30) {
-  console.log("Initializing rating distribution chart for", days);
   const periodSpan = document.getElementById("chartPeriodInfo");
   periodSpan.textContent =
     days === "all" ? "Từ trước đến nay" : `${days} ngày qua`;

@@ -765,7 +765,49 @@ body {
     min-width: unset;
   }
 }
-
+/* Enhanced Report Reunuve Table */
+.revenue-table-container {
+  background: white;
+  padding: 30px;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  border: 1px solid #f1f5f9;
+  transition: all 0.3s ease;
+  width: 100%;
+  margin-bottom: 30px;
+}
+.revenue-table-container:hover {
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+}
+.revenue-table-container table {
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+.revenue-table-container table,
+.revenue-table-container th,
+.revenue-table-container td {
+  border: none;
+}
+.revenue-table-container th {
+  background: var(--mainColor);
+  color: white;
+  position: relative;
+}
+.revenue-table-container tr:last-child td {
+  border-bottom: none;
+}
+.revenue-table-container tr:hover {
+  background: #f6faff;
+}
+.revenue-table-container td:nth-child(2),
+.revenue-table-container td:nth-child(3) {
+  text-align: center;
+}
+.revenue-table-container th:nth-child(2),
+.revenue-table-container th:nth-child(3) {
+  text-align: center;
+}
 /* Enhanced Table Styling */
 .reviews-table-container {
   background: white;
@@ -1173,34 +1215,20 @@ body {
   left: 0;
   right: 0;
   background: white;
-  border: 2px solid #43e97b;
-  border-top: none;
-  border-radius: 0 0 12px 12px;
-  max-height: 250px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  max-height: 200px;
   overflow-y: auto;
   z-index: 1000;
-  box-shadow: 0 12px 35px rgba(67, 233, 123, 0.2);
 }
 
 .suggestion-item {
-  padding: 16px 20px;
+  padding: 8px 12px;
   cursor: pointer;
-  transition: all 0.3s ease;
-  border-bottom: 1px solid #f1f5f9;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.suggestion-item:last-child {
-  border-bottom: none;
 }
 
 .suggestion-item:hover {
-  background: linear-gradient(135deg, #f0fff4 0%, #e6fffa 100%);
-  border-left: 4px solid #43e97b;
-  padding-left: 16px;
-  transform: translateX(4px);
+  background: #f0f0f0;
 }
 
 .suggestion-name {
