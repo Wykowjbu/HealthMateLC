@@ -655,11 +655,6 @@ const invoiceAPI = {
     const param = customerId ? `?customerId=${customerId}` : "";
     return await fetchApi(`/invoices/reminders${param}`);
   },
-
-  // Gửi nhắc nhở hàng loạt cho tất cả khách hàng có hóa đơn paid trong 3 ngày
-  sendBulkReminders: async function () {
-    return await fetchApi("/invoices/reminders/send", { method: "POST" });
-  },
 };
 
 //#endregion

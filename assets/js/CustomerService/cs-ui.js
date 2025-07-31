@@ -2,6 +2,44 @@
 // #region IMPORTS & GLOBAL VARIABLES
 // ====================================
 
+// --- Custom notification popup ---
+function showNotification(message, type = "info") {
+  const old = document.querySelector(
+    ".custom-notification, .api-status.connected"
+  );
+  if (old) old.remove();
+  if (type === "success") {
+    const apiStatusElement = document.createElement("div");
+    apiStatusElement.className = "api-status connected";
+    apiStatusElement.innerHTML = `
+      <div class="status-icon">
+        <span class="material-icons" >check_circle</span>
+      </div>
+      <div class="status-text" >${message}</div>
+    `;
+    document.body.appendChild(apiStatusElement);
+    setTimeout(() => {
+      apiStatusElement.classList.add("fade-out");
+      setTimeout(() => apiStatusElement.remove(), 600);
+    }, 1800);
+    return;
+  }
+  // Các loại khác giữ nguyên popup cũ
+  const notif = document.createElement("div");
+  notif.className = `custom-notification ${type}`;
+  notif.innerHTML = `
+    <div class="notif-icon">
+      <span class="material-icons">${type === "error" ? "error" : "info"}</span>
+    </div>
+    <div class="notif-text">${message}</div>
+  `;
+  document.body.appendChild(notif);
+  setTimeout(() => {
+    notif.classList.add("fade-out");
+    setTimeout(() => notif.remove(), 600);
+  }, 1800);
+}
+
 // Import các API từ module API
 import {
   pharmacyAPI,
@@ -17,7 +55,7 @@ import {
 import { showCustomerInfo } from "./customer-service.js";
 let currentPage = 1;
 const reviewsPerPage = 5;
-window.currentReviewId = null; 
+window.currentReviewId = null;
 let reviewsData = [];
 
 //#endregion
@@ -82,7 +120,7 @@ async function displayCurrentUserHeader() {
     if (roleDiv) roleDiv.textContent = user.role || "";
     // KHÔNG cập nhật các trường modal ở đây!
   } catch (e) {
-    console.error("Không thể lấy thông tin người dùng:", e);
+    showNotification("Không thể lấy thông tin người dùng:", "error");
   }
 }
 
@@ -116,7 +154,6 @@ if (nextBtn) {
     }
   };
 }
-// Removed upgraded customers navigation since the section was deleted
 
 // Quay lại xem đánh giá
 document.querySelector(".nav-item.active").onclick = function () {
@@ -132,82 +169,88 @@ document.querySelector(".nav-item.active").onclick = function () {
     .scrollIntoView({ behavior: "smooth" });
 };
 
-// Đăng ký sự kiện cho nút soạn tin nhắn
-const messageComposerBtn = document.querySelector(
-  '[data-action="focusMessageComposer"]'
-);
-if (messageComposerBtn) {
-  messageComposerBtn.addEventListener("click", function () {
-    document
-      .querySelector(".message-composer")
-      .scrollIntoView({ behavior: "smooth" });
-  });
-}
-
-// Đăng ký sự kiện cho nút gửi khảo sát
-const sendSurveyBtn = document.querySelector('[data-action="sendSurvey"]');
-if (sendSurveyBtn) {
-  sendSurveyBtn.addEventListener("click", function () {
-    document.getElementById("messageType").value = "survey";
-    loadMessageTemplate("survey");
-    document
-      .querySelector(".message-composer")
-      .scrollIntoView({ behavior: "smooth" });
-  });
-}
-
-// Đăng ký sự kiện cho nút gửi tin riêng tư
-const individualMsgBtn = document.querySelector(
-  '[data-action="showIndividualMessage"]'
-);
-if (individualMsgBtn) {
-  individualMsgBtn.addEventListener("click", function () {
-    document.getElementById("messageType").value = "custom";
-    loadMessageTemplate("custom");
-    document.querySelector(
-      '.message-composer form select[onchange="toggleCustomerInput(this)"]'
-    ).value = "individual";
-    toggleCustomerInput(
-      document.querySelector(
-        '.message-composer form select[onchange="toggleCustomerInput(this)"]'
-      )
-    );
-    document
-      .querySelector(".message-composer")
-      .scrollIntoView({ behavior: "smooth" });
-  });
-}
-// Đăng ký sự kiện cho nút cuộn đến biểu đồ
-const chartBtn = document.querySelector('[data-action="scrollToChart"]');
-if (chartBtn) {
-  chartBtn.addEventListener("click", function () {
-    document
-      .querySelector(".chart-container")
-      .scrollIntoView({ behavior: "smooth" });
-  });
-}
-
-// Đăng ký sự kiện cho nút trả lời đánh giá
-const replyModalBtn = document.querySelector('[data-action="showReplyModal"]');
-if (replyModalBtn) {
-  replyModalBtn.addEventListener("click", function () {
-    document.getElementById("replyModal").style.display = "flex";
-  });
-}
-
-// Đăng ký sự kiện cho tất cả các nút đóng modal
-const closeButtons = document.querySelectorAll(".modal-close, .btn-secondary");
-closeButtons.forEach((button) => {
-  button.addEventListener("click", function () {
-    // Tìm modal gần nhất và đóng nó
-    const modal = this.closest(".modal");
-    if (modal) {
-      modal.style.display = "none";
-    }
-  });
-});
-
 //#endregion
+// ====================================
+//#region USER INFO & LOGOUT
+// ====================================
+
+// Hiển thị thông tin người dùng
+export async function showUserInfo() {
+  // Hiển thị modal
+  const modal = document.getElementById("userInfoModal");
+  if (!modal) {
+    showNotification("Không tìm thấy element với ID 'userInfoModal'", "error");
+    return;
+  }
+  modal.classList.add("show");
+
+  // Xóa thông báo lỗi cũ nếu có
+  const oldError = document.querySelector("#modalEmployeeError");
+  if (oldError) {
+    oldError.style.display = "none";
+    oldError.textContent = "";
+  }
+
+  try {
+    // Lấy thông tin người dùng từ API
+    const currentUser = await userAPI.getCurrentUser();
+    if (!currentUser || typeof currentUser !== "object")
+      throw new Error("Không có dữ liệu người dùng từ backend");
+
+    // Cập nhật thông tin cơ bản
+    document.getElementById("modalEmployeeName").textContent =
+      currentUser.name || "";
+    document.getElementById("modalEmployeeRole").textContent =
+      currentUser.role || "";
+    document.getElementById("modalEmployeeEmail").textContent =
+      currentUser.email || "";
+    document.getElementById("modalEmployeePhone").textContent =
+      currentUser.phone || "";
+    document.getElementById("modalEmployeeUsername").textContent =
+      currentUser.username || "";
+    // Cập nhật trạng thái
+    const statusElement = document.getElementById("modalEmployeeStatus");
+    if (currentUser.isActive) {
+      statusElement.className = "status-badge active";
+      statusElement.innerHTML =
+        '<span class="status-dot"></span>Đang hoạt động';
+    } else {
+      statusElement.className = "status-badge inactive";
+      statusElement.innerHTML =
+        '<span class="status-dot"></span>Không hoạt động';
+    }
+  } catch (error) {
+    showNotification(
+      "Không thể tải thông tin người dùng. Vui lòng thử lại sau.",
+      "error"
+    );
+    // Hiển thị thông báo lỗi rõ ràng
+    const errorDiv = document.getElementById("modalEmployeeError");
+    if (errorDiv) {
+      errorDiv.style.display = "block";
+      errorDiv.textContent =
+        "Không thể tải thông tin người dùng. Vui lòng thử lại sau.";
+    }
+  }
+}
+
+// Đóng modal thông tin cá nhân
+export function closeUserInfoModal() {
+  const modal = document.getElementById("userInfoModal");
+  if (!modal) {
+    showNotification("Không tìm thấy element với ID 'userInfoModal'", "error");
+    return;
+  }
+  modal.classList.remove("show");
+}
+
+// Đăng xuất
+export function logout() {
+  showNotification("Đăng xuất thành công", "success");
+  setTimeout(() => {
+    window.location.href = "index.html";
+  }, 1500);
+}
 
 // ====================================
 // #region INITIAL DISPLAY & EVENT LISTENERS
@@ -339,30 +382,6 @@ function setupEventListeners() {
     };
   }
 
-  // Đăng ký sự kiện cho nút soạn tin nhắn
-  const messageComposerBtn = document.querySelector(
-    '[data-action="focusMessageComposer"]'
-  );
-  if (messageComposerBtn) {
-    messageComposerBtn.addEventListener("click", function () {
-      document
-        .querySelector(".message-composer")
-        .scrollIntoView({ behavior: "smooth" });
-    });
-  }
-
-  // Đăng ký sự kiện cho nút gửi khảo sát
-  const sendSurveyBtn = document.querySelector('[data-action="sendSurvey"]');
-  if (sendSurveyBtn) {
-    sendSurveyBtn.addEventListener("click", function () {
-      document.getElementById("messageType").value = "survey";
-      loadMessageTemplate("survey");
-      document
-        .querySelector(".message-composer")
-        .scrollIntoView({ behavior: "smooth" });
-    });
-  }
-
   // Đăng ký sự kiện cho nút gửi tin riêng tư
   const individualMsgBtn = document.querySelector(
     '[data-action="showIndividualMessage"]'
@@ -417,6 +436,69 @@ function setupEventListeners() {
       }
     });
   });
+
+  // Đăng ký sự kiện cho sidebar mục Báo cáo doanh thu để cuộn xuống phần báo cáo
+  const revenueSidebarItem = document.querySelector(
+    '.nav-item[data-action="scrollToRevenue"]'
+  );
+  if (revenueSidebarItem) {
+    revenueSidebarItem.addEventListener("click", function () {
+      const revenueSection = document.getElementById("revenueReportContainer");
+      if (revenueSection) {
+        revenueSection.scrollIntoView({ behavior: "smooth" });
+      }
+    });
+  }
+
+  // Trong setupEventListeners hoặc khi thay đổi messageType
+  const messageTypeSelect = document.getElementById("messageType");
+  const targetSelect = document.querySelector(
+    '.message-composer form select[onchange="toggleCustomerInput(this)"]'
+  );
+  if (messageTypeSelect && targetSelect) {
+    function updateTargetOptions() {
+      // Xóa toàn bộ option
+      targetSelect.innerHTML = "";
+      if (messageTypeSelect.value === "reminder") {
+        // Chỉ cho phép gửi từng khách hàng
+        const optIndividual = document.createElement("option");
+        optIndividual.value = "individual";
+        optIndividual.textContent = "Gửi tin nhắn riêng";
+        targetSelect.appendChild(optIndividual);
+        targetSelect.value = "individual";
+        toggleCustomerInput(targetSelect);
+      } else if (messageTypeSelect.value === "custom") {
+        // Cho phép cả từng khách và tất cả
+        const optIndividual = document.createElement("option");
+        optIndividual.value = "individual";
+        optIndividual.textContent = "Gửi tin nhắn riêng";
+        targetSelect.appendChild(optIndividual);
+        const optAll = document.createElement("option");
+        optAll.value = "all";
+        optAll.textContent = "Tất cả khách hàng";
+        targetSelect.appendChild(optAll);
+        // Giữ giá trị cũ nếu có, mặc định là individual
+        if (
+          targetSelect.value !== "all" &&
+          targetSelect.value !== "individual"
+        ) {
+          targetSelect.value = "individual";
+        }
+        toggleCustomerInput(targetSelect);
+      } else {
+        // Các loại khác: chỉ cho phép từng khách hàng
+        const optIndividual = document.createElement("option");
+        optIndividual.value = "individual";
+        optIndividual.textContent = "Gửi tin nhắn riêng";
+        targetSelect.appendChild(optIndividual);
+        targetSelect.value = "individual";
+        toggleCustomerInput(targetSelect);
+      }
+    }
+    messageTypeSelect.addEventListener("change", updateTargetOptions);
+    // Khởi tạo đúng option khi load
+    updateTargetOptions();
+  }
 }
 
 // Cập nhật số liệu trên Dashboard stats cards
@@ -460,7 +542,7 @@ async function updateDashboardStats() {
       statSatisfactionRateEl.textContent = satisfactionRate + "%";
     }
   } catch (error) {
-    console.error("Error updating dashboard stats:", error);
+    showNotification("Error updating dashboard stats:", "error");
   }
 }
 
@@ -521,11 +603,6 @@ function toggleCustomerInput(selectElement) {
 
 // Điền danh sách cửa hàng vào dropdown
 async function populatePharmacies(selectElement) {
-  if (!selectElement) {
-    console.error("populatePharmacies: No select element provided");
-    return;
-  }
-
   // Clear the dropdown first
   selectElement.innerHTML = "";
 
@@ -537,10 +614,6 @@ async function populatePharmacies(selectElement) {
 
   let pharmacies = await pharmacyAPI.getAll();
   if (!Array.isArray(pharmacies) || pharmacies.length === 0) {
-    console.error(
-      "pharmacyAPI.getAll() không trả về dữ liệu hợp lệ:",
-      pharmacies
-    );
     const option = document.createElement("option");
     option.value = "none";
     option.textContent = "(Không có dữ liệu nhà thuốc)";
@@ -787,7 +860,7 @@ async function loadReviews(forceNoCache = false) {
       tableBody.appendChild(row);
     });
   } catch (error) {
-    console.error("Error loading reviews:", error);
+    showNotification("Error loading reviews:", "error");
     tableBody.innerHTML = `
       <tr>
         <td colspan="5" class="error-row">
@@ -920,6 +993,12 @@ function selectCustomer(customer) {
   // Ẩn danh sách gợi ý và xóa nội dung tìm kiếm
   document.getElementById("customerSuggestions").style.display = "none";
   document.getElementById("customerSearch").value = "";
+
+  // Nếu đang ở loại tin nhắn reminder thì tự động điền nội dung nhắc uống thuốc
+  const messageType = document.getElementById("messageType").value;
+  if (messageType === "reminder") {
+    loadMessageTemplate("reminder");
+  }
 }
 
 // Xóa khách hàng đã chọn
@@ -953,13 +1032,6 @@ function loadMessageTemplate(type) {
   } else if (type === "custom") {
     template.content = "";
     template.hint = "Soạn nội dung tin nhắn tuỳ chỉnh cho khách hàng.";
-  } else if (type === "survey") {
-    template.content = "Bạn vui lòng đánh giá dịch vụ của Long Châu tại đây.";
-    template.hint = "Gửi khảo sát đánh giá dịch vụ.";
-  } else if (type === "promotion") {
-    template.content =
-      "Xin chào {Tên khách hàng},\nChúng tôi đang có chương trình khuyến mãi đặc biệt dành cho bạn. Vui lòng kiểm tra chi tiết tại Long Châu ngay hôm nay!";
-    template.hint = "Nội dung thông báo khuyến mãi cho khách hàng.";
   }
 
   document.getElementById("messageContent").value = template.content;
@@ -970,16 +1042,39 @@ function loadMessageTemplate(type) {
     invoiceAPI
       .getReminders(window.selectedCustomerId)
       .then((data) => {
-        const invoice = Array.isArray(data) ? data[0] : data;
+        // Nếu trả về mảng, lọc đơn paid, notes hợp lệ, lấy đơn mới nhất
+        let invoice = null;
+        if (Array.isArray(data)) {
+          const validInvoices = data
+            .filter(
+              (inv) => inv.status === "paid" && inv.notes && inv.notes.trim()
+            )
+            .sort((a, b) => new Date(b.invoiceDate) - new Date(a.invoiceDate));
+          invoice = validInvoices.length > 0 ? validInvoices[0] : null;
+        } else if (data && data.status === "paid" && data.notes) {
+          invoice = data;
+        }
         if (invoice && invoice.notes) {
           const greeting = `Xin chào ${invoice.customerName || ""},`;
           const noteText = invoice.notes;
           document.getElementById(
             "messageContent"
           ).value = `${greeting}\n\nLời nhắc uống thuốc:\n${noteText}\n\nChúc bạn mau khỏe!`;
+          showNotification(
+            "Đã tự động điền ghi chú nhắc uống thuốc cho khách hàng.",
+            "success"
+          );
+        } else {
+          // Không có ghi chú, giữ nội dung mặc định và thông báo
+          showNotification(
+            "Không tìm thấy ghi chú nhắc uống thuốc cho khách hàng này. Sử dụng nội dung mặc định.",
+            "info"
+          );
         }
       })
-      .catch((err) => console.error("Error fetching invoice note:", err));
+      .catch((err) => {
+        showNotification("Lỗi khi lấy ghi chú nhắc uống thuốc.", "error");
+      });
   }
 }
 
@@ -990,55 +1085,85 @@ async function sendMessage() {
   const targetType = document.querySelector(
     '.message-composer form select[onchange="toggleCustomerInput(this)"]'
   ).value;
-
-  // Determine selected channels
   const channels = Array.from(
     document.querySelectorAll('input[name="sendChannel"]:checked')
   ).map((cb) => cb.value);
 
-  // If reminder type, send based on target: individual or all
-  if (messageType === "reminder") {
+  // Gửi tin nhắn tùy chỉnh cho tất cả khách hàng có email
+  if (messageType === "custom" && targetType === "all") {
+    if (!messageContent) {
+      showNotification("Vui lòng nhập nội dung tin nhắn!", "error");
+      return;
+    }
+    const sendButton = document.querySelector(
+      '.message-composer form button[type="submit"]'
+    );
+    // Thêm nút hủy tiến trình gửi
+    let cancelBtn = document.getElementById("bulkCustomCancelBtn");
+    if (!cancelBtn) {
+      cancelBtn = document.createElement("button");
+      cancelBtn.id = "bulkCustomCancelBtn";
+      cancelBtn.type = "button";
+      cancelBtn.className = "btn-cancel";
+      cancelBtn.innerHTML = '<span class="material-icons">cancel</span> Hủy';
+      sendButton.parentNode.insertBefore(cancelBtn, sendButton.nextSibling);
+    }
+    cancelBtn.style.display = "inline-block";
+    cancelBtn.disabled = false;
+    window.bulkCustomSendCancelled = false;
+    cancelBtn.onclick = function () {
+      window.bulkCustomSendCancelled = true;
+      cancelBtn.disabled = true;
+    };
+    const originalButtonText = sendButton.innerHTML;
+    sendButton.innerHTML =
+      '<span class="material-icons spin">refresh</span> Đang gửi...';
+    sendButton.disabled = true;
+    let sentCount = 0;
+    let failedCount = 0;
     try {
-      // Fetch invoices: if individual, pass customerId, else get all
-      const invoices = await invoiceAPI.getReminders(
-        targetType === "individual" ? window.selectedCustomerId : null
+      const allCustomers = await customerAPI.getAll();
+      const customersWithEmail = allCustomers.filter(
+        (c) => c.email && c.email !== ""
       );
-      let sentCount = 0;
-      let failedCount = 0;
-      for (const inv of invoices) {
-        const email = inv.customerEmail;
-        const name = inv.customerName;
-        const content = `Xin chào ${name},\n\nLời nhắc uống thuốc:\n${inv.notes}\n\nChúc bạn mau khỏe!`;
+      for (const customer of customersWithEmail) {
+        if (window.bulkCustomSendCancelled) {
+          showNotification(
+            `Đã hủy tiến trình gửi tin nhắn. Đã gửi ${sentCount} trong tổng số ${customersWithEmail.length} khách hàng. Thất bại: ${failedCount}`,
+            "info"
+          );
+          break;
+        }
         try {
           await messageAPI.sendEmail({
-            to: email,
-            subject: "Nhắc nhở uống thuốc - Long Châu",
-            content,
-            customerId: inv.customerId,
+            to: customer.email,
+            subject: "Thông báo từ Long Châu",
+            content: messageContent,
+            customerId: customer.id || customer.customerId,
           });
           sentCount++;
         } catch (e) {
           failedCount++;
         }
+        showNotification(
+          `Đã gửi ${sentCount} trong tổng số ${customersWithEmail.length} khách hàng. Thất bại: ${failedCount}`,
+          failedCount ? "error" : "success"
+        );
       }
-      alert(
-        `Đã gửi ${sentCount} trong tổng số ${invoices.length} nhắc nhở. Thất bại: ${failedCount}`
-      );
     } catch (e) {
-      console.error("Error sending reminders:", e);
-      alert("Có lỗi xảy ra khi gửi nhắc nhở. Vui lòng thử lại.");
+      showNotification(
+        "Có lỗi xảy ra khi gửi tin nhắn. Vui lòng thử lại.",
+        "error"
+      );
     } finally {
-      // Restore send button state
-      sendButton.innerHTML = originalButtonText;
+      sendButton.innerHTML =
+        '<span class="material-icons">send</span>\n            Gửi';
       sendButton.disabled = false;
+      if (cancelBtn) {
+        cancelBtn.style.display = "none";
+        cancelBtn.disabled = false;
+      }
     }
-    // Refresh message history and exit
-    loadMessageHistory();
-    return;
-  }
-
-  if (!messageContent) {
-    alert("Vui lòng nhập nội dung tin nhắn!");
     return;
   }
 
@@ -1072,7 +1197,7 @@ async function sendMessage() {
         .getElementById("selectedCustomerEmail")
         ?.textContent?.trim();
       if (!customerEmail || customerEmail === "(Chưa cập nhật)") {
-        alert("Không tìm thấy email khách hàng để gửi!");
+        showNotification("Không tìm thấy email khách hàng để gửi!", "error");
         return;
       }
       await messageAPI.sendEmail({
@@ -1083,12 +1208,7 @@ async function sendMessage() {
       });
     } else {
       // Gửi thông qua API thông thường (SMS, app, v.v.)
-      if (messageType === "reminder" && targetType === "all") {
-        const result = await invoiceAPI.sendBulkReminders();
-        alert(`Đã gửi ${result.sentCount}/${result.total} nhắc nhở.`);
-      } else {
-        await messageAPI.send(messageData);
-      }
+      await messageAPI.send(messageData);
     }
 
     // Nếu đang trả lời đánh giá, cập nhật trạng thái đánh giá thành "Đã xử lý"
@@ -1106,24 +1226,19 @@ async function sendMessage() {
     }
 
     // Hiển thị thông báo thành công
-    alert("Đã gửi tin nhắn thành công!");
+    showNotification("Đã gửi tin nhắn thành công!", "success");
     // Xóa nội dung tin nhắn sau khi gửi thành công
     document.getElementById("messageContent").value = "";
-
-    // Refresh message history to include the new message
-    loadMessageHistory();
   } catch (error) {
-    console.error("Error sending message:", error);
-    // Hiển thị lỗi nếu có
     let userMessage = "Có lỗi xảy ra khi gửi tin nhắn. Vui lòng thử lại.";
     if (error && error.status === 401) {
       userMessage = "Bạn cần đăng nhập để gửi email.";
-      window.location.href = "/index.html"; // Chuyển hướng đến trang đăng nhập
+      window.location.href = "/index.html";
     } else if (error && error.status === 403) {
     } else if (error && error.message) {
       userMessage = `Có lỗi xảy ra khi gửi: ${error.message}`;
     }
-    alert(userMessage);
+    showNotification(userMessage, "error");
   } finally {
     // Khôi phục trạng thái ban đầu của nút gửi (bao gồm icon)
     sendButton.innerHTML =
@@ -1138,11 +1253,11 @@ async function replyReview(reviewId) {
   try {
     review = await reviewAPI.getById(reviewId);
   } catch (err) {
-    alert("Không tìm thấy dữ liệu đánh giá phù hợp!");
+    showNotification("Không tìm thấy dữ liệu đánh giá phù hợp!", "error");
     return;
   }
   if (!review) {
-    alert("Không tìm thấy dữ liệu đánh giá phù hợp!");
+    showNotification("Không tìm thấy dữ liệu đánh giá phù hợp!", "error");
     return;
   }
 
@@ -1174,7 +1289,6 @@ async function replyReview(reviewId) {
   } catch (err) {
     customerName = "Không có thông tin khách hàng";
     customerPhone = "";
-    console.error("Lỗi lấy thông tin khách hàng từ review:", review, err);
   }
   // Hiển thị thông tin khách hàng đã chọn
   document.getElementById("selectedCustomer").style.display = "";
@@ -1185,9 +1299,9 @@ async function replyReview(reviewId) {
   // Điền nội dung tin nhắn phản hồi
   let replyContent = "";
   if (review.rating <= 3) {
-    replyContent = `Kính gửi ${customerName},\n\nChúng tôi rất tiếc về trải nghiệm chưa tốt của bạn tại Long Châu. Chúng tôi đã ghi nhận phản hồi và sẽ cải thiện dịch vụ. Xin vui lòng liên hệ số 1800 XXXXX để được hỗ trợ thêm.\n\nTrân trọng,\nLong Châu`;
+    replyContent = `Kính gửi ${customerName},\n\nChúng tôi rất tiếc về trải nghiệm chưa tốt của bạn tại Long Châu. Chúng tôi đã ghi nhận phản hồi và sẽ cải thiện dịch vụ. Chúng tôi sẽ liên hệ với bạn sớm nhất.\n\nTrân trọng,\nLong Châu`;
   } else {
-    replyContent = `Kính gửi ${customerName},\n\nCảm ơn bạn đã đánh giá tích cực về dịch vụ của Long Châu. Chúng tôi rất vui khi được phục vụ và mong tiếp tục nhận được sự ủng hộ của bạn.\n\nTrân trọng,\nLong Châu`;
+    replyContent = `Kính gửi ${customerName},\n\nCảm ơn bạn đã đánh giá tích cực về dịch vụ của Long Châu. Chúng tôi rất vui khi được phục vụ và mong tiếp tục nhận được sự ủng hộ của bạn. Nếu có thắc mắc xin vui lòng liên hệ số 1800 1080 để được hỗ trợ thêm. \n\nTrân trọng,\nLong Châu`;
   }
 
   document.getElementById("messageContent").value = replyContent;
@@ -1200,37 +1314,22 @@ async function replyReview(reviewId) {
     .scrollIntoView({ behavior: "smooth" });
 }
 
-// Manage visibility of bulk reminders button based on messageType and target
-function toggleBulkReminderButton() {
-  const sendAllBtn = document.getElementById("sendAllRemindersBtn");
-  const type = document.getElementById("messageType").value;
-  const targetSelect = document.querySelector(
-    '.message-composer form select[onchange="toggleCustomerInput(this)"]'
-  );
-  const target = targetSelect ? targetSelect.value : null;
-  if (type === "reminder" && (!target || target !== "individual")) {
-    sendAllBtn.style.display = "";
-  } else {
-    sendAllBtn.style.display = "none";
+// Update a review's status in the table DOM
+function updateReviewStatusInDOM(reviewId) {
+  const row = document.querySelector(`tr[data-review-id="${reviewId}"]`);
+  if (row) {
+    const badge = row.querySelector(".status-badge");
+    if (badge) {
+      badge.className = "status-badge status-success";
+      badge.textContent = "Đã xử lý";
+    }
   }
 }
 
-// Setup bulk reminder button toggle on relevant controls
-document.getElementById("messageType").addEventListener("change", () => {
-  loadMessageTemplate(document.getElementById("messageType").value);
-  toggleBulkReminderButton();
-});
-const targetSelectElem = document.querySelector(
-  '.message-composer form select[onchange="toggleCustomerInput(this)"]'
-);
-if (targetSelectElem) {
-  targetSelectElem.addEventListener("change", toggleBulkReminderButton);
+// Alias for chart filter to call init
+function updateSatisfactionChart(days) {
+  initSatisfactionChart(days);
 }
-
-// After DOM and event listeners setup, initialize button state
-toggleBulkReminderButton();
-
-//#endregion
 
 // ====================================
 // #region CHARTS & DASHBOARD
@@ -1324,7 +1423,10 @@ document.addEventListener("DOMContentLoaded", () => initSatisfactionChart());
 export function closeCustomerInfoModal() {
   const modal = document.getElementById("customerInfoModal");
   if (!modal) {
-    console.error("Không tìm thấy element với ID 'customerInfoModal'");
+    showNotification(
+      "Không tìm thấy element với ID 'customerInfoModal'",
+      "error"
+    );
     return;
   }
   modal.style.display = "none";
@@ -1340,7 +1442,7 @@ export function sendMessageToCustomer() {
     document.getElementById("modalCustomerEmail").textContent;
 
   if (!customerName || customerName === "---") {
-    alert("Không có thông tin khách hàng để gửi tin nhắn");
+    showNotification("Không có thông tin khách hàng để gửi tin nhắn", "error");
     return;
   }
 
@@ -1365,20 +1467,3 @@ export function sendMessageToCustomer() {
     .scrollIntoView({ behavior: "smooth" });
 }
 //#endregion
-
-// Update a review's status in the table DOM
-function updateReviewStatusInDOM(reviewId) {
-  const row = document.querySelector(`tr[data-review-id="${reviewId}"]`);
-  if (row) {
-    const badge = row.querySelector(".status-badge");
-    if (badge) {
-      badge.className = "status-badge status-success";
-      badge.textContent = "Đã xử lý";
-    }
-  }
-}
-
-// Alias for chart filter to call init
-function updateSatisfactionChart(days) {
-  initSatisfactionChart(days);
-}
