@@ -184,8 +184,8 @@ function initializeStoreSearch() {
 // Content rendering based on panel type
 function renderContent(type) {
   // Ẩn tất cả pagination sections trước
-  document.querySelectorAll('.pagination-section').forEach(section => {
-    section.style.display = 'none';
+  document.querySelectorAll(".pagination-section").forEach((section) => {
+    section.style.display = "none";
   });
 
   switch (type) {
@@ -198,9 +198,14 @@ function renderContent(type) {
     case "list-products":
       renderListProducts();
       // Hiện pagination-section cho sản phẩm
-      const productPagSection = document.querySelector('#product-list-pagination')?.parentElement;
-      if (productPagSection && productPagSection.classList.contains('pagination-section')) {
-        productPagSection.style.display = 'block';
+      const productPagSection = document.querySelector(
+        "#product-list-pagination"
+      )?.parentElement;
+      if (
+        productPagSection &&
+        productPagSection.classList.contains("pagination-section")
+      ) {
+        productPagSection.style.display = "block";
       }
       break;
     case "add-product":
@@ -228,11 +233,6 @@ function renderContent(type) {
 
 // Load initial data for list-accounts panel
 function loadInitialData() {
-  // console.log("Load init data");
-  // renderListAccounts();
-  // document.querySelectorAll(".nav-item")[0].classList.add("active");
-  // document.querySelectorAll(".panel")[0].classList.add("active");
-  // document.querySelectorAll(".nav-item")[0].click();
   const firstNavItem = document.querySelector(
     ".nav-item[data-type='list-accounts']"
   );
@@ -257,7 +257,6 @@ function loadInitialData() {
   }
 }
 
-
 // ============================================================================
 // ACCOUNTS MANAGEMENT
 // ============================================================================
@@ -276,7 +275,7 @@ function renderListAccounts() {
       const listPharmacyData = data.listPharmacies;
       console.log("List pharmacies:", listPharmacyData);
       const listUser = data.listUsersByPharmacy;
-
+      console.log("List users by pharmacy:", listUser);
       // Store pharmacy data globally
       listPharmacy = listPharmacyData;
 
@@ -364,7 +363,6 @@ function renderPharmacyList(pharmacyData, userData) {
   });
 }
 
-
 // Update employee count display for pharmacy items
 function updatePharmacyEmployeeCount() {
   const storeItems = document.querySelectorAll(".store-item");
@@ -440,6 +438,7 @@ function showUsersForPharmacy(users) {
 }
 
 function showUserDetails(user) {
+  console.log(user);
   const usersWrapper = document.querySelector(".list-users-wrapper");
   const detailsWrapper = document.querySelector(".user-details-wrapper");
   if (!usersWrapper || !detailsWrapper) return;
@@ -484,7 +483,7 @@ function showUserDetails(user) {
 
       <div class="user-details-field">
         <label>Trạng thái</label>
-        <p>${user.active ? "Hoạt động" : "Vô hiệu hóa"}</p>
+        <p>${user.isActive ? "Hoạt động" : "Vô hiệu hóa"}</p>
       </div>
 
       <div class="user-actions">
@@ -558,32 +557,6 @@ function initializeModals() {
   document
     .getElementById("resetPasswordForm")
     .addEventListener("submit", handleResetPassword);
-}
-
-// Open edit user modal
-function openEditUserModal(user) {
-  // Store the user being edited
-  currentEditingUser = { ...user };
-
-  const modal = document.querySelector("#editUserModal");
-  modal.style.display = "block";
-
-  // Add form submission handler
-  const editUserForm = document.getElementById("editUserForm");
-  if (editUserForm) {
-    editUserForm.addEventListener("submit", handleEditUser);
-  }
-
-  // Populate form fields
-  document.getElementById("edit-user-id").value = user.userId;
-  document.getElementById("edit-username").value = user.username || "";
-  document.getElementById("edit-fullname").value = user.fullName || "";
-  document.getElementById("edit-email").value = user.email || "";
-  document.getElementById("edit-phone").value = user.phone || "";
-  document.getElementById("edit-role").value = user.role;
-  document.getElementById("edit-status").value = user.active
-    ? "active"
-    : "inactive";
 }
 
 // Initialize password validation when modal opens
@@ -980,7 +953,6 @@ function updateUserInCache(userId, updatedData) {
   });
 }
 
-
 // Show loading state in modal
 function showLoading(modalId) {
   const modal = document.getElementById(modalId);
@@ -1131,11 +1103,10 @@ function openEditUserModal(user) {
   document.getElementById("edit-email").value = user.email || "";
   document.getElementById("edit-phone").value = user.phone || "";
   document.getElementById("edit-role").value = user.role;
-  document.getElementById("edit-status").value = user.active
+  document.getElementById("edit-status").value = user.isActive
     ? "active"
     : "inactive";
 }
-
 
 // Handle edit user form submission
 function handleEditUser(e) {
@@ -1519,12 +1490,17 @@ function performSearch() {
 
 // Render list products with pagination
 function renderListProducts() {
-  fetch(`http://localhost:8080/admin/list-products-paginated?page=${currentPage - 1}&size=${pageSize}`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  })
+  fetch(
+    `http://localhost:8080/admin/list-products-paginated?page=${
+      currentPage - 1
+    }&size=${pageSize}`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  )
     .then((response) => response.json())
     .then((data) => {
       allProducts = data.products || [];
@@ -1557,7 +1533,7 @@ function renderProductTable() {
   let html = "";
   allProducts.forEach((p, idx) => {
     // Tạo HTML cho ảnh sản phẩm
-    let imageHtml = '';
+    let imageHtml = "";
     if (p.imageUrl) {
       imageHtml = `<img src="http://localhost:8080${p.imageUrl}" alt="${p.productName}" class="product-image" title="${p.productName}" onclick="openImageModal('http://localhost:8080${p.imageUrl}', '${p.productName}')" />`;
     } else {
@@ -1574,15 +1550,19 @@ function renderProductTable() {
         <td>
           <div class="quantity-control" data-product-id="${p.productId}">
             <button class="btn-qty btn-qty-minus" data-action="subtract">-</button>
-            <input type="number" class="input-qty" value="${p.quantity ?? 0}" min="0" style="width:60px;text-align:center;" />
+            <input type="number" class="input-qty" value="${
+              p.quantity ?? 0
+            }" min="0" style="width:60px;text-align:center;" />
             <button class="btn-qty btn-qty-plus" data-action="add">+</button>
           </div>
         </td>
         <td>${Number(p.price).toLocaleString("vi-VN")}</td>
-        <td title="${p.description || ''}">${p.description || ""}</td>
+        <td title="${p.description || ""}">${p.description || ""}</td>
         <td>
           <div class="action-buttons">
-            <button class="btn-edit" onclick="editProduct(${p.productId})" title="Sửa">
+            <button class="btn-edit" onclick="editProduct(${
+              p.productId
+            })" title="Sửa">
               <span class='material-icons' style='font-size:20px;vertical-align:middle;'>edit</span>
             </button>
           </div>
@@ -1598,18 +1578,26 @@ function renderPagination() {
   const container = document.getElementById("product-list-pagination");
   if (!container) return;
   if (totalPages <= 1) {
-    container.innerHTML = `<span style="color: #718096; font-size: 14px; font-weight: 500;">Trang ${currentPage} / ${totalPages || 1}</span>`;
+    container.innerHTML = `<span style="color: #718096; font-size: 14px; font-weight: 500;">Trang ${currentPage} / ${
+      totalPages || 1
+    }</span>`;
     return;
   }
   let html = "";
   if (currentPage > 1) {
-    html += `<button class="pagination-btn" data-page="${currentPage - 1}">‹</button>`;
+    html += `<button class="pagination-btn" data-page="${
+      currentPage - 1
+    }">‹</button>`;
   }
   for (let i = 1; i <= totalPages; i++) {
-    html += `<button class="pagination-btn${i === currentPage ? " active" : ""}" data-page="${i}">${i}</button>`;
+    html += `<button class="pagination-btn${
+      i === currentPage ? " active" : ""
+    }" data-page="${i}">${i}</button>`;
   }
   if (currentPage < totalPages) {
-    html += `<button class="pagination-btn" data-page="${currentPage + 1}">›</button>`;
+    html += `<button class="pagination-btn" data-page="${
+      currentPage + 1
+    }">›</button>`;
   }
   container.innerHTML = html;
   container.querySelectorAll(".pagination-btn").forEach((btn) => {
@@ -1647,8 +1635,10 @@ function initializeProductSearch() {
 }
 
 function performProductSearch() {
-  const keyword = document.getElementById("product-search-input")?.value?.trim() || "";
-  const searchType = document.getElementById("product-search-type")?.value || "all";
+  const keyword =
+    document.getElementById("product-search-input")?.value?.trim() || "";
+  const searchType =
+    document.getElementById("product-search-type")?.value || "all";
 
   if (!keyword) {
     renderListProducts();
@@ -1712,12 +1702,18 @@ function editProduct(productId) {
     })
     .then((product) => {
       // Switch to edit panel
-      document.querySelectorAll(".panel").forEach((panel) => panel.classList.remove("active"));
+      document
+        .querySelectorAll(".panel")
+        .forEach((panel) => panel.classList.remove("active"));
       document.getElementById("panel-edit-product").classList.add("active");
 
       // Update sidebar
-      document.querySelectorAll(".nav-item").forEach((item) => item.classList.remove("active"));
-      document.querySelector('.nav-item[data-type="list-products"]').classList.add("active");
+      document
+        .querySelectorAll(".nav-item")
+        .forEach((item) => item.classList.remove("active"));
+      document
+        .querySelector('.nav-item[data-type="list-products"]')
+        .classList.add("active");
 
       // Update header title
       updateHeaderTitle("edit-product");
@@ -1729,15 +1725,21 @@ function editProduct(productId) {
       // Fill form with product data after a longer delay to ensure options are loaded
       setTimeout(() => {
         document.getElementById("edit-product-id").value = product.productId;
-        document.getElementById("edit-product-name").value = product.productName;
+        document.getElementById("edit-product-name").value =
+          product.productName;
         document.getElementById("edit-product-price").value = product.price;
-        document.getElementById("edit-product-description").value = product.description || "";
+        document.getElementById("edit-product-description").value =
+          product.description || "";
 
         // Handle product type
         const productTypeSelect = document.getElementById("edit-product-type");
-        const productTypeCustom = document.getElementById("edit-product-type-custom");
+        const productTypeCustom = document.getElementById(
+          "edit-product-type-custom"
+        );
 
-        const typeOptions = Array.from(productTypeSelect.options).map((opt) => opt.value);
+        const typeOptions = Array.from(productTypeSelect.options).map(
+          (opt) => opt.value
+        );
         if (typeOptions.includes(product.productType)) {
           productTypeSelect.value = product.productType;
           productTypeCustom.style.display = "none";
@@ -1753,9 +1755,13 @@ function editProduct(productId) {
 
         // Handle product unit
         const productUnitSelect = document.getElementById("edit-product-unit");
-        const productUnitCustom = document.getElementById("edit-product-unit-custom");
+        const productUnitCustom = document.getElementById(
+          "edit-product-unit-custom"
+        );
 
-        const unitOptions = Array.from(productUnitSelect.options).map((opt) => opt.value);
+        const unitOptions = Array.from(productUnitSelect.options).map(
+          (opt) => opt.value
+        );
         if (unitOptions.includes(product.unit)) {
           productUnitSelect.value = product.unit;
           productUnitCustom.style.display = "none";
@@ -1798,12 +1804,18 @@ function editProduct(productId) {
 
 function cancelEditProduct() {
   // Switch back to product list
-  document.querySelectorAll(".panel").forEach((panel) => panel.classList.remove("active"));
+  document
+    .querySelectorAll(".panel")
+    .forEach((panel) => panel.classList.remove("active"));
   document.getElementById("panel-list-products").classList.add("active");
 
   // Update navigation back to list-products
-  document.querySelectorAll(".nav-item").forEach((item) => item.classList.remove("active"));
-  document.querySelector('.nav-item[data-type="list-products"]').classList.add("active");
+  document
+    .querySelectorAll(".nav-item")
+    .forEach((item) => item.classList.remove("active"));
+  document
+    .querySelector('.nav-item[data-type="list-products"]')
+    .classList.add("active");
 
   // Update header
   updateHeaderTitle("list-products");
@@ -1824,12 +1836,18 @@ function cancelEditProduct() {
 
 function cancelEditStore() {
   // Switch back to store list
-  document.querySelectorAll(".panel").forEach((panel) => panel.classList.remove("active"));
+  document
+    .querySelectorAll(".panel")
+    .forEach((panel) => panel.classList.remove("active"));
   document.getElementById("panel-list-stores").classList.add("active");
 
   // Update navigation back to list-stores
-  document.querySelectorAll(".nav-item").forEach((item) => item.classList.remove("active"));
-  document.querySelector('.nav-item[data-type="list-stores"]').classList.add("active");
+  document
+    .querySelectorAll(".nav-item")
+    .forEach((item) => item.classList.remove("active"));
+  document
+    .querySelector('.nav-item[data-type="list-stores"]')
+    .classList.add("active");
 
   // Update header
   updateHeaderTitle("list-stores");
@@ -1956,9 +1974,9 @@ function renderCreateStore() {
 function renderListStores(keepPage = false) {
   if (!keepPage) currentPage = 1;
   loadStoresFromAPI(currentPage - 1, pageSize); // Convert to 0-based for API
-  const paginationSection = document.getElementById('store-pagination-section');
+  const paginationSection = document.getElementById("store-pagination-section");
   if (paginationSection) {
-    paginationSection.style.display = 'block';
+    paginationSection.style.display = "block";
   }
   updateHeaderTitle("list-stores");
   attachAddStorePanelButtonEvent();
@@ -1966,7 +1984,9 @@ function renderListStores(keepPage = false) {
 
 function loadStoresFromAPI(page, size) {
   const url = isSearching
-    ? `http://localhost:8080/admin/search-pharmacies-paginated?keyword=${encodeURIComponent(currentSearchParams.keyword)}&type=${currentSearchParams.type}&page=${page}&size=${size}`
+    ? `http://localhost:8080/admin/search-pharmacies-paginated?keyword=${encodeURIComponent(
+        currentSearchParams.keyword
+      )}&type=${currentSearchParams.type}&page=${page}&size=${size}`
     : `http://localhost:8080/admin/list-pharmacies-paginated?page=${page}&size=${size}`;
 
   fetch(url, {
@@ -2003,22 +2023,39 @@ function renderStoreTable() {
     html += `
       <tr>
         <td>${globalIndex}</td>
-        <td title="${store.pharmacyName}"><span title="${store.pharmacyName}">${store.pharmacyName}</span></td>
-        <td title="${store.address || ''}"><span title="${store.address || ''}">${store.address || ""}</span></td>
-        <td title="${store.phone || ''}"><span title="${store.phone || ''}">${store.phone || ""}</span></td>
-        <td title="${store.email || ''}"><span title="${store.email || ''}">${store.email || ""}</span></td>
-        <td title="${store.manager || 'Chưa gán'}"><span title="${store.manager || 'Chưa gán'}">${store.manager || "Chưa gán"}</span></td>
+        <td title="${store.pharmacyName}"><span title="${store.pharmacyName}">${
+      store.pharmacyName
+    }</span></td>
+        <td title="${store.address || ""}"><span title="${
+      store.address || ""
+    }">${store.address || ""}</span></td>
+        <td title="${store.phone || ""}"><span title="${store.phone || ""}">${
+      store.phone || ""
+    }</span></td>
+        <td title="${store.email || ""}"><span title="${store.email || ""}">${
+      store.email || ""
+    }</span></td>
+        <td title="${store.manager || "Chưa gán"}"><span title="${
+      store.manager || "Chưa gán"
+    }">${store.manager || "Chưa gán"}</span></td>
         <td>
-          <span class="status ${store.isActive ? 'active' : 'inactive'}" title="${store.isActive ? 'Hoạt động' : 'Ngừng hoạt động'}">
-            ${store.isActive ? 'Hoạt động' : 'Ngừng hoạt động'}
+          <span class="status ${
+            store.isActive ? "active" : "inactive"
+          }" title="${store.isActive ? "Hoạt động" : "Ngừng hoạt động"}">
+            ${store.isActive ? "Hoạt động" : "Ngừng hoạt động"}
           </span>
         </td>
         <td>
           <div class="action-buttons">
-            ${store.isActive ? `<button class="btn-edit" data-id="${store.pharmacyId}" title="Sửa"><span class='material-icons' style='font-size:20px;vertical-align:middle;'>edit</span></button>` : ''}
-            ${store.isActive
-              ? `<button class="btn-disable" data-id="${store.pharmacyId}" title="Vô hiệu hóa"><span class='material-icons' style='font-size:20px;vertical-align:middle;'>block</span></button>`
-              : `<button class="btn-enable" data-id="${store.pharmacyId}" title="Kích hoạt"><span class='material-icons' style='font-size:20px;vertical-align:middle;'>check_circle</span></button>`
+            ${
+              store.isActive
+                ? `<button class="btn-edit" data-id="${store.pharmacyId}" title="Sửa"><span class='material-icons' style='font-size:20px;vertical-align:middle;'>edit</span></button>`
+                : ""
+            }
+            ${
+              store.isActive
+                ? `<button class="btn-disable" data-id="${store.pharmacyId}" title="Vô hiệu hóa"><span class='material-icons' style='font-size:20px;vertical-align:middle;'>block</span></button>`
+                : `<button class="btn-enable" data-id="${store.pharmacyId}" title="Kích hoạt"><span class='material-icons' style='font-size:20px;vertical-align:middle;'>check_circle</span></button>`
             }
           </div>
         </td>
@@ -2033,18 +2070,26 @@ function renderStorePagination() {
   const container = document.getElementById("store-list-pagination");
   if (!container) return;
   if (totalPages <= 1) {
-    container.innerHTML = `<span style="color: #718096; font-size: 14px; font-weight: 500;">Trang ${currentPage} / ${totalPages || 1}</span>`;
+    container.innerHTML = `<span style="color: #718096; font-size: 14px; font-weight: 500;">Trang ${currentPage} / ${
+      totalPages || 1
+    }</span>`;
     return;
   }
   let html = "";
   if (currentPage > 1) {
-    html += `<button class="pagination-btn" data-page="${currentPage - 1}">‹</button>`;
+    html += `<button class="pagination-btn" data-page="${
+      currentPage - 1
+    }">‹</button>`;
   }
   for (let i = 1; i <= totalPages; i++) {
-    html += `<button class="pagination-btn${i === currentPage ? " active" : ""}" data-page="${i}">${i}</button>`;
+    html += `<button class="pagination-btn${
+      i === currentPage ? " active" : ""
+    }" data-page="${i}">${i}</button>`;
   }
   if (currentPage < totalPages) {
-    html += `<button class="pagination-btn" data-page="${currentPage + 1}">›</button>`;
+    html += `<button class="pagination-btn" data-page="${
+      currentPage + 1
+    }">›</button>`;
   }
   container.innerHTML = html;
   container.querySelectorAll(".pagination-btn").forEach((btn) => {
@@ -2059,8 +2104,10 @@ function renderStorePagination() {
 }
 
 function performStoreSearch() {
-  const keyword = document.getElementById("store-search-input")?.value?.trim() || "";
-  const searchType = document.getElementById("store-search-type")?.value || "all";
+  const keyword =
+    document.getElementById("store-search-input")?.value?.trim() || "";
+  const searchType =
+    document.getElementById("store-search-type")?.value || "all";
   if (!keyword) {
     isSearching = false;
     currentPage = 1;
@@ -2108,11 +2155,15 @@ function attachStoreActionEvents() {
       `;
       document.body.appendChild(confirmDialog);
 
-      confirmDialog.querySelector(".btn-cancel-disable").addEventListener("click", closeConfirmDialog);
-      confirmDialog.querySelector(".btn-confirm-disable").addEventListener("click", function () {
-        closeConfirmDialog();
-        updatePharmacyStatus(id, false);
-      });
+      confirmDialog
+        .querySelector(".btn-cancel-disable")
+        .addEventListener("click", closeConfirmDialog);
+      confirmDialog
+        .querySelector(".btn-confirm-disable")
+        .addEventListener("click", function () {
+          closeConfirmDialog();
+          updatePharmacyStatus(id, false);
+        });
     });
   });
 
@@ -2125,12 +2176,18 @@ function attachStoreActionEvents() {
 }
 
 function showEditStorePanel(id) {
-  document.querySelectorAll(".panel").forEach((panel) => panel.classList.remove("active"));
+  document
+    .querySelectorAll(".panel")
+    .forEach((panel) => panel.classList.remove("active"));
   document.getElementById("panel-edit-store").classList.add("active");
   document.getElementById("panel-edit-store").setAttribute("data-edit-id", id);
 
-  document.querySelectorAll(".nav-item").forEach((item) => item.classList.remove("active"));
-  document.querySelector('.nav-item[data-type="list-stores"]').classList.add("active");
+  document
+    .querySelectorAll(".nav-item")
+    .forEach((item) => item.classList.remove("active"));
+  document
+    .querySelector('.nav-item[data-type="list-stores"]')
+    .classList.add("active");
 
   updateHeaderTitle("edit-store");
 
@@ -2138,7 +2195,8 @@ function showEditStorePanel(id) {
     .then((res) => res.json())
     .then((store) => {
       document.getElementById("edit-store-id").value = store.pharmacyId;
-      document.getElementById("edit-store-name").value = store.pharmacyName || "";
+      document.getElementById("edit-store-name").value =
+        store.pharmacyName || "";
       document.getElementById("edit-store-address").value = store.address || "";
       document.getElementById("edit-store-phone").value = store.phone || "";
       document.getElementById("edit-store-email").value = store.email || "";
@@ -2146,14 +2204,22 @@ function showEditStorePanel(id) {
       const isActive = store.isActive === true || store.isActive === "true";
       if (!isActive) {
         document
-          .querySelectorAll("#panel-edit-store .form-input, #panel-edit-store .form-select")
+          .querySelectorAll(
+            "#panel-edit-store .form-input, #panel-edit-store .form-select"
+          )
           .forEach((input) => (input.disabled = true));
-        document.querySelector("#panel-edit-store button[type='submit']").disabled = true;
+        document.querySelector(
+          "#panel-edit-store button[type='submit']"
+        ).disabled = true;
       } else {
         document
-          .querySelectorAll("#panel-edit-store .form-input, #panel-edit-store .form-select")
+          .querySelectorAll(
+            "#panel-edit-store .form-input, #panel-edit-store .form-select"
+          )
           .forEach((input) => (input.disabled = false));
-        document.querySelector("#panel-edit-store button[type='submit']").disabled = false;
+        document.querySelector(
+          "#panel-edit-store button[type='submit']"
+        ).disabled = false;
       }
     })
     .catch((error) => {
@@ -2170,18 +2236,29 @@ function updatePharmacyStatus(id, isActive) {
   })
     .then((res) => res.json())
     .then((res) => {
-      showToast(res.message || (isActive ? "Kích hoạt thành công!" : "Vô hiệu hóa thành công!"));
+      showToast(
+        res.message ||
+          (isActive ? "Kích hoạt thành công!" : "Vô hiệu hóa thành công!")
+      );
       renderListStores(true);
       fetch("http://localhost:8080/admin/list-pharmacies")
         .then((res) => res.json())
         .then((pharmacies) => {
           listPharmacy = pharmacies || [];
-          if (document.getElementById("panel-add-account").classList.contains("active")) {
+          if (
+            document
+              .getElementById("panel-add-account")
+              .classList.contains("active")
+          ) {
             loadPharmacyOptions();
           }
         });
-      document.querySelectorAll(".nav-item").forEach((item) => item.classList.remove("active"));
-      document.querySelector('.nav-item[data-type="list-stores"]').classList.add("active");
+      document
+        .querySelectorAll(".nav-item")
+        .forEach((item) => item.classList.remove("active"));
+      document
+        .querySelector('.nav-item[data-type="list-stores"]')
+        .classList.add("active");
       updateHeaderTitle("list-stores");
     })
     .catch(() => showToast("Có lỗi xảy ra khi cập nhật trạng thái!"));
@@ -2203,7 +2280,9 @@ function renderEditStore() {
 
 // Render revenue report panel
 function renderRevenueReport() {
-  document.querySelectorAll(".panel").forEach((panel) => panel.classList.remove("active"));
+  document
+    .querySelectorAll(".panel")
+    .forEach((panel) => panel.classList.remove("active"));
   document.getElementById("panel-revenue-report").classList.add("active");
   updateHeaderTitle("revenue-report");
   loadRevenueData();
@@ -2271,7 +2350,9 @@ function handleAddProduct(e) {
   const productUnitCustom = document.getElementById("product-unit-custom");
   const productPriceInput = document.getElementById("product-price");
   const productQuantityInput = document.getElementById("product-quantity"); // Lấy input số lượng
-  const productDescriptionInput = document.getElementById("product-description");
+  const productDescriptionInput = document.getElementById(
+    "product-description"
+  );
   const productImageInput = document.getElementById("product-image");
   const productName = productNameInput.value.trim();
 
@@ -2330,7 +2411,7 @@ function handleAddProduct(e) {
   if (productImageInput.files.length > 0) {
     const file = productImageInput.files[0];
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = function (e) {
       imageBase64 = e.target.result;
       submitProductData();
     };
@@ -2347,7 +2428,7 @@ function handleAddProduct(e) {
       description: description,
       price: price.toFixed(2),
       quantity: quantity, // Gửi số lượng lên backend
-      imageBase64: imageBase64
+      imageBase64: imageBase64,
     };
 
     const submitBtn = e.target.querySelector('button[type="submit"]');
@@ -2403,8 +2484,12 @@ function handleEditProduct(e) {
   const productTypeCustom = document.getElementById("edit-product-type-custom");
   const productUnitSelect = document.getElementById("edit-product-unit");
   const productUnitCustom = document.getElementById("edit-product-unit-custom");
-  const productPrice = parseFloat(document.getElementById("edit-product-price").value);
-  const productDescription = document.getElementById("edit-product-description").value.trim();
+  const productPrice = parseFloat(
+    document.getElementById("edit-product-price").value
+  );
+  const productDescription = document
+    .getElementById("edit-product-description")
+    .value.trim();
   const productImageInput = document.getElementById("edit-product-image");
 
   if (!productName) {
@@ -2440,7 +2525,7 @@ function handleEditProduct(e) {
   if (productImageInput.files.length > 0) {
     const file = productImageInput.files[0];
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = function (e) {
       imageBase64 = e.target.result;
       submitEditData();
     };
@@ -2456,7 +2541,7 @@ function handleEditProduct(e) {
       unit: productUnit,
       price: productPrice,
       description: productDescription,
-      imageBase64: imageBase64
+      imageBase64: imageBase64,
     };
 
     const submitBtn = e.target.querySelector('button[type="submit"]');
@@ -2618,61 +2703,65 @@ function loadRevenueData() {
   // Placeholder: Implement fetching revenue data if needed
 }
 async function logout() {
-    showToast('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
-    const response = await fetch('http://localhost:8080/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include'
-    });
+  showToast("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+  const response = await fetch("http://localhost:8080/api/auth/logout", {
+    method: "POST",
+    credentials: "include",
+  });
 
-    const data = await response.json();
-    console.log('Logout response:', data);
+  const data = await response.json();
+  console.log("Logout response:", data);
 
-    // Controller trả về JSON, JS phải tự redirect
-    if (data.success) {
-        window.location.href = data.redirectUrl || '/HealthMateLC/index.html';
-    }
+  // Controller trả về JSON, JS phải tự redirect
+  if (data.success) {
+    window.location.href = data.redirectUrl || "/HealthMateLC/index.html";
+  }
 }
 
 async function checkSessionOrRedirect() {
-    try {
-        const response = await fetch('http://localhost:8080/admin/profile', {
-            method: 'GET',
-            credentials: 'include'
-        });
+  try {
+    const response = await fetch("http://localhost:8080/admin/profile", {
+      method: "GET",
+      credentials: "include",
+    });
 
-        // Nếu server trả về 401
-        if (response.status === 401) {
-            showToast('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
-            console.log('Redirecting to login (401)...');
-            setTimeout(() => {
-                window.location.replace('/HealthMateLC/index.html');
-            }, 1000);
-            return false;
-        }
+    // Nếu server trả về 401
+    if (response.status === 401) {
+      showToast("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+      console.log("Redirecting to login (401)...");
+      setTimeout(() => {
+        window.location.replace("/HealthMateLC/index.html");
+      }, 1000);
+      return false;
+    }
 
-        // Nếu server trả về 200 nhưng nội dung báo lỗi
-        if (response.ok) {
-            const data = await response.json();
-            if (data && (data.error === 'Unauthorized access' || (data.message && data.message.includes('hết hạn')))) {
-                showToast('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
-                console.log('Redirecting to login (expired session in JSON)...');
-                setTimeout(() => {
-                    window.location.replace('/HealthMateLC/index.html');
-                }, 1000);
-                return false;
-            }
-        }
-
-        return true;
-    } catch (e) {
-        // Lỗi mạng hoặc fetch lỗi
-        showToast('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
-        console.log('Redirecting to login (network error)...');
+    // Nếu server trả về 200 nhưng nội dung báo lỗi
+    if (response.ok) {
+      const data = await response.json();
+      if (
+        data &&
+        (data.error === "Unauthorized access" ||
+          (data.message && data.message.includes("hết hạn")))
+      ) {
+        showToast("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+        console.log("Redirecting to login (expired session in JSON)...");
         setTimeout(() => {
-            window.location.replace('/HealthMateLC/index.html');
+          window.location.replace("/HealthMateLC/index.html");
         }, 1000);
         return false;
+      }
     }
+
+    return true;
+  } catch (e) {
+    // Lỗi mạng hoặc fetch lỗi
+    showToast("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+    console.log("Redirecting to login (network error)...");
+    setTimeout(() => {
+      window.location.replace("/HealthMateLC/index.html");
+    }, 1000);
+    return false;
+  }
 }
 
 function loadRoles() {
@@ -2713,7 +2802,7 @@ function getRoleDisplayName(role) {
   const roleNames = {
     manager: "Quản lý",
     employee: "Nhân viên",
-    "customer-service": "Chăm sóc khách hàng"
+    "customer-service": "Chăm sóc khách hàng",
   };
   return roleNames[role] || role;
 }
@@ -2727,18 +2816,26 @@ function renderAddAccount() {
 
 function attachAddStoreButtonEvent() {
   // Gắn sự kiện cho nút "Thêm nhà thuốc" trong panel list-stores
-  const addBtn = document.querySelector('#panel-list-stores .panel-header .btn.btn-primary');
+  const addBtn = document.querySelector(
+    "#panel-list-stores .panel-header .btn.btn-primary"
+  );
   if (addBtn) {
-    addBtn.onclick = function() {
+    addBtn.onclick = function () {
       // Ẩn tất cả panel
-      document.querySelectorAll('.panel').forEach(panel => panel.classList.remove('active'));
+      document
+        .querySelectorAll(".panel")
+        .forEach((panel) => panel.classList.remove("active"));
       // Hiện panel tạo nhà thuốc
-      document.getElementById('panel-create-store').classList.add('active');
+      document.getElementById("panel-create-store").classList.add("active");
       // Cập nhật sidebar
-      document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-      document.querySelector('.nav-item[data-type="create-store"]').classList.add('active');
+      document
+        .querySelectorAll(".nav-item")
+        .forEach((item) => item.classList.remove("active"));
+      document
+        .querySelector('.nav-item[data-type="create-store"]')
+        .classList.add("active");
       // Cập nhật header
-      updateHeaderTitle('create-store');
+      updateHeaderTitle("create-store");
       // Render lại nội dung nếu cần
       renderCreateStore();
     };
@@ -2754,7 +2851,12 @@ function loadProductTypes() {
     })
     .catch((error) => {
       console.error("Error loading product types:", error);
-      const fallbackTypes = ["Thuốc", "Thực phẩm chức năng", "Dụng cụ y tế", "Mỹ phẩm"];
+      const fallbackTypes = [
+        "Thuốc",
+        "Thực phẩm chức năng",
+        "Dụng cụ y tế",
+        "Mỹ phẩm",
+      ];
       updateProductTypeOptions(fallbackTypes);
     });
 }
@@ -2776,7 +2878,8 @@ function loadProductUnits() {
 function updateProductTypeOptions(types) {
   const addProductTypeSelect = document.getElementById("product-type");
   if (addProductTypeSelect) {
-    addProductTypeSelect.innerHTML = '<option value="">Chọn loại sản phẩm</option>';
+    addProductTypeSelect.innerHTML =
+      '<option value="">Chọn loại sản phẩm</option>';
     types.forEach((type) => {
       const option = document.createElement("option");
       option.value = type;
@@ -2788,7 +2891,8 @@ function updateProductTypeOptions(types) {
 
   const editProductTypeSelect = document.getElementById("edit-product-type");
   if (editProductTypeSelect) {
-    editProductTypeSelect.innerHTML = '<option value="">Chọn loại sản phẩm</option>';
+    editProductTypeSelect.innerHTML =
+      '<option value="">Chọn loại sản phẩm</option>';
     types.forEach((type) => {
       const option = document.createElement("option");
       option.value = type;
@@ -2832,23 +2936,31 @@ function closeConfirmDialog() {
 
 // Sau khi renderListStores, gắn lại sự kiện cho nút Thêm nhà thuốc
 function attachAddStorePanelButtonEvent() {
-  const addBtn = document.querySelector('#panel-list-stores .panel-header .btn.btn-primary');
+  const addBtn = document.querySelector(
+    "#panel-list-stores .panel-header .btn.btn-primary"
+  );
   if (addBtn) {
-    addBtn.onclick = function() {
+    addBtn.onclick = function () {
       // Ẩn tất cả panel
-      document.querySelectorAll('.panel').forEach(panel => panel.classList.remove('active'));
+      document
+        .querySelectorAll(".panel")
+        .forEach((panel) => panel.classList.remove("active"));
       // Hiện panel tạo nhà thuốc
-      document.getElementById('panel-create-store').classList.add('active');
+      document.getElementById("panel-create-store").classList.add("active");
       // Cập nhật sidebar
-      document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-      document.querySelector('.nav-item[data-type="create-store"]').classList.add('active');
+      document
+        .querySelectorAll(".nav-item")
+        .forEach((item) => item.classList.remove("active"));
+      document
+        .querySelector('.nav-item[data-type="create-store"]')
+        .classList.add("active");
       // Cập nhật header
-      updateHeaderTitle('create-store');
+      updateHeaderTitle("create-store");
       // Render lại nội dung nếu cần
       renderCreateStore();
     };
   }
-};
+}
 
 function attachQuantityEvents() {
   document.querySelectorAll(".quantity-control").forEach((container) => {
@@ -2877,7 +2989,11 @@ function updateProductQuantity(productId, quantity, operation, inputEl) {
   fetch("http://localhost:8080/admin/update-product-quantity", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ productId: Number(productId), quantity: Number(quantity), operation }),
+    body: JSON.stringify({
+      productId: Number(productId),
+      quantity: Number(quantity),
+      operation,
+    }),
   })
     .then((res) => res.json())
     .then((data) => {
@@ -2885,12 +3001,17 @@ function updateProductQuantity(productId, quantity, operation, inputEl) {
       // Lưu trang hiện tại
       const currentPageBefore = currentPage;
       // Reload lại danh sách sản phẩm với phân trang để đồng bộ số lượng
-      fetch(`http://localhost:8080/admin/list-products-paginated?page=${currentPageBefore - 1}&size=6`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      })
+      fetch(
+        `http://localhost:8080/admin/list-products-paginated?page=${
+          currentPageBefore - 1
+        }&size=6`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      )
         .then((response) => response.json())
         .then((data) => {
           allProducts = data.products || [];
@@ -2916,106 +3037,116 @@ function updateProductQuantity(productId, quantity, operation, inputEl) {
 }
 
 async function handleUserProfile() {
-    console.log('Đang hiển thị thông tin user...');
-    try {
-        const response = await fetch('http://localhost:8080/admin/profile?detail=true', {
-            method: 'GET',
-            credentials: 'include',
-            headers: {
-                'Accept': 'application/json',
-            }
-        });
+  console.log("Đang hiển thị thông tin user...");
+  try {
+    const response = await fetch(
+      "http://localhost:8080/admin/profile?detail=true",
+      {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          Accept: "application/json",
+        },
+      }
+    );
 
-        if (!response.ok) {
-            if (response.status === 401) {
-                showToast('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
-                window.location.href = '/HealthMateLC/index.html';
-                return;
-            }
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        console.log('Dữ liệu user profile:', data);
-
-        const userFullNameElement = document.getElementById('userFullName');
-        if (userFullNameElement && data.fullName) {
-            userFullNameElement.textContent = data.fullName;
-        }
-
-        console.log('Thông tin người dùng đã được tải và hiển thị.');
-
-    } catch (error) {
-        console.error('Lỗi khi lấy thông tin user profile:', error);
-        alert('Không thể tải thông tin người dùng. Vui lòng thử lại. Lỗi: ' + error.message);
-        window.location.href = '/HealthMateLC/index.html';
+    if (!response.ok) {
+      if (response.status === 401) {
+        showToast("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+        window.location.href = "/HealthMateLC/index.html";
+        return;
+      }
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
+
+    const data = await response.json();
+    console.log("Dữ liệu user profile:", data);
+
+    const userFullNameElement = document.getElementById("userFullName");
+    if (userFullNameElement && data.fullName) {
+      userFullNameElement.textContent = data.fullName;
+    }
+
+    console.log("Thông tin người dùng đã được tải và hiển thị.");
+  } catch (error) {
+    console.error("Lỗi khi lấy thông tin user profile:", error);
+    alert(
+      "Không thể tải thông tin người dùng. Vui lòng thử lại. Lỗi: " +
+        error.message
+    );
+    window.location.href = "/HealthMateLC/index.html";
+  }
 }
 
 async function showUserInfo() {
-    try {
-        const response = await fetch('http://localhost:8080/admin/showprofile', {
-            method: 'GET',
-            credentials: 'include',
-            headers: {
-                'Accept': 'application/json',
-            }
-        });
+  try {
+    const response = await fetch("http://localhost:8080/admin/showprofile", {
+      method: "GET",
+      credentials: "include",
+      headers: {
+        Accept: "application/json",
+      },
+    });
 
-        if (!response.ok) {
-            if (response.status === 401) {
-                showToast('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
-                window.location.href = '/HealthMateLC/index.html';
-                return;
-            }
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
+    if (!response.ok) {
+      if (response.status === 401) {
+        showToast("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+        window.location.href = "/HealthMateLC/index.html";
+        return;
+      }
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
 
-        const data = await response.json();
-        console.log('Dữ liệu hồ sơ đầy đủ:', data);
+    const data = await response.json();
+    console.log("Dữ liệu hồ sơ đầy đủ:", data);
 
-        let modal = document.getElementById('userInfoModal');
-        if (!modal) {
-            modal = document.createElement('div');
-            modal.id = 'userInfoModal';
-            modal.className = 'modal';
-            modal.innerHTML = `
+    let modal = document.getElementById("userInfoModal");
+    if (!modal) {
+      modal = document.createElement("div");
+      modal.id = "userInfoModal";
+      modal.className = "modal";
+      modal.innerHTML = `
                 <div class="modal-content">
                     <span class="close">×</span>
                     <h2>Thông tin cá nhân</h2>
                     <div id="userInfoContent"></div>
                 </div>
             `;
-            document.body.appendChild(modal);
-        }
+      document.body.appendChild(modal);
+    }
 
-        const userInfoContent = document.getElementById('userInfoContent');
-        userInfoContent.innerHTML = `
-                <p><strong>Họ và tên:</strong> ${data.fullName || 'Chưa cập nhật'}</p>
-            <p><strong>Số điện thoại:</strong> ${data.phone || 'Chưa cập nhật'}</p>
-            <p><strong>Email:</strong> ${data.email || 'Chưa cập nhật'}</p>
+    const userInfoContent = document.getElementById("userInfoContent");
+    userInfoContent.innerHTML = `
+                <p><strong>Họ và tên:</strong> ${
+                  data.fullName || "Chưa cập nhật"
+                }</p>
+            <p><strong>Số điện thoại:</strong> ${
+              data.phone || "Chưa cập nhật"
+            }</p>
+            <p><strong>Email:</strong> ${data.email || "Chưa cập nhật"}</p>
         `;
 
-        modal.style.display = 'block';
+    modal.style.display = "block";
 
-        const closeBtn = modal.querySelector('.close');
-        closeBtn.onclick = () => {
-            modal.style.display = 'none';
-        };
+    const closeBtn = modal.querySelector(".close");
+    closeBtn.onclick = () => {
+      modal.style.display = "none";
+    };
 
-        window.onclick = (event) => {
-            if (event.target === modal) {
-                modal.style.display = 'none';
-            }
-        };
+    window.onclick = (event) => {
+      if (event.target === modal) {
+        modal.style.display = "none";
+      }
+    };
 
-        console.log('Thông tin cá nhân đã được hiển thị.');
-
-    } catch (error) {
-        console.error('Lỗi khi lấy thông tin cá nhân:', error);
-        showToast('Không thể tải thông tin cá nhân. Vui lòng thử lại. Lỗi: ' + error.message);
-        window.location.href = '/HealthMateLC/index.html';
-    }
+    console.log("Thông tin cá nhân đã được hiển thị.");
+  } catch (error) {
+    console.error("Lỗi khi lấy thông tin cá nhân:", error);
+    showToast(
+      "Không thể tải thông tin cá nhân. Vui lòng thử lại. Lỗi: " + error.message
+    );
+    window.location.href = "/HealthMateLC/index.html";
+  }
 }
 
 // Image modal functionality
@@ -3033,15 +3164,15 @@ function closeImageModal() {
 }
 
 // Close modal when clicking outside
-window.onclick = function(event) {
+window.onclick = function (event) {
   const modal = document.getElementById("imageModal");
   if (event.target === modal) {
     closeImageModal();
   }
-}
+};
 
 // Close modal when clicking X
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function () {
   const closeBtn = document.querySelector(".image-modal-close");
   if (closeBtn) {
     closeBtn.addEventListener("click", closeImageModal);
@@ -3049,15 +3180,15 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 // Image preview functionality
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function () {
   // Add product image preview
   const productImageInput = document.getElementById("product-image");
   if (productImageInput) {
-    productImageInput.addEventListener("change", function(e) {
+    productImageInput.addEventListener("change", function (e) {
       const file = e.target.files[0];
       if (file) {
         const reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = function (e) {
           const preview = document.getElementById("image-preview");
           const previewImg = document.getElementById("preview-img");
           previewImg.src = e.target.result;
@@ -3071,11 +3202,11 @@ document.addEventListener("DOMContentLoaded", function() {
   // Edit product image preview
   const editProductImageInput = document.getElementById("edit-product-image");
   if (editProductImageInput) {
-    editProductImageInput.addEventListener("change", function(e) {
+    editProductImageInput.addEventListener("change", function (e) {
       const file = e.target.files[0];
       if (file) {
         const reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = function (e) {
           const preview = document.getElementById("edit-image-preview");
           const previewImg = document.getElementById("edit-preview-img");
           previewImg.src = e.target.result;
