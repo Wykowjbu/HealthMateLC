@@ -253,6 +253,14 @@ textarea::placeholder {
   transition: all 0.3s ease;
   transform: translateY(10px);
   opacity: 0;
+  position: relative;
+  left: unset;
+  right: unset;
+  top: unset;
+  z-index: 10;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 12px;
 }
 
 .message.show {
@@ -272,6 +280,11 @@ textarea::placeholder {
 
 .hidden {
   display: none;
+}
+
+.submit-button {
+  position: relative;
+  z-index: 1;
 }
 
 /* Responsive Design */
