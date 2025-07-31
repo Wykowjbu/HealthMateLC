@@ -689,34 +689,25 @@ function openCustomerList() {
 
 // Customer Management Functions
 async function fetchCustomers() {
-
     try {
-        console.log("Fetching customers...")
+        console.log("Fetching customers...");
         const response = await fetch("http://localhost:8080/employee/danh-sach-khach-hang", {
             method: "GET",
             headers: { "Content-Type": "application/json" },
-        })
+        });
 
         if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`)
+            throw new Error(`HTTP error! Status: ${response.status}`);
         }
 
-        customers = await response.json()
-        console.log("Received customers:", customers)
-        displayCustomers(customers)
+        customers = await response.json();
+        console.log("Received customers:", customers);
+        displayCustomers(customers);
     } catch (error) {
-        console.error("Error fetching customers:", error)
-
+        console.error("Error fetching customers:", error);
+        // Display mock data for demo purposes
+        displayMockCustomers();
     }
-
-    customers = await response.json();
-    console.log("Received customers:", customers);
-    displayCustomers(customers);
-  } catch (error) {
-    console.error("Error fetching customers:", error);
-    // Display mock data for demo purposes
-    displayMockCustomers();
-  }
 }
 
 
@@ -763,7 +754,7 @@ function showCustomerDetails(customer) {
     document.getElementById("detailPhone").textContent = customer.phone || "N/A"
     document.getElementById("detailEmail").textContent = customer.email || "N/A"
     document.getElementById("detailGender").textContent = customer.gender || "Không xác định"
-    document.getElementById("detailDateOfBirth").textContent = formatDate(customer.dateOfBirth) || "N/A"
+    document.getElementById("detailDateOfBirth").textContent = customer.dateOfBirth || "N/A"
     document.getElementById("detailMedicalHistory").textContent = customer.medicalHistory || "Không có"
     document.getElementById("detailAllergies").textContent = customer.allergies || "Không có"
     document.getElementById("detailTotalPoints").textContent = customer.totalPoints || 0
@@ -807,18 +798,7 @@ async function handleAddCustomer(event) {
     } catch (error) {
         console.error("Error adding customer:", error)
         showNotification("Lỗi khi thêm khách hàng: " + error.message, "error") ;
-
     }
-  } catch (error) {
-    console.error("Error adding customer:", error);
-    // For demo purposes, add to local array
-    const newCustomer = {
-      id: customers.length + 1,
-      ...formData,
-      totalPoints: 0,
-      createdDate: new Date().toISOString().split("T")[0],
-    };
-  }
 }
 
 async function handleEditCustomer(event) {
@@ -2524,6 +2504,4 @@ if (typeof window !== 'undefined') {
     window.showSampleEmployeeData = showSampleEmployeeData;
     window.loadEmployeeInfo = loadEmployeeInfo;
 }
-
-
 
