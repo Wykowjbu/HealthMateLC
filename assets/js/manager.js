@@ -1,7 +1,7 @@
 async function handleUserProfile() {
     console.log('Đang hiển thị thông tin user...');
     try {
-        const response = await fetch('http://localhost:8080/manager/profile?detail=true', {
+        const response = await fetch('https://healthmate-lc-83d3cba0821e.herokuapp.com/manager/profile?detail=true', {
             method: 'GET',
             credentials: 'include',
             headers: { 'Accept': 'application/json' }
@@ -71,7 +71,7 @@ function initializeUserDropdown() {
 async function showUserInfo() {
     console.log('Hiển thị thông tin cá nhân...');
     try {
-        const response = await fetch('http://localhost:8080/manager/showprofile', {
+        const response = await fetch('https://healthmate-lc-83d3cba0821e.herokuapp.com/manager/showprofile', {
             method: 'GET',
             credentials: 'include',
             headers: { 'Accept': 'application/json' }
@@ -129,7 +129,7 @@ async function showUserInfo() {
 
 async function logout() {
     console.log('Đang đăng xuất...');
-    const response = await fetch('http://localhost:8080/api/auth/logout', {
+    const response = await fetch('https://healthmate-lc-83d3cba0821e.herokuapp.com/api/auth/logout', {
         method: 'POST',
         credentials: 'include'
     });
@@ -218,7 +218,7 @@ function formatDateLocal(date) {
 async function loadSchedules() {
   try {
     console.log('Fetching schedules from /manager/schedules...');
-    const response = await fetch('http://localhost:8080/manager/schedules', {
+    const response = await fetch('https://healthmate-lc-83d3cba0821e.herokuapp.com/manager/schedules', {
       method: 'GET',
       credentials: 'include',
       headers: { 'Accept': 'application/json' }
@@ -425,7 +425,7 @@ window.editScheduleFromCalendar = editScheduleFromCalendar;
 async function handleCreateSchedule() {
     try {
         console.log('Fetching employees by pharmacy...');
-        const response = await fetch('http://localhost:8080/manager/employees', {
+        const response = await fetch('https://healthmate-lc-83d3cba0821e.herokuapp.com/manager/employees', {
             method: 'GET',
             credentials: 'include',
             headers: { 'Accept': 'application/json' }
@@ -469,7 +469,7 @@ async function saveSchedule() {
 
     if (userId && date && startTime && endTime) {
         try {
-            const response = await fetch('http://localhost:8080/manager/schedule', {
+            const response = await fetch('https://healthmate-lc-83d3cba0821e.herokuapp.com/manager/schedule', {
                 method: 'POST',
                 credentials: 'include',
                 headers: {
@@ -502,7 +502,7 @@ async function initEditScheduleSection() {
 
   try {
     console.log('Fetching employees for edit schedule section...');
-    const response = await fetch('http://localhost:8080/manager/employees', {
+    const response = await fetch('https://healthmate-lc-83d3cba0821e.herokuapp.com/manager/employees', {
       method: 'GET',
       credentials: 'include',
       headers: { 'Accept': 'application/json' }
@@ -533,7 +533,7 @@ async function loadEmployeeSchedules(userId) {
 
   try {
     console.log('Fetching schedules for user:', userId);
-    const response = await fetch(`http://localhost:8080/manager/schedules?userId=${userId}`, {
+    const response = await fetch(`https://healthmate-lc-83d3cba0821e.herokuapp.com/manager/schedules?userId=${userId}`, {
       method: 'GET',
       credentials: 'include',
       headers: { 'Accept': 'application/json' }
@@ -591,7 +591,7 @@ async function saveEditedSchedule() {
 
   if (scheduleId && userId && date && startTime && endTime) {
     try {
-      const response = await fetch('http://localhost:8080/manager/schedule', {
+      const response = await fetch('https://healthmate-lc-83d3cba0821e.herokuapp.com/manager/schedule', {
         method: 'PUT',
         credentials: 'include',
         headers: {
@@ -627,7 +627,7 @@ async function confirmDeleteSchedule() {
   const userId = modal.dataset.userId;
   console.log('Deleting schedule with ID:', scheduleId, 'for userId:', userId); // Debug
   try {
-    const response = await fetch(`http://localhost:8080/manager/schedule?scheduleId=${scheduleId}`, {
+    const response = await fetch(`https://healthmate-lc-83d3cba0821e.herokuapp.com/manager/schedule?scheduleId=${scheduleId}`, {
       method: 'DELETE',
       credentials: 'include',
       headers: { 'Accept': 'application/json' }
@@ -688,7 +688,7 @@ async function exportAttendance() {
     try {
         statusDiv.innerHTML = '<p style="color: blue;">Đang xuất file Excel...</p>';
 
-        const response = await fetch(`http://localhost:8080/manager/export-attendance?startDate=${startDate}&endDate=${endDate}`, {
+        const response = await fetch(`https://healthmate-lc-83d3cba0821e.herokuapp.com/manager/export-attendance?startDate=${startDate}&endDate=${endDate}`, {
             method: 'GET',
             credentials: 'include'
             // Bỏ header Accept để tránh conflict
@@ -751,7 +751,7 @@ async function initEmployeeHistorySection() {
   let allHistories = [];
 
   try {
-    const response = await fetch("http://localhost:8080/manager/history/all", {
+    const response = await fetch("https://healthmate-lc-83d3cba0821e.herokuapp.com/manager/history/all", {
       method: "GET",
       credentials: "include",
       headers: { Accept: "application/json" },

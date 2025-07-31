@@ -243,7 +243,7 @@ function loadInitialData() {
 
 // Render list accounts panel
 function renderListAccounts() {
-  fetch(`http://localhost:8080/admin/list-accounts`, {
+  fetch(`https://healthmate-lc-83d3cba0821e.herokuapp.com/admin/list-accounts`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -767,7 +767,7 @@ function handleEditUser(e) {
 function updateUser(userId, userData) {
   showLoading("editUserModal");
 
-  fetch(`http://localhost:8080/admin/update-account/${userId}`, {
+  fetch(`https://healthmate-lc-83d3cba0821e.herokuapp.com/admin/update-account/${userId}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -1402,7 +1402,7 @@ function handleEditUser(e) {
 function updateUser(userId, userData) {
   showLoading("editUserModal");
 
-  fetch(`http://localhost:8080/admin/update-account/${userId}`, {
+  fetch(`https://healthmate-lc-83d3cba0821e.herokuapp.com/admin/update-account/${userId}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -1827,7 +1827,7 @@ function performSearch() {
 
 // Render list products with pagination
 function renderListProducts() {
-  fetch("http://localhost:8080/admin/list-products", {
+  fetch("https://healthmate-lc-83d3cba0821e.herokuapp.com/admin/list-products", {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -1971,7 +1971,7 @@ function performProductSearch() {
   }
 
   fetch(
-    `http://localhost:8080/admin/search-products?keyword=${encodeURIComponent(
+    `https://healthmate-lc-83d3cba0821e.herokuapp.com/admin/search-products?keyword=${encodeURIComponent(
       keyword
     )}&type=${searchType}`,
     {
@@ -2008,7 +2008,7 @@ function clearProductSearch() {
 
 // Edit product functionality
 function editProduct(productId) {
-  fetch(`http://localhost:8080/admin/product/${productId}`, {
+  fetch(`https://healthmate-lc-83d3cba0821e.herokuapp.com/admin/product/${productId}`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -2296,10 +2296,10 @@ function renderListStores(keepPage = false) {
 
 function loadStoresFromAPI(page, size) {
   const url = isSearching
-    ? `http://localhost:8080/admin/search-pharmacies-paginated?keyword=${encodeURIComponent(
+    ? `https://healthmate-lc-83d3cba0821e.herokuapp.com/admin/search-pharmacies-paginated?keyword=${encodeURIComponent(
         currentSearchParams.keyword
       )}&type=${currentSearchParams.type}&page=${page}&size=${size}`
-    : `http://localhost:8080/admin/list-pharmacies-paginated?page=${page}&size=${size}`;
+    : `https://healthmate-lc-83d3cba0821e.herokuapp.com/admin/list-pharmacies-paginated?page=${page}&size=${size}`;
 
   fetch(url, {
     method: "GET",
@@ -2503,7 +2503,7 @@ function showEditStorePanel(id) {
 
   updateHeaderTitle("edit-store");
 
-  fetch(`http://localhost:8080/admin/pharmacy/${id}`)
+  fetch(`https://healthmate-lc-83d3cba0821e.herokuapp.com/admin/pharmacy/${id}`)
     .then((res) => res.json())
     .then((store) => {
       document.getElementById("edit-store-id").value = store.pharmacyId;
@@ -2541,7 +2541,7 @@ function showEditStorePanel(id) {
 }
 
 function updatePharmacyStatus(id, isActive) {
-  fetch(`http://localhost:8080/admin/update-pharmacy/${id}`, {
+  fetch(`https://healthmate-lc-83d3cba0821e.herokuapp.com/admin/update-pharmacy/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ isActive }),
@@ -2553,7 +2553,7 @@ function updatePharmacyStatus(id, isActive) {
           (isActive ? "Kích hoạt thành công!" : "Vô hiệu hóa thành công!")
       );
       renderListStores(true);
-      fetch("http://localhost:8080/admin/list-pharmacies")
+      fetch("https://healthmate-lc-83d3cba0821e.herokuapp.com/admin/list-pharmacies")
         .then((res) => res.json())
         .then((pharmacies) => {
           listPharmacy = pharmacies || [];
@@ -2630,7 +2630,7 @@ function handleAddAccount(e) {
     pharmacyId: pharmacyId,
   };
 
-  fetch(`http://localhost:8080/admin/add-account`, {
+  fetch(`https://healthmate-lc-83d3cba0821e.herokuapp.com/admin/add-account`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -2730,7 +2730,7 @@ function handleAddProduct(e) {
   submitBtn.textContent = "Đang thêm...";
   submitBtn.disabled = true;
 
-  fetch(`http://localhost:8080/admin/add-product`, {
+  fetch(`https://healthmate-lc-83d3cba0821e.herokuapp.com/admin/add-product`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -2820,7 +2820,7 @@ function handleEditProduct(e) {
   submitBtn.textContent = "Đang cập nhật...";
   submitBtn.disabled = true;
 
-  fetch(`http://localhost:8080/admin/edit-product/${productId}`, {
+  fetch(`https://healthmate-lc-83d3cba0821e.herokuapp.com/admin/edit-product/${productId}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -2868,7 +2868,7 @@ function handleCreateStore(e) {
   btn.disabled = true;
   btn.textContent = "Đang tạo...";
 
-  fetch("http://localhost:8080/admin/create-pharmacy", {
+  fetch("https://healthmate-lc-83d3cba0821e.herokuapp.com/admin/create-pharmacy", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -2919,7 +2919,7 @@ function handleEditStore(e) {
     email: document.getElementById("edit-store-email").value.trim(),
   };
 
-  fetch(`http://localhost:8080/admin/update-pharmacy/${id}`, {
+  fetch(`https://healthmate-lc-83d3cba0821e.herokuapp.com/admin/update-pharmacy/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -2975,7 +2975,7 @@ function loadRevenueData() {
 
 async function logout() {
   showToast("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
-  const response = await fetch("http://localhost:8080/api/auth/logout", {
+  const response = await fetch("https://healthmate-lc-83d3cba0821e.herokuapp.com/api/auth/logout", {
     method: "POST",
     credentials: "include",
   });
@@ -2991,7 +2991,7 @@ async function logout() {
 
 async function checkSessionOrRedirect() {
   try {
-    const response = await fetch("http://localhost:8080/admin/profile", {
+    const response = await fetch("https://healthmate-lc-83d3cba0821e.herokuapp.com/admin/profile", {
       method: "GET",
       credentials: "include",
     });
@@ -3038,7 +3038,7 @@ async function checkSessionOrRedirect() {
 function loadRoles() {
   const roleSelect = document.getElementById("role");
   if (roleSelect) {
-    fetch(`http://localhost:8080/admin/list-roles`, {
+    fetch(`https://healthmate-lc-83d3cba0821e.herokuapp.com/admin/list-roles`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -3128,7 +3128,7 @@ function attachAddStoreButtonEvent() {
 }
 
 function loadProductTypes() {
-  fetch("http://localhost:8080/admin/list-products")
+  fetch("https://healthmate-lc-83d3cba0821e.herokuapp.com/admin/list-products")
     .then((response) => response.json())
     .then((products) => {
       const types = [...new Set(products.map((p) => p.productType))];
@@ -3147,7 +3147,7 @@ function loadProductTypes() {
 }
 
 function loadProductUnits() {
-  fetch("http://localhost:8080/admin/list-products")
+  fetch("https://healthmate-lc-83d3cba0821e.herokuapp.com/admin/list-products")
     .then((response) => response.json())
     .then((products) => {
       const units = [...new Set(products.map((p) => p.unit))];
@@ -3271,7 +3271,7 @@ function attachQuantityEvents() {
 }
 
 function updateProductQuantity(productId, quantity, operation, inputEl) {
-  fetch("http://localhost:8080/admin/update-product-quantity", {
+  fetch("https://healthmate-lc-83d3cba0821e.herokuapp.com/admin/update-product-quantity", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -3286,7 +3286,7 @@ function updateProductQuantity(productId, quantity, operation, inputEl) {
       // Lưu trang hiện tại
       const currentPageBefore = currentPage;
       // Reload lại danh sách sản phẩm để đồng bộ số lượng
-      fetch("http://localhost:8080/admin/list-products", {
+      fetch("https://healthmate-lc-83d3cba0821e.herokuapp.com/admin/list-products", {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -3318,7 +3318,7 @@ async function handleUserProfile() {
   console.log("Đang hiển thị thông tin user...");
   try {
     const response = await fetch(
-      "http://localhost:8080/admin/profile?detail=true",
+      "https://healthmate-lc-83d3cba0821e.herokuapp.com/admin/profile?detail=true",
       {
         method: "GET",
         credentials: "include",
@@ -3358,7 +3358,7 @@ async function handleUserProfile() {
 
 async function showUserInfo() {
   try {
-    const response = await fetch("http://localhost:8080/admin/showprofile", {
+    const response = await fetch("https://healthmate-lc-83d3cba0821e.herokuapp.com/admin/showprofile", {
       method: "GET",
       credentials: "include",
       headers: {
@@ -3470,7 +3470,7 @@ function handleResetPassword(e) {
 function resetUserPassword(userId, newPassword) {
   showLoading("resetPasswordModal");
 
-  fetch(`http://localhost:8080/admin/reset-password/${userId}`, {
+  fetch(`https://healthmate-lc-83d3cba0821e.herokuapp.com/admin/reset-password/${userId}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -3550,7 +3550,7 @@ function handleResetPassword(e) {
 function resetUserPassword(userId, newPassword) {
   showLoading("resetPasswordModal");
 
-  fetch(`http://localhost:8080/admin/reset-password/${userId}`, {
+  fetch(`https://healthmate-lc-83d3cba0821e.herokuapp.com/admin/reset-password/${userId}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",

@@ -17,8 +17,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
         try {
-            console.log('Sending request to: http://localhost:8080/api/auth/request-otp');
-            const response = await fetch('http://localhost:8080/api/auth/request-otp', {
+            console.log('Sending request to: https://healthmate-lc-83d3cba0821e.herokuapp.com/api/auth/request-otp');
+            const response = await fetch('https://healthmate-lc-83d3cba0821e.herokuapp.com/api/auth/request-otp', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: `username=${encodeURIComponent(username)}`
@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
         try {
-            const response = await fetch('http://localhost:8080/api/auth/verify-otp', {
+            const response = await fetch('https://healthmate-lc-83d3cba0821e.herokuapp.com/api/auth/verify-otp', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: `username=${encodeURIComponent(username)}&otp=${encodeURIComponent(otp)}`
@@ -79,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
         try {
-            const response = await fetch('http://localhost:8080/api/auth/change-password', {
+            const response = await fetch('https://healthmate-lc-83d3cba0821e.herokuapp.com/api/auth/change-password', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: `username=${encodeURIComponent(username)}&newPassword=${encodeURIComponent(newPassword)}`
