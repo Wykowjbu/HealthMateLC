@@ -56,79 +56,41 @@
             </nav>
         </aside>
 
-        <header class="header" onclick="handleUserProfile()">
-            <h1 class="header-title" id="branch">Chưa gán chi nhánh</h1>
+        <header class="header">
+            <h1 class="header-title">Quầy bán hàng</h1>
             <div class="header-actions">
-                <button class="btn btn-primary" onclick="handleCreateSchedule()">
-                    <span class="material-icons">add</span>
+                <button class="check-in-btn">
+                    <span class="material-icons">access_time</span>
                     Check-in
                 </button>
-
-                <div class="user-profile">
-                    <div class="avatar">QL</div>
+                <div class="user-profile" id="userProfileDropdown">
+                    <div class="avatar" id="employeeAvatar">NV</div>
                     <div>
-                        <div id="userFullName" style="font-weight: 500">Loading...</div>
-                        <div id="userPharmacyName" style="font-size: 12px; color: #718096">Nhân viên chi nhánh</div>
+                        <div style="font-weight: 500;" id="employeeName">Đang tải...</div>
+                        <div style="font-size: 12px; color: #718096;" id="employeeRole">Long Châu</div>
                     </div>
-                    <span class="material-icons">expand_more</span>
-                    <div class="user-dropdown" id="userDropdown">
-                        <div class="dropdown-item" onclick="showUserInfo()">
+                    <span class="material-icons" id="dropdownIcon">expand_more</span>
+                    
+                    <!-- Dropdown Menu -->
+                    <div class="dropdown-menu" id="userDropdownMenu">
+                        <div class="dropdown-item" onclick="showEmployeeDetails()">
                             <span class="material-icons">person</span>
                             <span>Thông tin cá nhân</span>
                         </div>
-                        <div class="dropdown-item" onclick="logout()">
+        
+                        <div class="dropdown-divider"></div>
+                        <div class="dropdown-item logout" onclick="logout()">
                             <span class="material-icons">logout</span>
                             <span>Đăng xuất</span>
                         </div>
                     </div>
-
                 </div>
             </div>
         </header>
 
         <main class="main-content">
             <!-- Statistics Grid -->
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-header">
-                        <div class="stat-icon orders">
-                            <span class="material-icons">receipt</span>
-                        </div>
-                    </div>
-                    <div class="stat-value">24</div>
-                    <div class="stat-label">Đơn hôm nay</div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="stat-header">
-                        <div class="stat-icon customers">
-                            <span class="material-icons">people</span>
-                        </div>
-                    </div>
-                    <div class="stat-value">18</div>
-                    <div class="stat-label">Khách hàng mới</div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="stat-header">
-                        <div class="stat-icon revenue">
-                            <span class="material-icons">attach_money</span>
-                        </div>
-                    </div>
-                    <div class="stat-value">2.4M</div>
-                    <div class="stat-label">Doanh số hôm nay</div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="stat-header">
-                        <div class="stat-icon time">
-                            <span class="material-icons">schedule</span>
-                        </div>
-                    </div>
-                    <div class="stat-value">8h</div>
-                    <div class="stat-label">Giờ làm việc</div>
-                </div>
-            </div>
+            
 
             <!-- Customer Management Section -->
             <div class="customer-container">
@@ -185,18 +147,18 @@
                                 <span class="material-icons">close</span>
                             </button>
                         </div>
-
+                        
                         <form id="customerForm">
                             <div class="form-group">
                                 <label for="fullName">Họ và tên *</label>
                                 <input type="text" id="fullName" placeholder="Nhập họ và tên..." required>
                             </div>
-
+                            
                             <div class="form-group">
                                 <label for="phone">Số điện thoại *</label>
                                 <input type="tel" id="phone" placeholder="Nhập số điện thoại..." required>
                             </div>
-
+                            
                             <div class="form-group">
                                 <label for="email">Email</label>
                                 <input type="email" id="email" placeholder="Nhập email...">
@@ -222,7 +184,6 @@
                                 <textarea id="medicalHistory" placeholder="Nhập tiền sử bệnh lý..." rows="3"></textarea>
                             </div>
                             
-
                             <div class="form-group">
                                 <label for="allergies">Dị ứng</label>
                                 <textarea id="allergies" placeholder="Các thành phần dị ứng..." rows="3"></textarea>
@@ -290,11 +251,6 @@
                                 <span class="material-icons">edit</span>
                                 Chỉnh Sửa Thông Tin
                             </button>
-                            <button class="history-order-btn" onclick="historyOrderByCustomer()">
-                                <span class="material-icons">history</span>
-                                Xem Lịch Sử Đơn Hàng
-                            </button>
-                            
                         </div>
                     </div>
                 </div>
@@ -601,22 +557,37 @@
                                 </div>
                             </div>
 
+                            <!-- Order Notes -->
+                            <div class="order-notes">
+                                <h5>
+                                    <span class="material-icons">note_alt</span>
+                                    Ghi chú đơn hàng
+                                </h5>
+                                <textarea 
+                                    id="orderNotes" 
+                                    placeholder="Nhập ghi chú cho đơn hàng (hướng dẫn sử dụng, lưu ý đặc biệt...)" 
+                                    rows="3"
+                                    class="notes-textarea">
+                                </textarea>
+                                <small class="notes-hint">Ghi chú này sẽ giúp khách hàng nhớ cách sử dụng thuốc và các lưu ý quan trọng</small>
+                            </div>
+
                             <!-- Payment Method -->
                             <div class="payment-method">
                                 <h5>Phương thức thanh toán</h5>
                                 <div class="payment-options">
                                     <label class="radio-container">
-                                        <input type="radio" name="paymentMethod" value="cash" checked>
+                                        <input type="radio" name="paymentMethod" value="Tiền mặt" checked>
                                         <span class="radio-checkmark"></span>
                                         Tiền mặt
                                     </label>
                                     <label class="radio-container">
-                                        <input type="radio" name="paymentMethod" value="card">
+                                        <input type="radio" name="paymentMethod" value="Thẻ tín dụng">
                                         <span class="radio-checkmark"></span>
                                         Thẻ
                                     </label>
                                     <label class="radio-container">
-                                        <input type="radio" name="paymentMethod" value="transfer">
+                                        <input type="radio" name="paymentMethod" value="Chuyển khoản">
                                         <span class="radio-checkmark"></span>
                                         Chuyển khoản
                                     </label>
@@ -670,87 +641,334 @@
                 </div>
             </div>
 
-            <!-- Schedule Container -->
-            <div id="scheduleContainer" style="display: none;">
-                <h2>Lịch làm việc tuần này</h2>
-                <div style="margin-top: 20px;"></div>
-                <div class="schedule-grid"></div>
-
-                <!-- Check-in/Check-out Section - Auto Display -->
-                <div class="checkin-container" id="checkinContainer">
-                    <div class="checkin-header">
-                        <h3 class="section-title">
-                            <span class="material-icons">access_time</span>
-                            Chấm công hôm nay
-                        </h3>
-                        <div class="current-time" id="currentTime"></div>
+            <!-- Order List Container -->
+            <div class="order-list-container" id="orderListContainer" style="display: none;">
+                <div class="order-list-header">
+                    <h3 class="form-title">
+                        <span class="material-icons">list_alt</span>
+                        Danh sách đơn hàng nhà thuốc
+                    </h3>
+                    <div class="order-info-note">
+                        <span class="material-icons">info</span>
+                        Hiển thị tất cả đơn hàng của nhà thuốc
                     </div>
-
-                    <div class="checkin-content">
-                        <!-- Status Card -->
-                        <div class="status-card">
-                            <div class="status-header">
-                                <span class="material-icons">schedule</span>
-                                <h4>Trạng thái làm việc</h4>
-                            </div>
-                            <div class="status-body">
-                                <div class="status-item">
-                                    <span class="status-label">Check-in:</span>
-                                    <span class="status-value" id="checkinStatus">Chưa check-in</span>
-                                </div>
-                                <div class="status-item">
-                                    <span class="status-label">Check-out:</span>
-                                    <span class="status-value" id="checkoutStatus">Chưa check-out</span>
-                                </div>
-                                <div class="status-item">
-                                    <span class="status-label">Thời gian làm việc:</span>
-                                    <span class="status-value" id="workDuration">0 giờ 0 phút</span>
-                                </div>
-                            </div>
+                    
+                    <div class="order-filters">
+                        <div class="filter-group">
+                            <select id="orderStatusFilter" class="filter-select">
+                                <option value="all">Tất cả trạng thái</option>
+                                <option value="pending">Chờ xử lý</option>
+                                <option value="paid">Hoàn thành</option>
+                                <option value="cancelled">Đã hủy</option>
+                            </select>
+                            
+                            <select id="orderPaymentFilter" class="filter-select">
+                                <option value="all">Tất cả thanh toán</option>
+                                <option value="Tiền mặt">Tiền mặt</option>
+                                <option value="Thẻ tín dụng">Thẻ</option>
+                                <option value="Chuyển khoản">Chuyển khoản</option>
+                            </select>
+                            
+                            <input type="date" id="orderDateFilter" class="filter-date">
                         </div>
-
-                        <!-- Action Buttons -->
-                        <div class="checkin-actions">
-                            <button class="checkin-btn" id="checkinBtn" onclick="handleCheckIn()">
-                                <span class="material-icons">login</span>
-                                <span class="btn-text">Check-in</span>
-                                <span class="loading-spinner" style="display: none;">
-                    <span class="material-icons spinning">refresh</span>
-                </span>
+                        
+                        <div class="search-group">
+                            <div class="search-input-group">
+                                <span class="material-icons search-icon">search</span>
+                                <input type="text" id="orderSearchInput" placeholder="Tìm theo mã đơn hoặc tên khách hàng..." class="search-input">
+                            </div>
+                            <button class="clear-filter-btn" onclick="clearOrderFilters()">
+                                <span class="material-icons">clear_all</span>
+                                Xóa bộ lọc
                             </button>
-
-                            <button class="checkout-btn" id="checkoutBtn" onclick="handleCheckOut()" disabled>
-                                <span class="material-icons">logout</span>
-                                <span class="btn-text">Check-out</span>
-                                <span class="loading-spinner" style="display: none;">
-                    <span class="material-icons spinning">refresh</span>
-                </span>
-                            </button>
-
-                            <button class="refresh-btn" id="refreshBtn" onclick="refreshTimesheetStatus()">
+                            <button class="refresh-orders-btn" onclick="loadOrders()">
                                 <span class="material-icons">refresh</span>
                                 Làm mới
                             </button>
                         </div>
+                    </div>
+                </div>
 
-                        <!-- Work Schedule Today -->
-                        <div class="schedule-today">
-                            <h4>
-                                <span class="material-icons">today</span>
-                                Lịch làm việc hôm nay
-                            </h4>
-                            <div class="schedule-list" id="scheduleToday">
-                                <p>Đang tải lịch làm việc...</p>
+                <!-- Order Stats -->
+                <div class="order-stats">
+                    <div class="stat-card">
+                        <div class="stat-icon pending">
+                            <span class="material-icons">hourglass_empty</span>
+                        </div>
+                        <div class="stat-info">
+                            <h4 id="pendingOrdersCount">0</h4>
+                            <p>Chờ xử lý</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon completed">
+                            <span class="material-icons">check_circle</span>
+                        </div>
+                        <div class="stat-info">
+                            <h4 id="completedOrdersCount">0</h4>
+                            <p>Hoàn thành</p>
+                        </div>
+                    </div>
+                    
+                    
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon total">
+                            <span class="material-icons">receipt_long</span>
+                        </div>
+                        <div class="stat-info">
+                            <h4 id="totalOrdersCount">0</h4>
+                            <p>Tổng đơn hàng</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Orders List -->
+                <div class="orders-list">
+                    <!-- Loading state -->
+                    <div class="orders-loading" id="ordersLoading" style="display: none;">
+                        <span class="material-icons spinning">refresh</span>
+                        <div>Đang tải danh sách đơn hàng...</div>
+                    </div>
+                    
+                    <!-- Empty state -->
+                    <div class="orders-empty" id="ordersEmpty" style="display: none;">
+                        <span class="material-icons">receipt_long</span>
+                        <div>Không có đơn hàng nào</div>
+                    </div>
+                    
+                    <!-- Orders Table -->
+                    <div class="orders-table-container" id="ordersTableContainer">
+                        <table class="orders-table">
+                            <thead>
+                                <tr>
+                                    <th>Mã đơn</th>
+                                    <th>Khách hàng</th>
+                                    <th>Ngày tạo</th>
+                                    <th>Tổng tiền</th>
+                                    <th>Thanh toán</th>
+                                    <th>Trạng thái</th>
+                                    <th>Nhân viên</th>
+                                    <th>Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ordersTableBody">
+                                <!-- Orders will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Pagination -->
+                <div class="pagination" id="ordersPagination" style="display: none;">
+                    <button class="pagination-btn" id="prevOrdersPage" onclick="changeOrdersPage(-1)">
+                        <span class="material-icons">chevron_left</span>
+                    </button>
+                    <span class="pagination-info">
+                        Trang <span id="currentOrdersPage">1</span> / <span id="totalOrdersPages">1</span>
+                    </span>
+                    <button class="pagination-btn" id="nextOrdersPage" onclick="changeOrdersPage(1)">
+                        <span class="material-icons">chevron_right</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Order Detail Modal -->
+            <div class="order-detail-modal" id="orderDetailModal" style="display: none;">
+                <div class="modal-overlay" onclick="closeOrderDetail()"></div>
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 class="modal-title">
+                            <span class="material-icons">receipt</span>
+                            Chi tiết đơn hàng #<span id="orderDetailId"></span>
+                        </h3>
+                        <button class="close-modal-btn" onclick="closeOrderDetail()">
+                            <span class="material-icons">close</span>
+                        </button>
+                    </div>
+                    
+                    <div class="modal-body">
+                        <!-- Order Info -->
+                        <div class="order-detail-section">
+                            <h4 class="section-title">Thông tin đơn hàng</h4>
+                            <div class="order-info-grid">
+                                <div class="info-item">
+                                    <span class="info-label">Mã đơn hàng:</span>
+                                    <span class="info-value" id="detailOrderId"></span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Ngày tạo:</span>
+                                    <span class="info-value" id="detailOrderDate"></span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Trạng thái:</span>
+                                    <span class="info-value status" id="detailOrderStatus"></span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Thanh toán:</span>
+                                    <span class="info-value" id="detailOrderPayment"></span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Nhân viên:</span>
+                                    <span class="info-value" id="detailOrderEmployee"></span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Điểm tích lũy:</span>
+                                    <span class="info-value" id="detailOrderPoints"></span>
+                                </div>
                             </div>
                         </div>
+
+                        <!-- Customer Info -->
+                        <div class="order-detail-section">
+                            <h4 class="section-title">Thông tin khách hàng</h4>
+                            <div class="customer-info-card">
+                                <div class="customer-avatar" id="detailCustomerAvatar">KH</div>
+                                <div class="customer-details">
+                                    <h5 id="detailCustomerName">Tên khách hàng</h5>
+                                    <p id="detailCustomerPhone">Số điện thoại</p>
+                                    <p id="detailCustomerEmail">Email</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Order Notes -->
+                        <div class="order-detail-section" id="orderNotesSection" style="display: none;">
+                            <h4 class="section-title">Ghi chú đơn hàng</h4>
+                            <div class="order-notes-content">
+                                <p id="detailOrderNotes"></p>
+                            </div>
+                        </div>
+
+                        <!-- Order Items -->
+                        <div class="order-detail-section">
+                            <h4 class="section-title">Sản phẩm đã mua</h4>
+                            <div class="order-items-table">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Sản phẩm</th>
+                                            <th>Số lượng</th>
+                                            <th>Đơn giá</th>
+                                            <th>Thành tiền</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="detailOrderItems">
+                                        <!-- Items will be populated by JavaScript -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <div class="order-total-detail">
+                                <div class="total-row">
+                                    <span>Tạm tính:</span>
+                                    <span id="detailSubTotal">0 VND</span>
+                                </div>
+                                <div class="total-row final">
+                                    <span>Tổng cộng:</span>
+                                    <span id="detailTotalAmount">0 VND</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button class="print-invoice-btn" onclick="printInvoice()">
+                            <span class="material-icons">print</span>
+                            In hóa đơn
+                        </button>
+                        <button class="edit-order-btn" onclick="editOrder()" id="editOrderBtn">
+                            <span class="material-icons">edit</span>
+                            Chỉnh sửa
+                        </button>
                     </div>
                 </div>
             </div>
 
+            <!-- Medicine Info Container -->
+            <div class="medicine-info-container" id="medicineInfoContainer" style="display: none;">
+                <div class="medicine-info-header">
+                    <h3 class="form-title">
+                        <span class="material-icons">medication</span>
+                        Thông tin thuốc
+                    </h3>
+                    <button class="refresh-btn" onclick="refreshMedicineInfo()">
+                        <span class="material-icons">refresh</span>
+                        Làm mới
+                    </button>
+                </div>
+
+                <!-- Medicine Search and Filters -->
+                <div class="medicine-filters">
+                    <div class="search-container">
+                        <div class="search-box">
+                            <span class="material-icons">search</span>
+                            <input type="text" id="medicineSearchInput" placeholder="Tìm kiếm thuốc theo tên..." class="search-input">
+                        </div>
+                    </div>
+                    <div class="filter-container">
+                        <select id="stockStatusFilter" class="filter-select">
+                            <option value="all">Tất cả trạng thái</option>
+                            <option value="in-stock">Còn hàng</option>
+                            <option value="low-stock">Sắp hết</option>
+                            <option value="out-of-stock">Hết hàng</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Medicine Grid -->
+                <div class="medicine-grid" id="medicineGrid">
+                    <!-- Medicine cards will be populated here -->
+                </div>
+
+                <!-- Loading State -->
+                <div class="medicine-loading" id="medicineLoading" style="display: none;">
+                    <div class="loading-spinner"></div>
+                    <p>Đang tải thông tin thuốc...</p>
+                </div>
+
+                <!-- Empty State -->
+                <div class="medicine-empty" id="medicineEmpty" style="display: none;">
+                    <span class="material-icons">medication</span>
+                    <h4>Không tìm thấy thuốc nào</h4>
+                    <p>Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</p>
+                </div>
+
+                <!-- Pagination -->
+                <div class="pagination" id="medicinePagination" style="display: none;">
+                    <button class="pagination-btn" id="prevMedicinePage" onclick="changeMedicinePage(-1)">
+                        <span class="material-icons">chevron_left</span>
+                    </button>
+                    <span class="pagination-info">
+                        Trang <span id="currentMedicinePage">1</span> / <span id="totalMedicinePages">1</span>
+                    </span>
+                    <button class="pagination-btn" id="nextMedicinePage" onclick="changeMedicinePage(1)">
+                        <span class="material-icons">chevron_right</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Schedule Container -->
+            <div class="schedule-container" id="scheduleContainer" style="display: none;">
+                <h3 class="form-title">
+                    <span class="material-icons">today</span>
+                    Lịch làm việc hôm nay
+                </h3>
+                <div class="schedule-today">
+                    <div class="schedule-info">
+                        <div class="schedule-time">8:00 - 16:00</div>
+                        <div class="schedule-details">
+                            <div style="font-weight: 500;">Ca sáng</div>
+                            <div style="font-size: 12px; color: #718096;">Thứ 2, 12/05/2025</div>
+                        </div>
+                    </div>
+                    <div class="status-working">Đang làm việc</div>
+                </div>
+            </div>
         </main>
     </div>
 
     <script src="assets/js/employee.js"></script>
-    <script src="assets/js/employee_CheckIn_CheckOut.js"></script>
 </body>
 </html>
