@@ -559,6 +559,82 @@ function initializeModals() {
     .addEventListener("submit", handleResetPassword);
 }
 
+function handleResetPassword(e) {
+  e.preventDefault();
+
+  // Get form data
+  const userId = document.getElementById("reset-user-id").value;
+  const newPassword = document.getElementById("new-password").value;
+  const confirmPassword = document.getElementById("confirm-password").value;
+
+  // Validate form data
+  if (!newPassword || !confirmPassword) {
+    showFormError("resetPasswordForm", "Vui lòng nhập đầy đủ thông tin");
+    return;
+  }
+
+  if (newPassword.length < 6) {
+    showFormError("resetPasswordForm", "Mật khẩu phải có ít nhất 6 ký tự");
+    return;
+  }
+
+  if (newPassword !== confirmPassword) {
+    showFormError("resetPasswordForm", "Mật khẩu xác nhận không khớp");
+    return;
+  }
+
+  // Check password strength
+  const strength = calculatePasswordStrength(newPassword);
+  if (strength.score < 30) {
+    showFormError(
+      "resetPasswordForm",
+      "Mật khẩu quá yếu. Vui lòng chọn mật khẩu mạnh hơn."
+    );
+    return;
+  }
+
+  // Send API request to reset password
+  resetUserPassword(userId, newPassword);
+}
+
+function resetUserPassword(userId, newPassword) {
+  showLoading("resetPasswordModal");
+
+  fetch(`http://localhost:8080/admin/reset-password/${userId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      newPassword: newPassword,
+    }),
+  })
+    .then((response) => {
+      if (!response.ok) {
+        // Show success message
+        showToast(data.message || "Đặt lại mật khẩu thành công");
+      }
+      return response.json();
+    })
+    .then((data) => {
+      showToast(data.message || "Đặt lại mật khẩu thành công");
+      // Close modal
+      document.getElementById("resetPasswordModal").style.display = "none";
+      // Reset form
+      document.getElementById("new-password").value = "";
+      document.getElementById("confirm-password").value = "";
+    })
+    .catch((error) => {
+      showFormError(
+        "resetPasswordForm",
+        error.message || "Lỗi khi đặt lại mật khẩu"
+      );
+    })
+    .finally(() => {
+      hideLoading("resetPasswordModal");
+    });
+}
+
 // Initialize password validation when modal opens
 function openResetPasswordModal(user) {
   const modal = document.querySelector("#resetPasswordModal");
@@ -602,21 +678,6 @@ function openResetPasswordModal(user) {
 
   // Initialize password validation
   initializePasswordValidation();
-}
-
-// Toggle password visibility
-function togglePasswordVisibility(inputId) {
-  const input = document.getElementById(inputId);
-  const button = input.parentElement.querySelector(".password-toggle");
-  const icon = button.querySelector(".material-icons");
-
-  if (input.type === "password") {
-    input.type = "text";
-    icon.textContent = "visibility_off";
-  } else {
-    input.type = "password";
-    icon.textContent = "visibility";
-  }
 }
 
 // Add password validation and UX improvements
@@ -794,96 +855,6 @@ function updateUser(userId, userData) {
     });
 }
 
-// Update user info in real-time without reloading
-function updateUserInRealTime(userId, updatedData) {
-  if (!currentEditingUser) return;
-
-  // Update user data in the global cache
-  updateUserInCache(userId, updatedData);
-
-  // Update pharmacy employee count display
-  updatePharmacyEmployeeCount();
-
-  // Store the updated user info for reference
-  let updatedUser = null;
-
-  // Find the current user details view to get original data
-  const userDetailsWrapper = document.querySelector(".user-details-wrapper");
-  if (
-    userDetailsWrapper &&
-    userDetailsWrapper.classList.contains("slide-right")
-  ) {
-    // Create updated user object with all necessary data
-    updatedUser = {
-      userId: userId,
-      fullName: updatedData.fullName,
-      email: updatedData.email,
-      phone: updatedData.phone,
-      role: updatedData.role,
-      username: currentEditingUser.username || "",
-      status: updatedData.isActive ? "active" : "inactive",
-    };
-
-    // Update the user details view
-    updateUserDetailsView(updatedUser);
-  }
-
-  // Find and update user in the currently displayed user list
-  // Use the original user data before update to find the correct user
-  const userItems = document.querySelectorAll(".user-item");
-  userItems.forEach((userItem) => {
-    const userInfo = userItem.querySelector(".user-info");
-    const emailElement = userInfo?.querySelector("p:first-of-type");
-    const nameElement = userInfo?.querySelector("h4");
-
-    // Find user by original email and name combination
-    if (
-      emailElement &&
-      nameElement &&
-      emailElement.textContent === currentEditingUser.email &&
-      nameElement.textContent === currentEditingUser.fullName
-    ) {
-      // Update user info in the list
-      nameElement.textContent = updatedData.fullName;
-      emailElement.textContent = updatedData.email;
-
-      // Update phone
-      const phoneElement = userInfo.querySelector("p:last-of-type");
-      if (phoneElement) phoneElement.textContent = updatedData.phone;
-
-      // Update role
-      const roleElement = userItem.querySelector(".user-role");
-      if (roleElement) {
-        roleElement.textContent =
-          updatedData.role === "manager" ? "Quản lý" : "Nhân viên";
-        roleElement.className = `user-role ${updatedData.role}`;
-      }
-
-      // Update avatar
-      const avatarElement = userItem.querySelector(".user-avatar");
-      if (avatarElement) {
-        const initials = updatedData.fullName
-          .split(" ")
-          .map((name) => name.charAt(0))
-          .join("")
-          .substring(0, 2)
-          .toUpperCase();
-        avatarElement.textContent = initials;
-      }
-
-      // Update the click handler with new user data
-      if (updatedUser) {
-        userItem.removeEventListener("click", userItem.clickHandler);
-        userItem.clickHandler = () => showUserDetails(updatedUser);
-        userItem.addEventListener("click", userItem.clickHandler);
-      }
-    }
-  });
-
-  // Clear the current editing user
-  currentEditingUser = null;
-}
-
 // Helper function to update user details view
 function updateUserDetailsView(updatedUser) {
   const userDetails = document.querySelector(".user-details");
@@ -1044,42 +1015,6 @@ function showFormError(formId, message) {
 function closeEditUserModal() {
   const modal = document.querySelector("#editUserModal");
   modal.style.display = "none";
-}
-
-function initializeModals() {
-  // Close modal when clicking X or cancel button
-  document
-    .querySelectorAll(".close-modal, .close-modal-btn")
-    .forEach((element) => {
-      element.addEventListener("click", function () {
-        document.querySelectorAll(".modal").forEach((modal) => {
-          modal.style.display = "none";
-        });
-        // Reset current editing user when closing modal
-        currentEditingUser = null;
-      });
-    });
-
-  // Close modal when clicking outside
-  window.addEventListener("click", function (event) {
-    document.querySelectorAll(".modal").forEach((modal) => {
-      if (event.target === modal) {
-        modal.style.display = "none";
-        // Reset current editing user when closing modal
-        currentEditingUser = null;
-      }
-    });
-  });
-
-  // Handle edit user form submission
-  document
-    .getElementById("editUserForm")
-    .addEventListener("submit", handleEditUser);
-
-  // Handle reset password form submission
-  document
-    .getElementById("resetPasswordForm")
-    .addEventListener("submit", handleResetPassword);
 }
 
 // Open edit user modal
