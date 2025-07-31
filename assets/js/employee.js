@@ -329,13 +329,10 @@ function updateOrderStats() {
     const completedCount = allOrders.filter(order => order.status === 'paid').length;
     const totalCount = allOrders.length;
     
-    const todayRevenue = todayOrders.reduce((sum, order) => 
-        sum + parseFloat(order.totalAmount || 0), 0
-    );
+   
     
     document.getElementById("pendingOrdersCount").textContent = pendingCount;
     document.getElementById("completedOrdersCount").textContent = completedCount;
-    document.getElementById("todayRevenue").textContent = formatCurrency(todayRevenue);
     document.getElementById("totalOrdersCount").textContent = totalCount;
 }
 
@@ -522,7 +519,7 @@ function editOrder() {
     
     // Implementation for editing order
     console.log("Editing order:", selectedOrderForDetail);
-    showNotification("Chức năng chỉnh sửa đơn hàng sẽ được cập nhật", "info");
+    showNotification("Chi Quan Ly Moi Duoc Chinh Sua", "info");
 }
 
 // Pagination Functions
@@ -1614,7 +1611,7 @@ async function createOrder() {
         })),
         totalAmount: orderTotal,
         paymentMethod: paymentMethod,
-        status: "pending", // Trạng thái pending cho invoice
+        status: "paid", // Trạng thái pending cho invoice
         invoiceDate: new Date().toISOString(),
         notes: orderNotes, // Thêm ghi chú đơn hàng
         
