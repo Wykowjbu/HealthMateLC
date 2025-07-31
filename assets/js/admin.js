@@ -29,7 +29,9 @@ document.addEventListener("DOMContentLoaded", function () {
   initializeStoreSearch();
   loadInitialData();
   attachAddStoreButtonEvent();
-  initializeModals();
+
+  // Initialize modals when the DOM is fully loaded
+  setTimeout(initializeModals, 500); // Slight delay to ensure DOM is ready
 
   // Đảm bảo rằng sự kiện change cho dropdown tìm kiếm người dùng được gắn kết đúng
   const userSearchSelect = document.querySelector(".user-search-select");
@@ -427,54 +429,61 @@ function showUsersForPharmacy(users) {
 }
 
 function initializeModals() {
-  // Close modal when clicking X or cancel button
-  document
-    .querySelectorAll(".close-modal, .close-modal-btn")
-    .forEach((element) => {
-      element.addEventListener("click", function () {
-        document.querySelectorAll(".modal").forEach((modal) => {
-          modal.style.display = "none";
-        });
-        // Reset current editing user when closing modal
-        currentEditingUser = null;
-      });
-    });
+  // Add direct click handlers to each close button using the onclick attribute
+  // This avoids issues with event delegation and event listeners not being properly attached
 
-  // Close modal when clicking outside
-  window.addEventListener("click", function (event) {
-    document.querySelectorAll(".modal").forEach((modal) => {
-      if (event.target === modal) {
-        modal.style.display = "none";
-        // Reset current editing user when closing modal
-        currentEditingUser = null;
-      }
-    });
+  // First, make sure all modals are in the DOM
+  const modals = document.querySelectorAll(".modal");
+  if (modals.length === 0) {
+    console.error("No modals found in the DOM");
+    return;
+  }
+
+  // Add direct onclick handlers to all close buttons
+  const closeButtons = document.querySelectorAll(
+    ".close-modal, .close-modal-btn"
+  );
+  closeButtons.forEach((button) => {
+    // Use the inline onclick attribute for maximum reliability
+    button.setAttribute("onclick", "closeAllModals()");
   });
 
-  // Handle edit user form submission
-  document
-    .getElementById("editUserForm")
-    .addEventListener("submit", handleEditUser);
+  // Set up form submission handlers
+  const editUserForm = document.getElementById("editUserForm");
+  if (editUserForm) {
+    editUserForm.onsubmit = handleEditUser;
+  }
 
-  // Handle reset password form submission
-  document
-    .getElementById("resetPasswordForm")
-    .addEventListener("submit", handleResetPassword);
+  const resetPasswordForm = document.getElementById("resetPasswordForm");
+  if (resetPasswordForm) {
+    resetPasswordForm.addEventListener("submit", function (e) {
+      e.preventDefault(); // Make sure the default form submission is prevented
+      handleResetPassword(e);
+    });
+  }
 }
 
-// Open edit user modal
+// Global function to close all modals
+// This needs to be accessible globally
+function closeAllModals() {
+  document.querySelectorAll(".modal").forEach((modal) => {
+    modal.style.display = "none";
+  });
+  currentEditingUser = null;
+} // Open edit user modal
 function openEditUserModal(user) {
   // Store the user being edited
   currentEditingUser = { ...user };
 
+  // Make sure modal close buttons have the correct onclick handler
   const modal = document.querySelector("#editUserModal");
-  modal.style.display = "block";
+  const closeButtons = modal.querySelectorAll(".close-modal, .close-modal-btn");
+  closeButtons.forEach((button) => {
+    button.setAttribute("onclick", "closeAllModals()");
+  });
 
-  // Add form submission handler
-  const editUserForm = document.getElementById("editUserForm");
-  if (editUserForm) {
-    editUserForm.addEventListener("submit", handleEditUser);
-  }
+  // Display the modal
+  modal.style.display = "block";
 
   // Populate form fields
   document.getElementById("edit-user-id").value = user.userId;
@@ -490,7 +499,14 @@ function openEditUserModal(user) {
 
 // Initialize password validation when modal opens
 function openResetPasswordModal(user) {
+  // Make sure modal close buttons have the correct onclick handler
   const modal = document.querySelector("#resetPasswordModal");
+  const closeButtons = modal.querySelectorAll(".close-modal, .close-modal-btn");
+  closeButtons.forEach((button) => {
+    button.setAttribute("onclick", "closeAllModals()");
+  });
+
+  // Display the modal
   modal.style.display = "block";
 
   // Populate form fields
@@ -507,30 +523,25 @@ function openResetPasswordModal(user) {
   document.getElementById("new-password").style.borderColor = "";
   document.getElementById("confirm-password").style.borderColor = "";
 
-  // Reset password strength indicator
-  const strengthIndicator = document.getElementById("password-strength");
-  const strengthBar = document.querySelector(".strength-bar");
-  const strengthText = document.querySelector(".strength-text");
-
-  if (strengthIndicator) {
-    strengthIndicator.classList.remove("show");
-  }
-  if (strengthBar) {
-    strengthBar.className = "strength-bar";
-  }
-  if (strengthText) {
-    strengthText.className = "strength-text";
-    strengthText.textContent = "";
-  }
-
   // Clear any previous error messages
   const errorDiv = document.querySelector("#resetPasswordForm .error-message");
   if (errorDiv) {
     errorDiv.style.display = "none";
+    errorDiv.textContent = "";
   }
+
+  // Add animation to the modal
+  setTimeout(() => {
+    modal.querySelector(".modal-content").classList.add("modal-animated");
+  }, 10);
 
   // Initialize password validation
   initializePasswordValidation();
+
+  // Focus on the new password field after a short delay
+  setTimeout(() => {
+    document.getElementById("new-password").focus();
+  }, 300);
 }
 
 // Toggle password visibility
@@ -553,68 +564,52 @@ function initializePasswordValidation() {
   const newPasswordInput = document.getElementById("new-password");
   const confirmPasswordInput = document.getElementById("confirm-password");
   const strengthIndicator = document.getElementById("password-strength");
-  const strengthBar = document.querySelector(".strength-bar");
-  const strengthText = document.querySelector(".strength-text");
+  const errorDiv = document.querySelector("#resetPasswordForm .error-message");
+  const submitButton = document.getElementById("reset-password-submit-btn");
 
   if (newPasswordInput && confirmPasswordInput) {
-    // Real-time password matching validation
-    confirmPasswordInput.addEventListener("input", function () {
-      const newPassword = newPasswordInput.value;
-      const confirmPassword = confirmPasswordInput.value;
+    // Hide the password strength indicator since we're not using real-time validation
+    if (strengthIndicator) {
+      strengthIndicator.style.display = "none";
+    }
 
-      if (confirmPassword && newPassword !== confirmPassword) {
-        confirmPasswordInput.setCustomValidity("Mật khẩu xác nhận không khớp");
-        confirmPasswordInput.style.borderColor = "#e53e3e";
-      } else {
-        confirmPasswordInput.setCustomValidity("");
-        confirmPasswordInput.style.borderColor = "";
-      }
-    });
+    // Clear any previous error messages
+    if (errorDiv) {
+      errorDiv.style.display = "none";
+    }
 
-    // Password strength validation
-    newPasswordInput.addEventListener("input", function () {
-      const password = newPasswordInput.value;
+    // Clear previous validation states
+    newPasswordInput.setCustomValidity("");
+    confirmPasswordInput.setCustomValidity("");
+    newPasswordInput.style.borderColor = "";
+    confirmPasswordInput.style.borderColor = "";
 
-      if (password.length === 0) {
-        strengthIndicator.classList.remove("show");
-        newPasswordInput.setCustomValidity("");
-        newPasswordInput.style.borderColor = "";
-        return;
-      }
+    // Add click handler to the submit button
+    if (submitButton) {
+      // Remove any existing event listeners
+      const newSubmitButton = submitButton.cloneNode(true);
+      submitButton.parentNode.replaceChild(newSubmitButton, submitButton);
 
-      // Show strength indicator
-      strengthIndicator.classList.add("show");
+      // Add new event listener
+      newSubmitButton.addEventListener("click", function (e) {
+        handleResetPassword(e);
+      });
+    }
 
-      // Calculate password strength
-      const strength = calculatePasswordStrength(password);
+    // Add visual feedback on input focus only (no validation)
+    const inputWrappers = document.querySelectorAll(".input-with-icon");
+    inputWrappers.forEach((wrapper) => {
+      const input = wrapper.querySelector("input");
+      const icon = wrapper.querySelector(".input-icon");
 
-      // Update strength bar and text
-      strengthBar.className = "strength-bar";
-      strengthText.className = "strength-text";
+      if (input && icon) {
+        input.addEventListener("focus", function () {
+          icon.style.color = "#667eea";
+        });
 
-      if (strength.score < 30) {
-        strengthBar.classList.add("weak");
-        strengthText.classList.add("weak");
-        strengthText.textContent = "Yếu - " + strength.feedback;
-        newPasswordInput.setCustomValidity("Mật khẩu quá yếu");
-        newPasswordInput.style.borderColor = "#e53e3e";
-      } else if (strength.score < 70) {
-        strengthBar.classList.add("medium");
-        strengthText.classList.add("medium");
-        strengthText.textContent = "Trung bình - " + strength.feedback;
-        newPasswordInput.setCustomValidity("");
-        newPasswordInput.style.borderColor = "#f6ad55";
-      } else {
-        strengthBar.classList.add("strong");
-        strengthText.classList.add("strong");
-        strengthText.textContent = "Mạnh - Mật khẩu tốt";
-        newPasswordInput.setCustomValidity("");
-        newPasswordInput.style.borderColor = "#38a169";
-      }
-
-      // Recheck confirm password when new password changes
-      if (confirmPasswordInput.value) {
-        confirmPasswordInput.dispatchEvent(new Event("input"));
+        input.addEventListener("blur", function () {
+          icon.style.color = "#718096";
+        });
       }
     });
   }
@@ -885,7 +880,14 @@ function updateUserInCache(userId, updatedData) {
 // Show loading state in modal
 function showLoading(modalId) {
   const modal = document.getElementById(modalId);
-  const submitBtn = modal.querySelector('button[type="submit"]');
+  let submitBtn;
+
+  if (modalId === "resetPasswordModal") {
+    submitBtn = document.getElementById("reset-password-submit-btn");
+  } else {
+    submitBtn = modal.querySelector('button[type="submit"]');
+  }
+
   if (submitBtn) {
     submitBtn.disabled = true;
     submitBtn.innerHTML =
@@ -896,15 +898,23 @@ function showLoading(modalId) {
 // Hide loading state in modal
 function hideLoading(modalId) {
   const modal = document.getElementById(modalId);
-  const submitBtn = modal.querySelector('button[type="submit"]');
+  let submitBtn;
+
+  if (modalId === "resetPasswordModal") {
+    submitBtn = document.getElementById("reset-password-submit-btn");
+  } else {
+    submitBtn = modal.querySelector('button[type="submit"]');
+  }
 
   if (submitBtn) {
     submitBtn.disabled = false;
 
     if (modalId === "editUserModal") {
-      submitBtn.innerHTML = "Lưu thay đổi";
+      submitBtn.innerHTML =
+        '<span class="material-icons">save</span> Lưu thay đổi';
     } else if (modalId === "resetPasswordModal") {
-      submitBtn.innerHTML = "Đặt lại mật khẩu";
+      submitBtn.innerHTML =
+        '<span class="material-icons">save</span> Đặt lại mật khẩu';
     }
   }
 }
@@ -957,7 +967,7 @@ function showFormError(formId, message) {
   if (!errorDiv) {
     errorDiv = document.createElement("div");
     errorDiv.className = "error-message";
-    form.insertBefore(errorDiv, form.firstChild);
+    form.insertBefore(errorDiv, form.querySelector(".form-actions"));
   }
 
   errorDiv.textContent = message;
@@ -1053,16 +1063,6 @@ function showUserDetails(user) {
   // Apply sliding effect
   usersWrapper.classList.add("slide-left");
   detailsWrapper.classList.add("slide-right");
-
-  // Handle edit user form submission
-  document
-    .getElementById("editUserForm")
-    .addEventListener("submit", handleEditUser);
-
-  // Handle reset password form submission
-  document
-    .getElementById("resetPasswordForm")
-    .addEventListener("submit", handleResetPassword);
 }
 
 // Update user via API
@@ -2870,12 +2870,22 @@ async function showUserInfo() {
 
 // Handle reset password form submission
 function handleResetPassword(e) {
-  e.preventDefault();
+  // Ensure we prevent the default form submission
+  if (e && e.preventDefault) {
+    e.preventDefault();
+  }
 
   // Get form data
   const userId = document.getElementById("reset-user-id").value;
   const newPassword = document.getElementById("new-password").value;
   const confirmPassword = document.getElementById("confirm-password").value;
+  const errorDiv = document.querySelector("#resetPasswordForm .error-message");
+
+  // Clear previous error messages
+  if (errorDiv) {
+    errorDiv.style.display = "none";
+    errorDiv.textContent = "";
+  }
 
   // Validate form data
   if (!newPassword || !confirmPassword) {
@@ -2883,23 +2893,24 @@ function handleResetPassword(e) {
     return;
   }
 
+  // Check password length - must be at least 6 characters
   if (newPassword.length < 6) {
     showFormError("resetPasswordForm", "Mật khẩu phải có ít nhất 6 ký tự");
     return;
   }
 
-  if (newPassword !== confirmPassword) {
-    showFormError("resetPasswordForm", "Mật khẩu xác nhận không khớp");
+  // Check for special characters - shouldn't contain special characters
+  if (/[^A-Za-z0-9]/.test(newPassword)) {
+    showFormError(
+      "resetPasswordForm",
+      "Mật khẩu không được chứa ký tự đặc biệt"
+    );
     return;
   }
 
-  // Check password strength
-  const strength = calculatePasswordStrength(newPassword);
-  if (strength.score < 30) {
-    showFormError(
-      "resetPasswordForm",
-      "Mật khẩu quá yếu. Vui lòng chọn mật khẩu mạnh hơn."
-    );
+  // Confirm passwords match
+  if (newPassword !== confirmPassword) {
+    showFormError("resetPasswordForm", "Mật khẩu xác nhận không khớp");
     return;
   }
 
@@ -2909,6 +2920,14 @@ function handleResetPassword(e) {
 
 // Reset user password via API
 function resetUserPassword(userId, newPassword) {
+  const modal = document.getElementById("resetPasswordModal");
+  const submitBtn = document.getElementById("reset-password-submit-btn");
+  const originalBtnText = submitBtn.innerHTML;
+
+  // Show loading state
+  submitBtn.disabled = true;
+  submitBtn.innerHTML =
+    '<span class="material-icons spinning">autorenew</span> Đang xử lý...';
   showLoading("resetPasswordModal");
 
   fetch(`http://localhost:8080/admin/reset-password/${userId}`, {
@@ -2921,14 +2940,39 @@ function resetUserPassword(userId, newPassword) {
     }),
   })
     .then((response) => {
+      // Check if response is OK (status 200-299)
       if (!response.ok) {
-        throw new Error("Lỗi khi đặt lại mật khẩu");
+        if (response.status === 404) {
+          throw new Error("Người dùng không tồn tại");
+        } else {
+          // Don't try to parse JSON if there's an error that might not return JSON
+          throw new Error("Lỗi khi đặt lại mật khẩu");
+        }
       }
-      return response.json();
+
+      // Check if there's content before trying to parse JSON
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        return response.text().then((text) => {
+          if (!text || text.trim() === "") {
+            return { message: "Đặt lại mật khẩu thành công" };
+          }
+          try {
+            return JSON.parse(text);
+          } catch (e) {
+            console.error("Error parsing JSON:", e);
+            return { message: "Đặt lại mật khẩu thành công" };
+          }
+        });
+      }
+
+      return { message: "Đặt lại mật khẩu thành công" };
     })
     .then((data) => {
-      // Close modal
-      document.getElementById("resetPasswordModal").style.display = "none";
+      // Change button to success state
+      submitBtn.innerHTML =
+        '<span class="material-icons">check_circle</span> Thành công!';
+      submitBtn.classList.add("btn-success");
 
       // Show success message
       showToast(data.message || "Đặt lại mật khẩu thành công");
@@ -2936,12 +2980,36 @@ function resetUserPassword(userId, newPassword) {
       // Clear form
       document.getElementById("new-password").value = "";
       document.getElementById("confirm-password").value = "";
+
+      // Close modal after short delay to show success state
+      setTimeout(() => {
+        modal.style.display = "none";
+        // Reset button state after modal is closed
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnText;
+        submitBtn.classList.remove("btn-success");
+      }, 1500);
     })
     .catch((error) => {
-      showFormError(
-        "resetPasswordForm",
-        error.message || "Lỗi khi đặt lại mật khẩu"
+      console.error("Lỗi đặt lại mật khẩu:", error);
+
+      // Reset button state
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = originalBtnText;
+
+      // Show error message
+      const errorDiv = document.querySelector(
+        "#resetPasswordForm .error-message"
       );
+      if (errorDiv) {
+        errorDiv.textContent = error.message || "Lỗi khi đặt lại mật khẩu";
+        errorDiv.style.display = "block";
+      } else {
+        showFormError(
+          "resetPasswordForm",
+          error.message || "Lỗi khi đặt lại mật khẩu"
+        );
+      }
     })
     .finally(() => {
       hideLoading("resetPasswordModal");

@@ -861,9 +861,9 @@
 
     <!-- Modal Reset Password -->
     <div id="resetPasswordModal" class="modal">
-      <div class="modal-content">
+      <div class="modal-content reset-password-modal">
         <div class="modal-header">
-          <h2>Đặt lại mật khẩu</h2>
+          <h2 class="modal-title">Đặt lại mật khẩu</h2>
           <span class="close-modal">&times;</span>
         </div>
         <div class="modal-body">
@@ -871,20 +871,25 @@
             <input type="hidden" id="reset-user-id" />
             <div class="form-group">
               <label for="user-display">Tài khoản</label>
-              <input
-                type="text"
-                id="user-display"
-                class="form-input"
-                disabled
-              />
+              <div class="input-with-icon">
+                <span class="material-icons input-icon">person</span>
+                <input
+                  type="text"
+                  id="user-display"
+                  class="form-input"
+                  disabled
+                />
+              </div>
             </div>
             <div class="form-group">
               <label for="new-password">Mật khẩu mới</label>
-              <div class="password-input-wrapper">
+              <div class="input-with-icon">
+                <span class="material-icons input-icon">lock</span>
                 <input
                   type="password"
                   id="new-password"
                   class="form-input"
+                  placeholder="Nhập mật khẩu mới (ít nhất 6 ký tự, không chứa ký tự đặc biệt)"
                   required
                 />
                 <button
@@ -895,20 +900,17 @@
                   <span class="material-icons">visibility</span>
                 </button>
               </div>
-              <div id="password-strength" class="password-strength">
-                <div class="strength-meter">
-                  <div class="strength-bar"></div>
-                </div>
-                <div class="strength-text"></div>
-              </div>
+              <!-- Password strength indicator removed as requested -->
             </div>
             <div class="form-group">
               <label for="confirm-password">Xác nhận mật khẩu</label>
-              <div class="password-input-wrapper">
+              <div class="input-with-icon">
+                <span class="material-icons input-icon">lock_outline</span>
                 <input
                   type="password"
                   id="confirm-password"
                   class="form-input"
+                  placeholder="Xác nhận mật khẩu mới"
                   required
                 />
                 <button
@@ -920,11 +922,18 @@
                 </button>
               </div>
             </div>
+            <div class="error-message"></div>
             <div class="form-actions">
-              <button type="submit" class="btn btn-primary">
+              <button
+                type="button"
+                id="reset-password-submit-btn"
+                class="btn btn-primary btn-reset-password"
+              >
+                <span class="material-icons">save</span>
                 Đặt lại mật khẩu
               </button>
               <button type="button" class="btn btn-secondary close-modal-btn">
+                <span class="material-icons">close</span>
                 Hủy
               </button>
             </div>
