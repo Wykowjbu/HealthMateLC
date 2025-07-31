@@ -1813,11 +1813,12 @@ function performSearch() {
         }
       }
 
-    const storeItem = document.querySelectorAll(".store-item")[index];
-    if (storeItem) {
-      storeItem.style.display = isMatch ? "flex" : "none";
-    }
-  });
+      const storeItem = document.querySelectorAll(".store-item")[index];
+      if (storeItem) {
+        storeItem.style.display = isMatch ? "flex" : "none";
+      }
+    });
+  }, 300);
 }
 
 // ============================================================================

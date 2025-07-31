@@ -24,15 +24,28 @@ async function handleUserProfile() {
         const branchElement = document.getElementById('branch');
 
         if (userFullNameElement) userFullNameElement.textContent = data.fullName || 'Chưa cập nhật';
-        if (userPharmacyNameElement) userPharmacyNameElement.textContent = data.pharmacyName || data.branch || 'Chưa gán chi nhánh';
-        if (branchElement) branchElement.textContent = data.branch || 'Chưa gán chi nhánh';
 
-        console.log('Thông tin người dùng đã được tải và hiển thị.');
+        if (userPharmacyNameElement && data.pharmacyName) {
+            userPharmacyNameElement.textContent = data.pharmacyName;
+        } else if (userPharmacyNameElement && data.pharmacyAddress) {
+            userPharmacyNameElement.textContent = data.pharmacyAddress;
+        } else if (userPharmacyNameElement) {
+            userPharmacyNameElement.textContent = 'Chưa gán chi nhánh';
+        }
+
+        if (branchElement && data.branch) {
+            branchElement.textContent = data.branch;
+        } else if (branchElement) {
+            branchElement.textContent = "Chưa gán chi nhánh";
+        }
+
+        console.log("Thông tin người dùng đã được tải và hiển thị.");
     } catch (error) {
-        console.error('Lỗi khi lấy thông tin user profile:', error);
-        alert('Không thể tải thông tin người dùng. Vui lòng thử lại. Lỗi: ' + error.message);
-        window.location.href = '/HealthMateLC/index.html';
+        console.error("Lỗi khi lấy thông tin user profile:", error);
+        alert("Không thể tải thông tin người dùng. Vui lòng thử lại. Lỗi: " + error.message);
+        window.location.href = "/HealthMateLC/index.html";
     }
+}
 
 
 function initializeUserDropdown() {
@@ -53,26 +66,6 @@ function initializeUserDropdown() {
 
         userDropdown.addEventListener("click", (e) => e.stopPropagation());
     }
-    if (userPharmacyNameElement && data.pharmacyName) {
-      userPharmacyNameElement.textContent = data.pharmacyName;
-    } else if (userPharmacyNameElement && data.pharmacyAddress) {
-      userPharmacyNameElement.textContent = data.pharmacyAddress;
-    }
-    if (branchElement && data.branch) {
-      branchElement.textContent = data.branch;
-    } else if (branchElement) {
-      branchElement.textContent = "Chưa gán chi nhánh";
-    }
-
-    console.log("Thông tin người dùng đã được tải và hiển thị.");
-  } catch (error) {
-    console.error("Lỗi khi lấy thông tin user profile:", error);
-    alert(
-      "Không thể tải thông tin người dùng. Vui lòng thử lại. Lỗi: " +
-        error.message
-    );
-    window.location.href = "/HealthMateLC/index.html";
-  }
 }
 
 async function showUserInfo() {
@@ -154,9 +147,11 @@ function navigate(section) {
     if (sectionElement) sectionElement.style.display = 'block';
     document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
     document.querySelector(`.nav-item[data-section="${section}"]`)?.classList.add('active');
+
     const headerTitle = document.getElementById('header-title');
     const actionBtn = document.getElementById('header-action-btn');
     const actionText = document.getElementById('header-action-text');
+
     if (headerTitle && actionBtn && actionText) {
         switch (section) {
             case 'dashboard':
@@ -200,29 +195,13 @@ function navigate(section) {
                 actionBtn.onclick = exportAttendance;
                 break;
         }
+    }
 
-function initializeUserDropdown() {
-  const userProfile = document.querySelector(".user-profile");
-  const userDropdown = document.getElementById("userDropdown");
-
-  if (userProfile && userDropdown) {
-    userProfile.addEventListener("click", function (e) {
-      e.stopPropagation();
-      userDropdown.classList.toggle("show");
-    });
-
-    document.addEventListener("click", function (e) {
-      if (!userProfile.contains(e.target)) {
-        userDropdown.classList.remove("show");
-      }
-    });
-
-    userDropdown.addEventListener("click", function (e) {
-      e.stopPropagation();
-    });
-  }
+    // Khởi tạo section specific
+    if (section === "employee_history") {
+        initEmployeeHistorySection();
+    }
 }
-
 
 function formatTime(timeStr) {
     let [hours, minutes] = timeStr.slice(0, 5).split(':').map(Number);
@@ -440,8 +419,6 @@ async function loadEmployeeSchedules(userId) {
     return;
 
   }
-}
-
 
   try {
     console.log('Fetching schedules for user:', userId);
@@ -715,14 +692,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 });
 
-// Thêm vào hàm navigate để khởi tạo khi chuyển tab
-const oldNavigate = navigate;
-navigate = function (section) {
-  oldNavigate(section);
-  if (section === "employee_history") {
-    initEmployeeHistorySection();
-  }
-};
 //#endregion
 document.addEventListener('DOMContentLoaded', () => {
   handleUserProfile();
@@ -732,3 +701,7 @@ document.addEventListener('DOMContentLoaded', () => {
   handleCreateSchedule().catch(err => console.error('Error in initial handleCreateSchedule:', err));
   initEditScheduleSection().catch(err => console.error('Error in initial initEditScheduleSection:', err));
 });
+
+window.handleUserProfile = handleUserProfile;
+window.navigate = navigate;
+window.handleCreateSchedule = handleCreateSchedule;
