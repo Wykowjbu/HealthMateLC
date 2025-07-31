@@ -738,6 +738,25 @@ body {
   padding: 30px;
 }
 
+/* Ensure modal form maintains proper grid structure */
+.modal-body .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  width: 100%;
+}
+
+/* Make sure form elements are full width within their containers */
+.modal-body .form-group {
+  width: 100%;
+}
+
+.modal-body .form-input,
+.modal-body .form-select {
+  width: 100%;
+  box-sizing: border-box;
+}
+
 .error-message {
   color: #e53e3e;
   background-color: #fed7d7;
@@ -1167,10 +1186,6 @@ body {
     grid-template-columns: 1fr;
   }
 
-  .form-row {
-    grid-template-columns: 1fr;
-  }
-
   .panel-container {
     padding: 16px 6px 12px 6px;
   }
@@ -1370,12 +1385,39 @@ body {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  width: 100%;
+}
+
+/* Specific styling for modal forms */
+.modal-body .panel-form {
+  width: 100%;
+  max-width: 100%;
 }
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
 }
+
+/* Make sure form-row stays two columns for medium screens */
+@media (min-width: 577px) and (max-width: 1024px) {
+  .form-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Only go to single column on very small screens */
+@media (max-width: 576px) {
+  .form-row:not(.modal-body .form-row) {
+    grid-template-columns: 1fr;
+  }
+
+  /* Keep modal forms in two-column layout even on small screens */
+  .modal-body .form-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 .form-group {
   display: flex;
   flex-direction: column;
@@ -1410,6 +1452,8 @@ body {
 }
 .form-select {
   cursor: pointer;
+  box-sizing: border-box;
+  width: 100%;
 }
 .form-actions {
   display: flex;
