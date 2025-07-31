@@ -2546,6 +2546,252 @@ function showMedicineLoading(show) {
     }
 }
 
+function formatTime(time) {
+  try {
+    const [hours, minutes] = time.split(":");
+    const date = new Date();
+    date.setHours(parseInt(hours), parseInt(minutes));
+    return date.toLocaleTimeString("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch (error) {
+    console.error("Lỗi khi định dạng thời gian:", time, error);
+    return time;
+  }
+}
+
+// Hàm định dạng ngày
+function formatDateLocal(date) {
+  try {
+    return date.toISOString().split("T")[0];
+  } catch (error) {
+    console.error("Lỗi khi định dạng ngày:", date, error);
+    return "";
+  }
+}
+
+// Utility functions to get current user info
+function getCurrentUserId() {
+    const userId = localStorage.getItem("currentUserId");
+    if (userId) {
+        console.log("Getting current User ID:", userId);
+        return userId;
+    } else {
+        console.warn("No User ID found in localStorage");
+        return null;
+    }
+}
+
+function getCurrentUserRole() {
+    return localStorage.getItem("userRole");
+}
+
+function getCurrentEmployeeId() {
+    return getCurrentUserId(); // Alias for employee context
+}
+
+// Log user info whenever this function is called
+function logCurrentUserInfo() {
+    const userId = getCurrentUserId();
+    const userRole = getCurrentUserRole();
+
+    console.log("=== Current User Info ===");
+    console.log("User ID:", userId);
+    console.log("User Role:", userRole);
+    console.log("========================");
+}
+
+// Initialize the application
+document.addEventListener("DOMContentLoaded", () => {
+  handleUserProfile();
+ setupUserProfileDropdown();
+  initializeApp();
+});
+
+async function handleUserProfile() {
+  console.log("Đang hiển thị thông tin user...");
+  try {
+    const response = await fetch(
+      "http://localhost:8080/employee/profile?detail=true",
+      {
+        method: "GET",
+        credentials: "include",
+        headers: { Accept: "application/json" },
+      }
+    );
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        alert("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+        window.location.href = "/HealthMateLC/index.html";
+        return null;
+      }
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log("Dữ liệu user profile:", data);
+
+    const userFullNameElement = document.getElementById("userFullName");
+    const userPharmacyNameElement = document.getElementById("userPharmacyName");
+    const branchElement = document.getElementById("branch");
+
+    if (userFullNameElement)
+      userFullNameElement.textContent = data.fullName || "Chưa cập nhật";
+    if (userPharmacyNameElement)
+      userPharmacyNameElement.textContent =
+        data.pharmacyName || data.branch || "Chưa gán chi nhánh";
+    if (branchElement)
+      branchElement.textContent = data.branch || "Chưa gán chi nhánh";
+
+    console.log("Thông tin người dùng đã được tải và hiển thị.");
+    return data.userId; // Trả về userId để sử dụng trong loadSchedules
+  } catch (error) {
+    console.error("Lỗi khi lấy thông tin user profile:", error);
+    showNotification(
+      "Không thể tải thông tin người dùng. Vui lòng thử lại. Lỗi: " +
+        error.message,
+      "error"
+    );
+    window.location.href = "/HealthMateLC/index.html";
+    return null;
+  }
+}
+
+async function loadSchedules(month = null, year = null) {
+  try {
+    console.log("Fetching schedules from /employee/schedules...");
+    const response = await fetch("http://localhost:8080/employee/schedules", {
+      method: "GET",
+      credentials: "include",
+      headers: { Accept: "application/json" },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `HTTP error! status: ${response.status}, Details: ${errorText}`
+      );
+    }
+    const schedules = await response.json();
+    console.log("Schedules data:", schedules);
+
+    // Xác định tháng/năm cần hiển thị
+    const today = new Date();
+    const currentMonth = month !== null ? month : today.getMonth();
+    const currentYear = year !== null ? year : today.getFullYear();
+
+    // Hiển thị tên tháng/năm
+    const monthNames = [
+      "Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", "Tháng 6",
+      "Tháng 7", "Tháng 8", "Tháng 9", "Tháng 10", "Tháng 11", "Tháng 12"
+    ];
+    const currentMonthYearElem = document.getElementById("currentMonthYear");
+    if (currentMonthYearElem) {
+      currentMonthYearElem.textContent = `${monthNames[currentMonth]} ${currentYear}`;
+    }
+
+    // Số ngày trong tháng
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    // Ngày đầu tháng là thứ mấy (0 = CN, 1 = T2, ...)
+    const firstDayOfWeek = new Date(currentYear, currentMonth, 1).getDay();
+
+    // Tạo grid calendar
+    let calendarHtml = "";
+
+    // Số ô (cell) cần hiển thị: có thể dư sang tuần tiếp theo nên là 42 ô (6 dòng x 7 ngày)
+    let dayCounter = 1;
+    for (let cell = 0; cell < 42; cell++) {
+      let cellDate = "";
+      let cellClass = "calendar-day";
+      let isToday = false;
+      let shiftHtml = "";
+
+      if (cell >= firstDayOfWeek && dayCounter <= daysInMonth) {
+        // Định dạng yyyy-mm-dd cho ngày
+        cellDate = `${currentYear}-${(currentMonth + 1).toString().padStart(2, "0")}-${dayCounter.toString().padStart(2, "0")}`;
+        // Lấy lịch làm việc của ngày này
+        const daySchedules = schedules.filter(s => s.date === cellDate);
+
+        // Xác định có phải hôm nay không
+        const now = new Date();
+        if (
+          dayCounter === now.getDate() &&
+          currentMonth === now.getMonth() &&
+          currentYear === now.getFullYear()
+        ) {
+          cellClass += " today";
+          isToday = true;
+        }
+        if (daySchedules.length > 0) {
+          cellClass += " has-schedule";
+          shiftHtml = `<div class="day-schedules">` +
+            daySchedules.map(s =>
+              `<div class="schedule-item">
+                ${s.fullName} (${formatTime(s.startTime)} - ${formatTime(s.endTime)})
+              </div>`
+            ).join("") +
+            `</div>`;
+        }
+        // Nội dung chính của ngày
+        calendarHtml += `<div class="${cellClass}">
+          <div class="day-number">${dayCounter}</div>
+          ${shiftHtml}
+        </div>`;
+        dayCounter++;
+      } else {
+        // Ô trống hoặc ngày ngoài tháng
+        calendarHtml += `<div class="calendar-day other-month"></div>`;
+      }
+    }
+
+    const calendarGrid = document.getElementById("calendarGrid");
+    if (calendarGrid) {
+      calendarGrid.innerHTML = calendarHtml;
+    } else {
+      console.error("Element calendarGrid not found");
+    }
+
+    // Lưu biến tháng/năm hiện tại để dùng cho chuyển tháng
+    window.currentCalendarMonth = currentMonth;
+    window.currentCalendarYear = currentYear;
+  } catch (error) {
+    console.error("Lỗi khi lấy lịch làm việc:", error);
+    showNotification(
+      "Không thể tải lịch làm việc. Vui lòng thử lại. Lỗi: " + error.message,
+      "error"
+    );
+  }
+}
+
+async function showSchedule() {
+  hideAllSections();
+  currentSection = "schedule";
+
+  const scheduleContainer = document.getElementById("scheduleContainer");
+  if (scheduleContainer) {
+    scheduleContainer.style.display = "block";
+    await loadSchedules(); // Tải lịch làm việc
+  }
+}
+
+// Thêm sự kiện chuyển tháng
+window.navigateMonth = function (delta) {
+  let month = window.currentCalendarMonth ?? new Date().getMonth();
+  let year = window.currentCalendarYear ?? new Date().getFullYear();
+  month += delta;
+  if (month < 0) {
+    month = 11;
+    year -= 1;
+  } else if (month > 11) {
+    month = 0;
+    year += 1;
+  }
+  loadSchedules(month, year);
+}
+
+
 // Add to window for debugging
 if (typeof window !== 'undefined') {
     window.refreshEmployeeInfo = refreshEmployeeInfo;
