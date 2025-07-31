@@ -1419,6 +1419,72 @@ function performSearch() {
   }, 300);
 }
 
+let searchTimeout1 = null;
+
+function performUserSearch() {
+  if (searchTimeout1) {
+    clearTimeout(searchTimeout1);
+  }
+  searchTimeout1 = setTimeout(() => {
+    const searchType =
+      document.querySelector(".user-search-select")?.value || "all";
+    const searchContent =
+      document.querySelector(".user-search-input")?.value || "";
+    const searchTerm = searchContent.toLowerCase();
+
+    // Get all user items in the list
+    const userItems = document.querySelectorAll(".user-item");
+
+    userItems.forEach((userItem) => {
+      // Extract the text content from relevant user item elements
+      const fullName =
+        userItem.querySelector(".user-info h4")?.textContent?.toLowerCase() ||
+        "";
+      const email =
+        userItem
+          .querySelector(".user-info p:nth-child(2)")
+          ?.textContent?.toLowerCase() || "";
+      const phone =
+        userItem
+          .querySelector(".user-info p:nth-child(3)")
+          ?.textContent?.toLowerCase() || "";
+      const role =
+        userItem.querySelector(".user-role")?.textContent?.toLowerCase() || "";
+
+      let isMatch = false;
+
+      // Luôn áp dụng lọc theo loại tìm kiếm, cho dù có từ khóa hay không
+      switch (searchType) {
+        case "all":
+          // Với "all", nếu không có từ khóa thì hiển thị tất cả
+          isMatch =
+            searchTerm === ""
+              ? true
+              : fullName.includes(searchTerm) ||
+                email.includes(searchTerm) ||
+                phone.includes(searchTerm) ||
+                role.includes(searchTerm);
+          break;
+        case "name":
+          isMatch = searchTerm === "" ? true : fullName.includes(searchTerm);
+          break;
+        case "email":
+          isMatch = searchTerm === "" ? true : email.includes(searchTerm);
+          break;
+        case "phone":
+          isMatch = searchTerm === "" ? true : phone.includes(searchTerm);
+          break;
+        case "role":
+          isMatch = searchTerm === "" ? true : role.includes(searchTerm);
+          break;
+      }
+
+      // Show or hide based on match
+      userItem.style.display = isMatch ? "flex" : "none";
+    });
+  }, 300);
+}
+
 // ============================================================================
 // PRODUCTS MANAGEMENT
 // ============================================================================
