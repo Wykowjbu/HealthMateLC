@@ -672,9 +672,33 @@
 
             <!-- Schedule Container -->
             <div id="scheduleContainer" style="display: none;">
-                <h2>Lịch làm việc tuần này</h2>
-                <div style="margin-top: 20px;"></div>
-                <div class="schedule-grid"></div>
+                <div class="calendar-header">
+                    <h2>Lịch làm việc</h2>
+                    <div class="calendar-navigation">
+                        <button class="nav-btn" id="prevMonth" onclick="navigateMonth(-1)">
+                            <span class="material-icons">chevron_left</span>
+                        </button>
+                        <h3 id="currentMonthYear"></h3>
+                        <button class="nav-btn" id="nextMonth" onclick="navigateMonth(1)">
+                            <span class="material-icons">chevron_right</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="calendar-container">
+                    <div class="calendar-weekdays">
+                        <div class="weekday">CN</div>
+                        <div class="weekday">T2</div>
+                        <div class="weekday">T3</div>
+                        <div class="weekday">T4</div>
+                        <div class="weekday">T5</div>
+                        <div class="weekday">T6</div>
+                        <div class="weekday">T7</div>
+                    </div>
+                    <div class="calendar-grid" id="calendarGrid">
+                        <!-- Calendar days will be generated here -->
+                    </div>
+                </div>
 
                 <!-- Check-in/Check-out Section - Auto Display -->
                 <div class="checkin-container" id="checkinContainer">
@@ -754,3 +778,4 @@
     <script src="assets/js/employee_CheckIn_CheckOut.js"></script>
 </body>
 </html>
+

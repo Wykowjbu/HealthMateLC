@@ -63,7 +63,7 @@ function getCurrentEmployeeId() {
 function logCurrentUserInfo() {
     const userId = getCurrentUserId();
     const userRole = getCurrentUserRole();
-    
+
     console.log("=== Current User Info ===");
     console.log("User ID:", userId);
     console.log("User Role:", userRole);
@@ -127,7 +127,7 @@ async function handleUserProfile() {
   }
 }
 
-async function loadSchedules() {
+async function loadSchedules(month = null, year = null) {
   try {
     console.log("Fetching schedules from /employee/schedules...");
     const response = await fetch("http://localhost:8080/employee/schedules", {
@@ -145,76 +145,85 @@ async function loadSchedules() {
     const schedules = await response.json();
     console.log("Schedules data:", schedules);
 
+    // Xác định tháng/năm cần hiển thị
     const today = new Date();
-    const dayOfWeek = today.getDay();
-    const startOfWeek = new Date(today);
-    startOfWeek.setDate(
-      today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1)
-    );
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    const currentMonth = month !== null ? month : today.getMonth();
+    const currentYear = year !== null ? year : today.getFullYear();
 
-    const weekSchedules = schedules.filter((s) => {
-      const d = new Date(s.date);
-      return d >= startOfWeek && d <= endOfWeek;
-    });
-
-    console.log("Week schedules:", weekSchedules);
-
-    const dayNames = [
-      "Thứ 2",
-      "Thứ 3",
-      "Thứ 4",
-      "Thứ 5",
-      "Thứ 6",
-      "Thứ 7",
-      "Chủ nhật",
+    // Hiển thị tên tháng/năm
+    const monthNames = [
+      "Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", "Tháng 6",
+      "Tháng 7", "Tháng 8", "Tháng 9", "Tháng 10", "Tháng 11", "Tháng 12"
     ];
-    let gridHtml = "";
-    for (let i = 0; i < 7; i++) {
-      const currentDay = new Date(startOfWeek);
-      currentDay.setDate(startOfWeek.getDate() + i);
-
-      const dayStr = dayNames[i];
-      const dateStr = `${currentDay.getDate().toString().padStart(2, "0")}/${(
-        currentDay.getMonth() + 1
-      )
-        .toString()
-        .padStart(2, "0")}/${currentDay.getFullYear()}`;
-      const dayDateStr = formatDateLocal(currentDay);
-
-      const daySchedules = weekSchedules.filter((s) => s.date === dayDateStr);
-      const shiftsHtml =
-        daySchedules.length > 0
-          ? daySchedules
-              .sort((a, b) => a.startTime.localeCompare(b.startTime))
-              .map(
-                (schedule) => `
-                <div class="employee-shift">${schedule.fullName} (${formatTime(
-                  schedule.startTime
-                )} - ${formatTime(schedule.endTime)})</div>
-            `
-              )
-              .join("")
-          : "";
-
-      gridHtml += `
-                <div class="schedule-day">
-                    <div class="day-name">${dayStr}</div>
-                    <div class="day-date">${dateStr}</div>
-                    ${shiftsHtml}
-                </div>
-            `;
+    const currentMonthYearElem = document.getElementById("currentMonthYear");
+    if (currentMonthYearElem) {
+      currentMonthYearElem.textContent = `${monthNames[currentMonth]} ${currentYear}`;
     }
 
-    const scheduleSection = document.getElementById("scheduleContainer");
-    if (scheduleSection) {
-      console.log("Updating scheduleContainer with HTML:", gridHtml);
-      scheduleSection.querySelector(".schedule-grid").innerHTML =
-        gridHtml || "<p>Không có lịch làm việc.</p>";
+    // Số ngày trong tháng
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    // Ngày đầu tháng là thứ mấy (0 = CN, 1 = T2, ...)
+    const firstDayOfWeek = new Date(currentYear, currentMonth, 1).getDay();
+
+    // Tạo grid calendar
+    let calendarHtml = "";
+
+    // Số ô (cell) cần hiển thị: có thể dư sang tuần tiếp theo nên là 42 ô (6 dòng x 7 ngày)
+    let dayCounter = 1;
+    for (let cell = 0; cell < 42; cell++) {
+      let cellDate = "";
+      let cellClass = "calendar-day";
+      let isToday = false;
+      let shiftHtml = "";
+
+      if (cell >= firstDayOfWeek && dayCounter <= daysInMonth) {
+        // Định dạng yyyy-mm-dd cho ngày
+        cellDate = `${currentYear}-${(currentMonth + 1).toString().padStart(2, "0")}-${dayCounter.toString().padStart(2, "0")}`;
+        // Lấy lịch làm việc của ngày này
+        const daySchedules = schedules.filter(s => s.date === cellDate);
+
+        // Xác định có phải hôm nay không
+        const now = new Date();
+        if (
+          dayCounter === now.getDate() &&
+          currentMonth === now.getMonth() &&
+          currentYear === now.getFullYear()
+        ) {
+          cellClass += " today";
+          isToday = true;
+        }
+        if (daySchedules.length > 0) {
+          cellClass += " has-schedule";
+          shiftHtml = `<div class="day-schedules">` +
+            daySchedules.map(s =>
+              `<div class="schedule-item">
+                ${s.fullName} (${formatTime(s.startTime)} - ${formatTime(s.endTime)})
+              </div>`
+            ).join("") +
+            `</div>`;
+        }
+        // Nội dung chính của ngày
+        calendarHtml += `<div class="${cellClass}">
+          <div class="day-number">${dayCounter}</div>
+          ${shiftHtml}
+        </div>`;
+        dayCounter++;
+      } else {
+        // Ô trống hoặc ngày ngoài tháng
+        calendarHtml += `<div class="calendar-day other-month"></div>`;
+      }
+    }
+
+    const calendarGrid = document.getElementById("calendarGrid");
+    if (calendarGrid) {
+      calendarGrid.innerHTML = calendarHtml;
     } else {
-      console.error("Element scheduleContainer not found");
+      console.error("Element calendarGrid not found");
     }
+
+    // Lưu biến tháng/năm hiện tại để dùng cho chuyển tháng
+    window.currentCalendarMonth = currentMonth;
+    window.currentCalendarYear = currentYear;
   } catch (error) {
     console.error("Lỗi khi lấy lịch làm việc:", error);
     showNotification(
@@ -222,6 +231,21 @@ async function loadSchedules() {
       "error"
     );
   }
+}
+
+// Thêm sự kiện chuyển tháng
+window.navigateMonth = function (delta) {
+  let month = window.currentCalendarMonth ?? new Date().getMonth();
+  let year = window.currentCalendarYear ?? new Date().getFullYear();
+  month += delta;
+  if (month < 0) {
+    month = 11;
+    year -= 1;
+  } else if (month > 11) {
+    month = 0;
+    year += 1;
+  }
+  loadSchedules(month, year);
 }
 
 function initializeUserDropdown() {
@@ -548,10 +572,10 @@ function showCreateOrderForm() {
     if (createOrderForm) {
         createOrderForm.style.display = "flex"
     }
-    
+
     // Reset form and ensure all elements are visible
     resetOrderForm()
-    
+
     // Display products when form opens
     if (products.length > 0) {
         displayProducts(products)
@@ -1243,7 +1267,7 @@ function updateCustomerPreview(customer) {
 
     if (previewName) previewName.textContent = customer.fullName || "Tên khách hàng"
     if (previewPhone) previewPhone.textContent = customer.phone || "Số điện thoại"
-    
+
     if (previewAvatar && customer.fullName) {
         const initials = customer.fullName
             .split(" ")
@@ -1298,7 +1322,7 @@ async function handleMainEditCustomer(event) {
         // Send update request to backend
         const response = await fetch(`http://localhost:8080/employee/cap-nhat-khach-hang/${formData.id}`, {
             method: "PUT",
-            headers: { 
+            headers: {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({
@@ -1313,10 +1337,10 @@ async function handleMainEditCustomer(event) {
         })
         if (response.ok) {
             const updatedCustomer = await response.json()
-            
+
             // Update current customer data
             currentCustomer = { ...currentCustomer, ...updatedCustomer }
-            
+
             // Update customers array
             const customerIndex = customers.findIndex(c => c.customerID === currentCustomer.customerID || c.id === currentCustomer.id)
             if (customerIndex !== -1) {
@@ -1328,11 +1352,11 @@ async function handleMainEditCustomer(event) {
             displayCustomers(customers)
             showCustomerDetails(currentCustomer)
             closeMainEditCustomer()
-            
+
             showNotification("Cập nhật thông tin khách hàng thành công!", "success")
 
         } else {
-            
+
             const errorData = await response.json().catch(() => ({}))
             throw new Error(errorData.message || `Số điện thoại hoặc email đã tồn tại! Vui lòng kiểm tra lại.`)
         }
@@ -1344,7 +1368,7 @@ async function handleMainEditCustomer(event) {
         const submitBtn = document.querySelector("#mainEditCustomerForm button[type='submit']")
         submitBtn.disabled = false
         submitBtn.textContent = "Lưu thay đổi"
-        
+
     }
 }
 
@@ -1399,10 +1423,10 @@ function validateMainEditForm(formData) {
 function showCreateOrderForm() {
     // Hide other sections first
     hideAllSections();
-    
+
     // Show the create order form
     document.getElementById("createOrderForm").style.display = "flex";
-    
+
     // Reset form and ensure all elements are visible
     resetOrderForm();
 }
@@ -1411,7 +1435,7 @@ function showCreateOrderForm() {
 function closeCreateOrderForm() {
     document.getElementById("createOrderForm").style.display = "none";
     resetOrderForm();
-    
+
     // Show customer section by default
     showCustomerSection();
 }
@@ -1421,18 +1445,18 @@ function resetOrderForm() {
     selectedCustomerForOrder = null;
     orderItems = [];
     orderTotal = 0;
-    
+
     // Clear form fields
     document.getElementById("orderCustomerSearch").value = "";
     document.getElementById("medicineSearch").value = "";
-    
+
     // Hide selected customer
     document.getElementById("selectedCustomer").style.display = "none";
     document.getElementById("customerSearchResults").style.display = "none";
-    
+
     // Show customer search elements
     showCustomerSearchElements();
-    
+
     // Reset order summary
     updateOrderSummary();
 }
@@ -1443,20 +1467,20 @@ function searchCustomersForOrder(searchTerm) {
         document.getElementById("customerSearchResults").style.display = "none";
         return;
     }
-    
+
     // Filter customers based on search term
-    const filteredCustomers = customers.filter(customer => 
+    const filteredCustomers = customers.filter(customer =>
         customer.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         customer.phone.includes(searchTerm)
     );
-    
+
     displayCustomerSearchResults(filteredCustomers);
 }
 
 // Display Customer Search Results
 function displayCustomerSearchResults(customerList) {
     const resultsContainer = document.getElementById("customerSearchResults");
-    
+
     if (customerList.length === 0) {
         resultsContainer.innerHTML = `
             <div style="padding: 20px; text-align: center; color: #718096;">
@@ -1467,7 +1491,7 @@ function displayCustomerSearchResults(customerList) {
         resultsContainer.style.display = "block";
         return;
     }
-    
+
     resultsContainer.innerHTML = customerList.map(customer => {
         const initials = customer.fullName
             .split(" ")
@@ -1475,12 +1499,12 @@ function displayCustomerSearchResults(customerList) {
             .slice(-2)
             .join("")
             .toUpperCase();
-        
+
         // Kiểm tra các field ID có thể có
         const customerId = customer.id || customer.customerId || customer.customerID || customer.userId;
         console.log("Customer data for search:", customer); // Debug log
         console.log("Customer ID found:", customerId); // Debug log
-            
+
         return `
             <div class="customer-result-item" onclick="selectCustomerForOrder(${customerId}, '${customer.fullName}', '${customer.phone}', ${customer.totalPoints || 0})">
                 <div class="customer-avatar">${initials}</div>
@@ -1491,7 +1515,7 @@ function displayCustomerSearchResults(customerList) {
             </div>
         `;
     }).join("");
-    
+
     resultsContainer.style.display = "block";
 }
 
@@ -1502,16 +1526,16 @@ function selectCustomerForOrder(customerId, fullName, phone, totalPoints) {
     console.log("Full Name:", fullName);
     console.log("Phone:", phone);
     console.log("Total Points:", totalPoints);
-    
+
     selectedCustomerForOrder = {
         id: customerId,
         fullName: fullName,
         phone: phone,
         totalPoints: totalPoints
     };
-    
+
     console.log("selectedCustomerForOrder object:", selectedCustomerForOrder);
-    
+
     // Update selected customer display
     const initials = fullName
         .split(" ")
@@ -1519,17 +1543,17 @@ function selectCustomerForOrder(customerId, fullName, phone, totalPoints) {
         .slice(-2)
         .join("")
         .toUpperCase();
-    
+
     document.getElementById("selectedCustomerAvatar").textContent = initials;
     document.getElementById("selectedCustomerName").textContent = fullName;
     document.getElementById("selectedCustomerPhone").textContent = phone;
     document.getElementById("selectedCustomerPoints").textContent = `Điểm: ${totalPoints || 0}`;
-    
+
     // Show selected customer and hide search results
     document.getElementById("selectedCustomer").style.display = "flex";
     document.getElementById("customerSearchResults").style.display = "none";
     document.getElementById("orderCustomerSearch").value = "";
-    
+
     // Hide customer search elements
     hideCustomerSearchElements();
 }
@@ -1537,7 +1561,7 @@ function selectCustomerForOrder(customerId, fullName, phone, totalPoints) {
 // Hide Customer Search Elements when a customer is selected
 function hideCustomerSearchElements() {
     const customerSearchContainer = document.querySelector(".customer-search-container");
-    
+
     if (customerSearchContainer) {
         customerSearchContainer.style.display = "none";
     }
@@ -1546,7 +1570,7 @@ function hideCustomerSearchElements() {
 // Show Customer Search Elements when customer is removed
 function showCustomerSearchElements() {
     const customerSearchContainer = document.querySelector(".customer-search-container");
-    
+
     if (customerSearchContainer) {
         customerSearchContainer.style.display = "flex";
     }
@@ -1557,7 +1581,7 @@ function removeSelectedCustomer() {
     selectedCustomerForOrder = null;
     document.getElementById("selectedCustomer").style.display = "none";
     document.getElementById("orderCustomerSearch").value = "";
-    
+
     // Show customer search elements again
     showCustomerSearchElements();
 }
@@ -1568,7 +1592,7 @@ function updateProductQuantity(productId, newQuantity) {
         removeProductFromOrder(productId);
         return;
     }
-    
+
     const item = orderItems.find(item => item.id === productId);
     if (item) {
         item.quantity = newQuantity;
@@ -1586,7 +1610,7 @@ function removeProductFromOrder(productId) {
 // Update Order Summary
 function updateOrderSummary() {
     const orderItemsList = document.getElementById("orderItemsList");
-    
+
     if (orderItems.length === 0) {
         orderItemsList.innerHTML = `
             <div class="empty-order">
@@ -1606,7 +1630,7 @@ function updateOrderSummary() {
                     <button class="quantity-btn" onclick="updateProductQuantity(${item.id}, ${item.quantity - 1})">
                         <span class="material-icons" style="font-size: 14px;">remove</span>
                     </button>
-                    <input type="number" class="quantity-input" value="${item.quantity}" 
+                    <input type="number" class="quantity-input" value="${item.quantity}"
                            onchange="updateProductQuantity(${item.id}, parseInt(this.value) || 0)" min="1">
                     <button class="quantity-btn" onclick="updateProductQuantity(${item.id}, ${item.quantity + 1})">
                         <span class="material-icons" style="font-size: 14px;">add</span>
@@ -1620,10 +1644,10 @@ function updateOrderSummary() {
                 </div>
             </div>
         `).join("");
-        
+
         orderTotal = orderItems.reduce((sum, item) => sum + item.total, 0);
     }
-    
+
     // Update totals
     document.getElementById("orderSubtotal").textContent = formatCurrency(orderTotal);
     document.getElementById("orderTotal").textContent = formatCurrency(orderTotal);
@@ -1651,20 +1675,20 @@ function closeQuickAddCustomer() {
 // Handle Quick Add Customer Form
 async function handleQuickAddCustomer(event) {
     event.preventDefault();
-    
+
     const formData = {
         fullName: document.getElementById("quickFullName").value.trim(),
         phone: document.getElementById("quickPhone").value.trim(),
         email: document.getElementById("quickEmail").value.trim()
     };
-    
+
     try {
         // Show loading state
         const submitBtn = event.target.querySelector('button[type="submit"]');
         const originalText = submitBtn.textContent;
         submitBtn.disabled = true;
         submitBtn.textContent = "Đang thêm...";
-        
+
         // Send request to backend
         const response = await fetch("http://localhost:8080/employee/tao-moi-khach-hang", {
             method: "POST",
@@ -1673,18 +1697,18 @@ async function handleQuickAddCustomer(event) {
             },
             body: JSON.stringify(formData),
         });
-        
+
         if (response.ok) {
             const newCustomer = await response.json();
             console.log("New customer created:", newCustomer); // Debug log
-            
+
             // Add to customers array
             customers.push(newCustomer);
-            
+
             // Determine customer ID field
             const customerId = newCustomer.id || newCustomer.customerId || newCustomer.customerID || newCustomer.userId;
             console.log("Using customer ID:", customerId); // Debug log
-            
+
             // Select the new customer
             selectCustomerForOrder(
                 customerId,
@@ -1692,7 +1716,7 @@ async function handleQuickAddCustomer(event) {
                 newCustomer.phone,
                 newCustomer.totalPoints || 0
             );
-            
+
             closeQuickAddCustomer();
             showNotification("Thêm khách hàng thành công!", "success");
         } else {
@@ -1726,14 +1750,14 @@ async function createOrder() {
         showNotification("Vui lòng thêm ít nhất một sản phẩm", "error");
         return;
     }
-    
+
     if (!selectedCustomerForOrder) {
         showNotification("Vui lòng chọn khách hàng", "error");
         return;
     }
-    
+
     const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked')?.value || "cash";
-    
+
     // Debug log để kiểm tra selectedCustomerForOrder
     console.log("=== DEBUG CREATE ORDER ===");
     console.log("selectedCustomerForOrder:", selectedCustomerForOrder);
@@ -1741,7 +1765,7 @@ async function createOrder() {
     console.log("getCurrentUserId():", getCurrentUserId());
     console.log("orderItems:", orderItems);
     console.log("=========================");
-    
+
     // Prepare order data for backend
     const orderData = {
         employeeId: getCurrentUserId(),
@@ -1750,25 +1774,25 @@ async function createOrder() {
             productId: item.id,
             quantity: item.quantity,
             unitPrice: item.price,
-            
+
         })),
         totalAmount: orderTotal,
         paymentMethod: paymentMethod,
         status: "pending", // Trạng thái pending cho invoice
         invoiceDate: new Date().toISOString(),
-        
+
     };
-    
+
     try {
         // Show loading state
         const createBtn = document.querySelector('.create-order-btn');
         const originalText = createBtn.innerHTML;
         createBtn.disabled = true;
         createBtn.innerHTML = '<span class="material-icons">refresh</span> Đang tạo...';
-        
+
         // Log order data for debugging
         console.log("Sending order data to backend:", orderData);
-        
+
         // Send to backend
         const response = await fetch("http://localhost:8080/employee/tao-don-hang", {
             method: "POST",
@@ -1777,28 +1801,28 @@ async function createOrder() {
             },
             body: JSON.stringify(orderData),
         });
-        
+
         if (response.ok) {
             const result = await response.json();
             console.log("Order created successfully:", result);
-            
+
             showNotification("Tạo đơn hàng thành công!", "success");
             closeCreateOrderForm();
-            
+
             // Ask if user wants to print receipt
             setTimeout(() => {
                 if (confirm("Đơn hàng đã được tạo thành công! Bạn có muốn in hóa đơn không?")) {
                     printReceipt(result);
                 }
             }, 1000);
-            
+
         } else {
             // Handle error response
             const errorData = await response.json().catch(() => ({}));
             const errorMessage = errorData.message || `Lỗi HTTP: ${response.status}`;
             throw new Error(errorMessage);
         }
-        
+
     } catch (error) {
         console.error("Error creating order:", error);
         showNotification("Lỗi khi tạo đơn hàng: " + error.message, "error");
@@ -1828,7 +1852,7 @@ function setupOrderFormEventListeners() {
             searchCustomersForOrder(e.target.value);
         });
     }
-    
+
     // Product search
     const productSearchInput = document.getElementById("medicineSearch");
     if (productSearchInput) {
@@ -1840,7 +1864,7 @@ function setupOrderFormEventListeners() {
     } else {
         console.error("Product search input (medicineSearch) not found!");
     }
-    
+
     // Product type filter
     const productTypeFilter = document.getElementById("productTypeFilter");
     if (productTypeFilter) {
@@ -1848,7 +1872,7 @@ function setupOrderFormEventListeners() {
             filterProductsByType(e.target.value);
         });
     }
-    
+
     // Quick add customer form
     const quickAddForm = document.getElementById("quickAddCustomerForm");
     if (quickAddForm) {
@@ -1912,7 +1936,7 @@ function displayProducts(productList) {
     productList.forEach((product) => {
         const productItem = document.createElement("div")
         productItem.className = "medicine-item"
-        
+
         productItem.innerHTML = `
             <div class="medicine-info">
                 <h6>${product.productName}</h6>
@@ -1931,11 +1955,11 @@ function displayProducts(productList) {
 function searchProducts(searchTerm) {
     console.log("Searching products with term:", searchTerm);
     console.log("Current products array:", products);
-    
+
     if (!searchTerm) {
         filteredProducts = [...products]
     } else {
-        filteredProducts = products.filter(product => 
+        filteredProducts = products.filter(product =>
             product.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
             product.productType.toLowerCase().includes(searchTerm.toLowerCase()) ||
             (product.description && product.description.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -1949,7 +1973,7 @@ function filterProductsByType(productType) {
     if (!productType || productType === 'all') {
         filteredProducts = [...products]
     } else {
-        filteredProducts = products.filter(product => 
+        filteredProducts = products.filter(product =>
             product.productType.toLowerCase() === productType.toLowerCase()
         )
     }
@@ -1959,7 +1983,7 @@ function filterProductsByType(productType) {
 function addProductToOrder(productId, productName, price) {
     // Check if product already exists in order
     const existingItem = orderItems.find(item => item.id === productId)
-    
+
     if (existingItem) {
         existingItem.quantity += 1
         existingItem.total = existingItem.quantity * existingItem.price
@@ -1972,7 +1996,7 @@ function addProductToOrder(productId, productName, price) {
             total: price
         })
     }
-    
+
     updateOrderSummary()
     showNotification(`Đã thêm ${productName} vào đơn hàng`, "success")
 }
@@ -1992,7 +2016,7 @@ function displaySampleProducts() {
             productId: 2,
             productName: "Amoxicillin 250mg",
             productType: "Thuốc",
-            unit: "Viên", 
+            unit: "Viên",
             description: "Kháng sinh",
             price: 3500
         },
@@ -2005,7 +2029,7 @@ function displaySampleProducts() {
             price: 1500
         }
     ];
-    
+
     products = sampleProducts;
     filteredProducts = [...products];
     displayProducts(filteredProducts);
@@ -2016,11 +2040,11 @@ function displaySampleProducts() {
 async function fetchEmployeeInfo(employeeId) {
     try {
         console.log(`Fetching employee info for ID: ${employeeId}`);
-        
+
         const response = await fetch(`http://localhost:8080/employee/thong-tin-nhan-vien/${employeeId}`, {
             method: "GET",
-            headers: { 
-                "Content-Type": "application/json" 
+            headers: {
+                "Content-Type": "application/json"
             }
         });
 
@@ -2030,7 +2054,7 @@ async function fetchEmployeeInfo(employeeId) {
 
         const employeeInfo = await response.json();
         console.log("Employee info received:", employeeInfo);
-        
+
         return employeeInfo;
     } catch (error) {
         console.error("Error fetching employee info:", error);
@@ -2060,7 +2084,7 @@ function displayEmployeeInfo(employeeInfo) {
         console.warn("No employee info to display");
         return;
     }
-    
+
     console.log("=== Employee Information ===");
     console.log("User ID:", employeeInfo.userId);
     console.log("Full Name:", employeeInfo.fullName);
@@ -2069,7 +2093,7 @@ function displayEmployeeInfo(employeeInfo) {
     console.log("Pharmacy Name:", employeeInfo.pharmacyName);
     console.log("Assigned Date:", employeeInfo.assignedDate);
     console.log("===========================");
-    
+
     // Update UI elements if they exist
     updateEmployeeInfoInUI(employeeInfo);
 }
@@ -2080,17 +2104,17 @@ function updateEmployeeInfoInUI(employeeInfo) {
     const userProfileName = document.getElementById("employeeName");
     const userProfileRole = document.getElementById("employeeRole");
     const avatar = document.getElementById("employeeAvatar");
-    
+
     if (userProfileName && employeeInfo.fullName) {
         userProfileName.textContent = employeeInfo.fullName;
         console.log("Updated employee name:", employeeInfo.fullName);
     }
-    
+
     if (userProfileRole && employeeInfo.pharmacyName) {
         userProfileRole.textContent = `Nhân viên - ${employeeInfo.pharmacyName}`;
         console.log("Updated employee role:", employeeInfo.pharmacyName);
     }
-    
+
     // Update avatar initials
     if (avatar && employeeInfo.fullName) {
         const initials = employeeInfo.fullName
@@ -2102,30 +2126,30 @@ function updateEmployeeInfoInUI(employeeInfo) {
         avatar.textContent = initials;
         console.log("Updated avatar initials:", initials);
     }
-    
+
     console.log("UI updated successfully with employee info:", employeeInfo);
 }
 
 // Load employee info and display on page load
 async function loadEmployeeInfo() {
     const userId = getCurrentUserId();
-    
+
     if (!userId) {
         console.warn("No user ID found to fetch employee info");
         showNotification("Không tìm thấy thông tin đăng nhập", "error");
         return null;
     }
-    
+
     try {
         // Show loading state in header
         const userProfileName = document.getElementById("employeeName");
         if (userProfileName) {
             userProfileName.textContent = "Đang tải...";
         }
-        
+
         console.log("Loading employee info for userId:", userId);
         const employeeInfo = await fetchEmployeeInfo(userId);
-        
+
         if (employeeInfo) {
             displayEmployeeInfo(employeeInfo);
             return employeeInfo;
@@ -2133,7 +2157,7 @@ async function loadEmployeeInfo() {
             // Fallback to show default info if API fails
             const userProfileName = document.getElementById("employeeName");
             const userProfileRole = document.getElementById("employeeRole");
-            
+
             if (userProfileName) {
                 userProfileName.textContent = "Nhân viên";
             }
@@ -2144,14 +2168,14 @@ async function loadEmployeeInfo() {
     } catch (error) {
         console.error("Error loading employee info:", error);
         showNotification("Không thể tải thông tin nhân viên", "error");
-        
+
         // Show error state
         const userProfileName = document.getElementById("employeeName");
         if (userProfileName) {
             userProfileName.textContent = "Lỗi tải dữ liệu";
         }
     }
-    
+
     return null;
 }
 
@@ -2163,11 +2187,11 @@ async function getCurrentEmployeeInfo() {
 // Utility function to format date
 function formatEmployeeDate(dateString) {
     if (!dateString) return "N/A";
-    
+
     const date = new Date(dateString);
     return date.toLocaleDateString("vi-VN", {
         day: "2-digit",
-        month: "2-digit", 
+        month: "2-digit",
         year: "numeric"
     });
 }
@@ -2188,7 +2212,7 @@ function showSampleEmployeeData() {
         pharmacyName: "Long Châu Quận 1",
         assignedDate: new Date()
     };
-    
+
     console.log("Showing sample employee data:", sampleEmployee);
     updateEmployeeInfoInUI(sampleEmployee);
     showNotification("Hiển thị dữ liệu mẫu nhân viên", "info");
@@ -2199,13 +2223,13 @@ function setupUserProfileDropdown() {
     const userProfile = document.getElementById("userProfileDropdown");
     const dropdownMenu = document.getElementById("userDropdownMenu");
     const dropdownIcon = document.getElementById("dropdownIcon");
-    
+
     if (userProfile && dropdownMenu) {
         userProfile.addEventListener("click", (e) => {
             e.stopPropagation();
             toggleDropdown();
         });
-        
+
         // Close dropdown when clicking outside
         document.addEventListener("click", (e) => {
             if (!userProfile.contains(e.target)) {
@@ -2218,7 +2242,7 @@ function setupUserProfileDropdown() {
 function toggleDropdown() {
     const dropdownMenu = document.getElementById("userDropdownMenu");
     const dropdownIcon = document.getElementById("dropdownIcon");
-    
+
     if (dropdownMenu.classList.contains("show")) {
         closeDropdown();
     } else {
@@ -2229,7 +2253,7 @@ function toggleDropdown() {
 function openDropdown() {
     const dropdownMenu = document.getElementById("userDropdownMenu");
     const dropdownIcon = document.getElementById("dropdownIcon");
-    
+
     dropdownMenu.classList.add("show");
     dropdownIcon.classList.add("rotate");
 }
@@ -2237,7 +2261,7 @@ function openDropdown() {
 function closeDropdown() {
     const dropdownMenu = document.getElementById("userDropdownMenu");
     const dropdownIcon = document.getElementById("dropdownIcon");
-    
+
     dropdownMenu.classList.remove("show");
     dropdownIcon.classList.remove("rotate");
 }
@@ -2245,14 +2269,14 @@ function closeDropdown() {
 // Dropdown Menu Actions
 function showEmployeeDetails() {
     closeDropdown();
-    
+
     // Create and show employee details modal
     showEmployeeDetailsModal();
 }
 
 function showEmployeeSchedule() {
     closeDropdown();
-    
+
     // Navigate to schedule section
     const navSchedule = document.getElementById("nav-schedule");
     if (navSchedule) {
@@ -2263,14 +2287,14 @@ function showEmployeeSchedule() {
 
 function changePassword() {
     closeDropdown();
-    
+
     // Show change password modal
     showChangePasswordModal();
 }
 
 function logout() {
     closeDropdown();
-    
+
     // Show confirmation dialog
     if (confirm("Bạn có chắc chắn muốn đăng xuất không?")) {
         performLogout();
@@ -2280,12 +2304,12 @@ function logout() {
 // Employee Details Modal
 function showEmployeeDetailsModal() {
     const userId = getCurrentUserId();
-    
+
     if (!userId) {
         showNotification("Không tìm thấy thông tin đăng nhập", "error");
         return;
     }
-    
+
     // Create modal
     const modal = document.createElement("div");
     modal.className = "modal-overlay";
@@ -2305,9 +2329,9 @@ function showEmployeeDetailsModal() {
             </div>
         </div>
     `;
-    
+
     document.body.appendChild(modal);
-    
+
     // Load employee details
     loadEmployeeDetailsForModal(userId);
 }
@@ -2433,7 +2457,7 @@ function showChangePasswordModal() {
             </div>
         </div>
     `;
-    
+
     document.body.appendChild(modal);
 }
 
@@ -2446,16 +2470,16 @@ function closeChangePasswordModal() {
 
 async function handleChangePassword(event) {
     event.preventDefault();
-    
+
     const currentPassword = document.getElementById("currentPassword").value;
     const newPassword = document.getElementById("newPassword").value;
     const confirmPassword = document.getElementById("confirmPassword").value;
-    
+
     if (newPassword !== confirmPassword) {
         showNotification("Mật khẩu xác nhận không khớp", "error");
         return;
     }
-    
+
     try {
         const userId = getCurrentUserId();
         const response = await fetch(`http://localhost:8080/employee/doi-mat-khau`, {
@@ -2469,7 +2493,7 @@ async function handleChangePassword(event) {
                 newPassword: newPassword
             }),
         });
-        
+
         if (response.ok) {
             showNotification("Đổi mật khẩu thành công!", "success");
             closeChangePasswordModal();
@@ -2488,10 +2512,10 @@ function performLogout() {
     localStorage.removeItem("currentUserId");
     localStorage.removeItem("userRole");
     localStorage.removeItem("currentUser");
-    
+
     // Show logout message
     showNotification("Đăng xuất thành công!", "success");
-    
+
     // Redirect to login page after short delay
     setTimeout(() => {
         window.location.href = "index.html";
@@ -2504,4 +2528,3 @@ if (typeof window !== 'undefined') {
     window.showSampleEmployeeData = showSampleEmployeeData;
     window.loadEmployeeInfo = loadEmployeeInfo;
 }
-
