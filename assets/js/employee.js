@@ -2245,63 +2245,22 @@ function closeEmployeeDetailsModal() {
     }
 }
 
-// Change Password Modal
-function showChangePasswordModal() {
-    const modal = document.createElement("div");
-    modal.className = "modal-overlay";
-    modal.innerHTML = `
-        <div class="modal-content change-password-modal">
-            <div class="modal-header">
-                <h3>Đổi mật khẩu</h3>
-                <button class="close-btn" onclick="closeChangePasswordModal()">
-                    <span class="material-icons">close</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <form id="changePasswordForm" onsubmit="handleChangePassword(event)">
-                    <div class="form-group">
-                        <label>Mật khẩu hiện tại</label>
-                        <input type="password" id="currentPassword" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Mật khẩu mới</label>
-                        <input type="password" id="newPassword" required minlength="6">
-                    </div>
-                    <div class="form-group">
-                        <label>Xác nhận mật khẩu mới</label>
-                        <input type="password" id="confirmPassword" required>
-                    </div>
-                    <div class="form-actions">
-                        <button type="button" onclick="closeChangePasswordModal()">Hủy</button>
-                        <button type="submit" class="primary-button">Đổi mật khẩu</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-}
 
-function closeChangePasswordModal() {
-    const modal = document.querySelector(".modal-overlay");
-    if (modal) {
-        modal.remove();
-    }
-}
+
+
 
 async function handleChangePassword(event) {
     event.preventDefault();
-    
+
     const currentPassword = document.getElementById("currentPassword").value;
     const newPassword = document.getElementById("newPassword").value;
     const confirmPassword = document.getElementById("confirmPassword").value;
-    
+
     if (newPassword !== confirmPassword) {
         showNotification("Mật khẩu xác nhận không khớp", "error");
         return;
     }
-    
+
     try {
         const userId = getCurrentUserId();
         const response = await fetch(`http://localhost:8080/employee/doi-mat-khau`, {
@@ -2315,7 +2274,7 @@ async function handleChangePassword(event) {
                 newPassword: newPassword
             }),
         });
-        
+
         if (response.ok) {
             showNotification("Đổi mật khẩu thành công!", "success");
             closeChangePasswordModal();
@@ -2327,7 +2286,6 @@ async function handleChangePassword(event) {
         showNotification("Lỗi: " + error.message, "error");
     }
 }
-
 // Logout Function
 function performLogout() {
     // Clear localStorage
