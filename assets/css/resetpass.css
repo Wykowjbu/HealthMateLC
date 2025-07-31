@@ -10,12 +10,14 @@ body {
 
 .container {
     background: white;
+
     padding: 40px;
     border-radius: 8px;
 
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     width: 500px;
     height: 250px
+
 }
 
 .form {
@@ -51,7 +53,9 @@ input {
 
 button {
     padding: 10px;
+
     background-color: #F19C0A;
+
     color: white;
     border: none;
     border-radius: 4px;
@@ -60,14 +64,18 @@ button {
 }
 
 button:hover {
+
     background-color: #F26D3D;
+
 }
 
 a {
     display: block;
     text-align: center;
     margin-top: 10px;
+
     color: rgba(248, 128, 5, 1);
+
     text-decoration: none;
     font-size: 12px;
 }
@@ -83,6 +91,7 @@ a:hover {
 
 .step1.active, .step2.active, .step3.active {
     display: block;
+
 }
 
 #f-name{
@@ -201,4 +210,5 @@ html>body {
 }
 .toast-close:hover {
   opacity: 1;
+
 }

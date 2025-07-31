@@ -56,41 +56,32 @@
             </nav>
         </aside>
 
-        <header class="header">
-            <h1 class="header-title">Quầy bán hàng</h1>
+        <header class="header" onclick="handleUserProfile()">
+            <h1 class="header-title" id="branch">Chưa gán chi nhánh</h1>
             <div class="header-actions">
-                <button class="check-in-btn">
-                    <span class="material-icons">access_time</span>
+                <button class="btn btn-primary" onclick="handleCreateSchedule()">
+                    <span class="material-icons">add</span>
                     Check-in
                 </button>
-                <div class="user-profile" id="userProfileDropdown">
-                    <div class="avatar" id="employeeAvatar">NV</div>
+
+                <div class="user-profile">
+                    <div class="avatar">QL</div>
                     <div>
-                        <div style="font-weight: 500;" id="employeeName">Đang tải...</div>
-                        <div style="font-size: 12px; color: #718096;" id="employeeRole">Long Châu</div>
+                        <div id="userFullName" style="font-weight: 500">Loading...</div>
+                        <div id="userPharmacyName" style="font-size: 12px; color: #718096">Nhân viên chi nhánh</div>
                     </div>
-                    <span class="material-icons" id="dropdownIcon">expand_more</span>
-                    
-                    <!-- Dropdown Menu -->
-                    <div class="dropdown-menu" id="userDropdownMenu">
-                        <div class="dropdown-item" onclick="showEmployeeDetails()">
+                    <span class="material-icons">expand_more</span>
+                    <div class="user-dropdown" id="userDropdown">
+                        <div class="dropdown-item" onclick="showUserInfo()">
                             <span class="material-icons">person</span>
                             <span>Thông tin cá nhân</span>
                         </div>
-                        <div class="dropdown-item" onclick="showEmployeeSchedule()">
-                            <span class="material-icons">schedule</span>
-                            <span>Lịch làm việc</span>
-                        </div>
-                        <div class="dropdown-item" onclick="changePassword()">
-                            <span class="material-icons">lock</span>
-                            <span>Đổi mật khẩu</span>
-                        </div>
-                        <div class="dropdown-divider"></div>
-                        <div class="dropdown-item logout" onclick="logout()">
+                        <div class="dropdown-item" onclick="logout()">
                             <span class="material-icons">logout</span>
                             <span>Đăng xuất</span>
                         </div>
                     </div>
+
                 </div>
             </div>
         </header>
@@ -194,18 +185,18 @@
                                 <span class="material-icons">close</span>
                             </button>
                         </div>
-                        
+
                         <form id="customerForm">
                             <div class="form-group">
                                 <label for="fullName">Họ và tên *</label>
                                 <input type="text" id="fullName" placeholder="Nhập họ và tên..." required>
                             </div>
-                            
+
                             <div class="form-group">
                                 <label for="phone">Số điện thoại *</label>
                                 <input type="tel" id="phone" placeholder="Nhập số điện thoại..." required>
                             </div>
-                            
+
                             <div class="form-group">
                                 <label for="email">Email</label>
                                 <input type="email" id="email" placeholder="Nhập email...">
@@ -231,6 +222,7 @@
                                 <textarea id="medicalHistory" placeholder="Nhập tiền sử bệnh lý..." rows="3"></textarea>
                             </div>
                             
+
                             <div class="form-group">
                                 <label for="allergies">Dị ứng</label>
                                 <textarea id="allergies" placeholder="Các thành phần dị ứng..." rows="3"></textarea>
@@ -679,25 +671,86 @@
             </div>
 
             <!-- Schedule Container -->
-            <div class="schedule-container" id="scheduleContainer" style="display: none;">
-                <h3 class="form-title">
-                    <span class="material-icons">today</span>
-                    Lịch làm việc hôm nay
-                </h3>
-                <div class="schedule-today">
-                    <div class="schedule-info">
-                        <div class="schedule-time">8:00 - 16:00</div>
-                        <div class="schedule-details">
-                            <div style="font-weight: 500;">Ca sáng</div>
-                            <div style="font-size: 12px; color: #718096;">Thứ 2, 12/05/2025</div>
+            <div id="scheduleContainer" style="display: none;">
+                <h2>Lịch làm việc tuần này</h2>
+                <div style="margin-top: 20px;"></div>
+                <div class="schedule-grid"></div>
+
+                <!-- Check-in/Check-out Section - Auto Display -->
+                <div class="checkin-container" id="checkinContainer">
+                    <div class="checkin-header">
+                        <h3 class="section-title">
+                            <span class="material-icons">access_time</span>
+                            Chấm công hôm nay
+                        </h3>
+                        <div class="current-time" id="currentTime"></div>
+                    </div>
+
+                    <div class="checkin-content">
+                        <!-- Status Card -->
+                        <div class="status-card">
+                            <div class="status-header">
+                                <span class="material-icons">schedule</span>
+                                <h4>Trạng thái làm việc</h4>
+                            </div>
+                            <div class="status-body">
+                                <div class="status-item">
+                                    <span class="status-label">Check-in:</span>
+                                    <span class="status-value" id="checkinStatus">Chưa check-in</span>
+                                </div>
+                                <div class="status-item">
+                                    <span class="status-label">Check-out:</span>
+                                    <span class="status-value" id="checkoutStatus">Chưa check-out</span>
+                                </div>
+                                <div class="status-item">
+                                    <span class="status-label">Thời gian làm việc:</span>
+                                    <span class="status-value" id="workDuration">0 giờ 0 phút</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="checkin-actions">
+                            <button class="checkin-btn" id="checkinBtn" onclick="handleCheckIn()">
+                                <span class="material-icons">login</span>
+                                <span class="btn-text">Check-in</span>
+                                <span class="loading-spinner" style="display: none;">
+                    <span class="material-icons spinning">refresh</span>
+                </span>
+                            </button>
+
+                            <button class="checkout-btn" id="checkoutBtn" onclick="handleCheckOut()" disabled>
+                                <span class="material-icons">logout</span>
+                                <span class="btn-text">Check-out</span>
+                                <span class="loading-spinner" style="display: none;">
+                    <span class="material-icons spinning">refresh</span>
+                </span>
+                            </button>
+
+                            <button class="refresh-btn" id="refreshBtn" onclick="refreshTimesheetStatus()">
+                                <span class="material-icons">refresh</span>
+                                Làm mới
+                            </button>
+                        </div>
+
+                        <!-- Work Schedule Today -->
+                        <div class="schedule-today">
+                            <h4>
+                                <span class="material-icons">today</span>
+                                Lịch làm việc hôm nay
+                            </h4>
+                            <div class="schedule-list" id="scheduleToday">
+                                <p>Đang tải lịch làm việc...</p>
+                            </div>
                         </div>
                     </div>
-                    <div class="status-working">Đang làm việc</div>
                 </div>
             </div>
+
         </main>
     </div>
 
     <script src="assets/js/employee.js"></script>
+    <script src="assets/js/employee_CheckIn_CheckOut.js"></script>
 </body>
 </html>

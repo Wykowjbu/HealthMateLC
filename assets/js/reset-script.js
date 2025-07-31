@@ -12,7 +12,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('requestOtpButton').addEventListener('click', async () => {
         const username = document.getElementById('resetUsername').value;
+
         if (!username) return showToast('Vui lòng nhập tên đăng nhập');
+
 
         try {
             console.log('Sending request to: http://localhost:8080/api/auth/request-otp');
@@ -31,6 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('Step1 active:', step1.classList.contains('active'));
                 console.log('Step2 active:', step2.classList.contains('active'));
             } else {
+
                 showToast(`Lỗi: ${response.status} - ${responseText || 'Lỗi server'}`);
             }
         } catch (error) {
@@ -42,7 +45,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('verifyOtpButton').addEventListener('click', async () => {
         const username = document.getElementById('resetUsername').value;
         const otp = document.getElementById('otp').value;
+
         if (!otp) return showToast('Vui lòng nhập OTP');
+
 
         try {
             const response = await fetch('http://localhost:8080/api/auth/verify-otp', {
@@ -54,10 +59,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 step2.classList.remove('active');
                 step3.classList.add('active');
             } else {
+
                 showToast('OTP không hợp lệ');
             }
         } catch (error) {
             showToast('Lỗi Hệ Thống');
+
         }
     });
 
@@ -66,8 +73,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const newPassword = document.getElementById('newPassword').value;
         const confirmPassword = document.getElementById('confirmPassword').value;
 
+
         if (newPassword !== confirmPassword) return showToast('Mật khẩu không khớp');
         if (!newPassword) return showToast('Vui lòng nhập mật khẩu mới');
+
 
         try {
             const response = await fetch('http://localhost:8080/api/auth/change-password', {
@@ -125,3 +134,4 @@ function showToast(message) {
     setTimeout(() => toast.remove(), 300);
   }, 5000);
 }
+
