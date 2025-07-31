@@ -6,9 +6,10 @@ let panelItems = document.querySelectorAll(".panel");
 let listPharmacy = [];
 let allProducts = [];
 let allStores = [];
-let currentPage = 0; // dùng cho nhà thuốc
+let currentPage = 1; // dùng cho sản phẩm (1-based), stores sẽ convert về 0-based khi cần
 const pageSize = 6; // dùng cho nhà thuốc, mỗi trang 6 nhà thuốc
 let totalPages = 0;
+let totalProducts = 0;
 let isSearching = false;
 let currentSearchParams = {};
 let listUsersByPharmacy = {}; // Store users data by pharmacy
@@ -22,12 +23,12 @@ async function checkSessionOnLoad() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-  checkSessionOnLoad(); // <--- Add this line
+  checkSessionOnLoad();
+  loadInitialData();
   initializeNavigation();
   initializeUserDropdown();
   initializeProductSearch();
   initializeStoreSearch();
-  loadInitialData();
   attachAddStoreButtonEvent();
   initializeModals();
 });
@@ -232,9 +233,28 @@ function renderContent(type) {
 
 // Load initial data for list-accounts panel
 function loadInitialData() {
-  renderListAccounts();
-  document.querySelectorAll(".nav-item")[0].classList.add("active");
-  document.querySelectorAll(".panel")[0].classList.add("active");
+  const firstNavItem = document.querySelector(
+    ".nav-item[data-type='list-accounts']"
+  );
+
+  if (firstNavItem) {
+    // Activate the first nav item
+    navItems.forEach((item) => item.classList.remove("active"));
+    firstNavItem.classList.add("active");
+
+    // Activate the corresponding panel
+    panelItems.forEach((panel) => panel.classList.remove("active"));
+    const panel = document.getElementById("panel-list-accounts");
+    if (panel) {
+      panel.classList.add("active");
+    }
+
+    // Update header title
+    updateHeaderTitle("list-accounts");
+
+    // Load data for the first panel
+    renderListAccounts();
+  }
 }
 
 // ============================================================================
@@ -255,7 +275,7 @@ function renderListAccounts() {
       const listPharmacyData = data.listPharmacies;
       console.log("List pharmacies:", listPharmacyData);
       const listUser = data.listUsersByPharmacy;
-
+      console.log("List users by pharmacy:", listUser);
       // Store pharmacy data globally
       listPharmacy = listPharmacyData;
 
@@ -418,6 +438,7 @@ function showUsersForPharmacy(users) {
 }
 
 function showUserDetails(user) {
+  console.log(user);
   const usersWrapper = document.querySelector(".list-users-wrapper");
   const detailsWrapper = document.querySelector(".user-details-wrapper");
   if (!usersWrapper || !detailsWrapper) return;
@@ -444,27 +465,27 @@ function showUserDetails(user) {
           </div>
         </div>
       </div>
-      
+
       <div class="user-details-field">
         <label>Email</label>
         <p>${user.email}</p>
       </div>
-      
+
       <div class="user-details-field">
         <label>Số điện thoại</label>
         <p>${user.phone}</p>
       </div>
-      
+
       <div class="user-details-field">
         <label>Tên đăng nhập</label>
         <p>${user.username || "N/A"}</p>
       </div>
-      
+
       <div class="user-details-field">
         <label>Trạng thái</label>
-        <p>${user.active ? "Hoạt động" : "Vô hiệu hóa"}</p>
+        <p>${user.isActive ? "Hoạt động" : "Vô hiệu hóa"}</p>
       </div>
-      
+
       <div class="user-actions">
         <button id="edit-user-btn" class="btn btn-primary">
           <span class="material-icons">edit</span>
@@ -538,30 +559,80 @@ function initializeModals() {
     .addEventListener("submit", handleResetPassword);
 }
 
-// Open edit user modal
-function openEditUserModal(user) {
-  // Store the user being edited
-  currentEditingUser = { ...user };
+function handleResetPassword(e) {
+  e.preventDefault();
 
-  const modal = document.querySelector("#editUserModal");
-  modal.style.display = "block";
+  // Get form data
+  const userId = document.getElementById("reset-user-id").value;
+  const newPassword = document.getElementById("new-password").value;
+  const confirmPassword = document.getElementById("confirm-password").value;
 
-  // Add form submission handler
-  const editUserForm = document.getElementById("editUserForm");
-  if (editUserForm) {
-    editUserForm.addEventListener("submit", handleEditUser);
+  // Validate form data
+  if (!newPassword || !confirmPassword) {
+    showFormError("resetPasswordForm", "Vui lòng nhập đầy đủ thông tin");
+    return;
   }
 
-  // Populate form fields
-  document.getElementById("edit-user-id").value = user.userId;
-  document.getElementById("edit-username").value = user.username || "";
-  document.getElementById("edit-fullname").value = user.fullName || "";
-  document.getElementById("edit-email").value = user.email || "";
-  document.getElementById("edit-phone").value = user.phone || "";
-  document.getElementById("edit-role").value = user.role;
-  document.getElementById("edit-status").value = user.active
-    ? "active"
-    : "inactive";
+  if (newPassword.length < 6) {
+    showFormError("resetPasswordForm", "Mật khẩu phải có ít nhất 6 ký tự");
+    return;
+  }
+
+  if (newPassword !== confirmPassword) {
+    showFormError("resetPasswordForm", "Mật khẩu xác nhận không khớp");
+    return;
+  }
+
+  // Check password strength
+  const strength = calculatePasswordStrength(newPassword);
+  if (strength.score < 30) {
+    showFormError(
+      "resetPasswordForm",
+      "Mật khẩu quá yếu. Vui lòng chọn mật khẩu mạnh hơn."
+    );
+    return;
+  }
+
+  // Send API request to reset password
+  resetUserPassword(userId, newPassword);
+}
+
+function resetUserPassword(userId, newPassword) {
+  showLoading("resetPasswordModal");
+
+  fetch(`http://localhost:8080/admin/reset-password/${userId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      newPassword: newPassword,
+    }),
+  })
+    .then((response) => {
+      if (!response.ok) {
+        // Show success message
+        showToast(data.message || "Đặt lại mật khẩu thành công");
+      }
+      return response.json();
+    })
+    .then((data) => {
+      showToast(data.message || "Đặt lại mật khẩu thành công");
+      // Close modal
+      document.getElementById("resetPasswordModal").style.display = "none";
+      // Reset form
+      document.getElementById("new-password").value = "";
+      document.getElementById("confirm-password").value = "";
+    })
+    .catch((error) => {
+      showFormError(
+        "resetPasswordForm",
+        error.message || "Lỗi khi đặt lại mật khẩu"
+      );
+    })
+    .finally(() => {
+      hideLoading("resetPasswordModal");
+    });
 }
 
 // Initialize password validation when modal opens
@@ -607,21 +678,6 @@ function openResetPasswordModal(user) {
 
   // Initialize password validation
   initializePasswordValidation();
-}
-
-// Toggle password visibility
-function togglePasswordVisibility(inputId) {
-  const input = document.getElementById(inputId);
-  const button = input.parentElement.querySelector(".password-toggle");
-  const icon = button.querySelector(".material-icons");
-
-  if (input.type === "password") {
-    input.type = "text";
-    icon.textContent = "visibility_off";
-  } else {
-    input.type = "password";
-    icon.textContent = "visibility";
-  }
 }
 
 // Add password validation and UX improvements
@@ -737,6 +793,254 @@ function calculatePasswordStrength(password) {
   }
 
   return { score: Math.min(score, 100), feedback };
+}
+
+// Handle edit user form submission
+function handleEditUser(e) {
+  e.preventDefault();
+
+  // Get form data
+  const userId = document.getElementById("edit-user-id").value;
+  const userData = {
+    fullName: document.getElementById("edit-fullname").value,
+    email: document.getElementById("edit-email").value,
+    phone: document.getElementById("edit-phone").value,
+    role: document.getElementById("edit-role").value,
+    isActive: document.getElementById("edit-status").value === "active",
+  };
+  console.log("User data:", userData);
+
+  // Validate form data
+  if (!userData.fullName || !userData.email || !userData.phone) {
+    showFormError("editUserForm", "Vui lòng nhập đầy đủ thông tin");
+    return;
+  }
+  // Send API request to update user
+  updateUser(userId, userData);
+}
+
+// Update user via API
+function updateUser(userId, userData) {
+  showLoading("editUserModal");
+
+  fetch(`http://localhost:8080/admin/update-account/${userId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(userData),
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error("Lỗi khi cập nhật thông tin tài khoản");
+      }
+      return response.json();
+    })
+    .then((data) => {
+      // Close modal
+      document.getElementById("editUserModal").style.display = "none";
+
+      // Show success message
+      showToast("Cập nhật thông tin tài khoản thành công");
+
+      // Update user info in real-time instead of reloading all data
+      updateUserInRealTime(userId, userData);
+    })
+    .catch((error) => {
+      console.error("Error updating user:", error);
+      showFormError("editUserForm", "Lỗi khi cập nhật thông tin tài khoản");
+    })
+    .finally(() => {
+      hideLoading("editUserModal");
+    });
+}
+
+// Helper function to update user details view
+function updateUserDetailsView(updatedUser) {
+  const userDetails = document.querySelector(".user-details");
+  if (!userDetails) return;
+
+  // Update name and avatar
+  const nameElement = userDetails.querySelector(".user-details-info h2");
+  const avatarElement = userDetails.querySelector(".user-details-avatar");
+
+  if (nameElement) nameElement.textContent = updatedUser.fullName;
+  if (avatarElement) {
+    const initials = updatedUser.fullName
+      .split(" ")
+      .map((name) => name.charAt(0))
+      .join("")
+      .substring(0, 2)
+      .toUpperCase();
+    avatarElement.textContent = initials;
+  }
+
+  // Update role
+  const roleElement = userDetails.querySelector(".user-details-role");
+  if (roleElement) {
+    roleElement.textContent =
+      updatedUser.role === "manager" ? "Quản lý" : "Nhân viên";
+    roleElement.className = `user-details-role ${updatedUser.role}`;
+  }
+
+  // Update contact info
+  const emailField = userDetails.querySelector(
+    ".user-details-field:nth-child(3) p"
+  );
+  const phoneField = userDetails.querySelector(
+    ".user-details-field:nth-child(4) p"
+  );
+
+  if (emailField) emailField.textContent = updatedUser.email;
+  if (phoneField) phoneField.textContent = updatedUser.phone;
+
+  // Update the edit button click handler with new user data
+  const editBtn = userDetails.querySelector("#edit-user-btn");
+  if (editBtn) {
+    editBtn.removeEventListener("click", editBtn.clickHandler);
+    editBtn.clickHandler = () => openEditUserModal(updatedUser);
+    editBtn.addEventListener("click", editBtn.clickHandler);
+  }
+}
+
+// Update user data in the global cache
+function updateUserInCache(userId, updatedData) {
+  // Find and update user in all pharmacy caches
+  Object.keys(listUsersByPharmacy).forEach((pharmacyId) => {
+    const users = listUsersByPharmacy[pharmacyId];
+    const userIndex = users.findIndex((user) => user.userId === userId);
+
+    if (userIndex !== -1) {
+      // Update user data in cache
+      listUsersByPharmacy[pharmacyId][userIndex] = {
+        ...listUsersByPharmacy[pharmacyId][userIndex],
+        fullName: updatedData.fullName,
+        email: updatedData.email,
+        phone: updatedData.phone,
+        role: updatedData.role,
+        status: updatedData.isActive ? "active" : "inactive",
+      };
+    }
+  });
+}
+
+// Show loading state in modal
+function showLoading(modalId) {
+  const modal = document.getElementById(modalId);
+  const submitBtn = modal.querySelector('button[type="submit"]');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML =
+      '<span class="material-icons spinning">refresh</span> Đang xử lý...';
+  }
+}
+
+// Hide loading state in modal
+function hideLoading(modalId) {
+  const modal = document.getElementById(modalId);
+  const submitBtn = modal.querySelector('button[type="submit"]');
+
+  if (submitBtn) {
+    submitBtn.disabled = false;
+
+    if (modalId === "editUserModal") {
+      submitBtn.innerHTML = "Lưu thay đổi";
+    } else if (modalId === "resetPasswordModal") {
+      submitBtn.innerHTML = "Đặt lại mật khẩu";
+    }
+  }
+}
+
+// Toast notification
+function showToast(message) {
+  // Create toast container if it doesn't exist
+  let toastContainer = document.querySelector(".toast-container");
+
+  if (!toastContainer) {
+    toastContainer = document.createElement("div");
+    toastContainer.className = "toast-container";
+    document.body.appendChild(toastContainer);
+  }
+
+  // Create toast
+  const toast = document.createElement("div");
+  toast.className = "toast";
+  toast.innerHTML = `
+    <div class="toast-content">
+      <span class="material-icons toast-icon">check_circle</span>
+      <span class="toast-message">${message}</span>
+    </div>
+    <span class="toast-close">&times;</span>
+  `;
+
+  // Add toast to container
+  toastContainer.appendChild(toast);
+
+  // Animation
+  setTimeout(() => toast.classList.add("show"), 10);
+
+  // Close button functionality
+  toast.querySelector(".toast-close").addEventListener("click", () => {
+    toast.classList.remove("show");
+    setTimeout(() => toast.remove(), 300);
+  });
+
+  setTimeout(() => {
+    toast.classList.remove("show");
+    setTimeout(() => toast.remove(), 300);
+  }, 5000);
+}
+
+// Utility functions for handling forms
+function showFormError(formId, message) {
+  const form = document.getElementById(formId);
+  let errorDiv = form.querySelector(".error-message");
+
+  if (!errorDiv) {
+    errorDiv = document.createElement("div");
+    errorDiv.className = "error-message";
+    form.insertBefore(errorDiv, form.firstChild);
+  }
+
+  errorDiv.textContent = message;
+  errorDiv.style.display = "block";
+
+  // Hide error after 5 seconds
+  setTimeout(() => {
+    errorDiv.style.display = "none";
+  }, 5000);
+}
+
+// close edit user modal
+function closeEditUserModal() {
+  const modal = document.querySelector("#editUserModal");
+  modal.style.display = "none";
+}
+
+// Open edit user modal
+function openEditUserModal(user) {
+  // Store the user being edited
+  currentEditingUser = { ...user };
+
+  const modal = document.querySelector("#editUserModal");
+  modal.style.display = "block";
+
+  // Add form submission handler
+  const editUserForm = document.getElementById("editUserForm");
+  if (editUserForm) {
+    editUserForm.addEventListener("submit", handleEditUser);
+  }
+
+  // Populate form fields
+  document.getElementById("edit-user-id").value = user.userId;
+  document.getElementById("edit-username").value = user.username || "";
+  document.getElementById("edit-fullname").value = user.fullName || "";
+  document.getElementById("edit-email").value = user.email || "";
+  document.getElementById("edit-phone").value = user.phone || "";
+  document.getElementById("edit-role").value = user.role;
+  document.getElementById("edit-status").value = user.isActive
+    ? "active"
+    : "inactive";
 }
 
 // Handle edit user form submission
@@ -983,707 +1287,6 @@ function hideLoading(modalId) {
       submitBtn.innerHTML = "Đặt lại mật khẩu";
     }
   }
-}
-
-// Toast notification
-function showToast(message) {
-  // Create toast container if it doesn't exist
-  let toastContainer = document.querySelector(".toast-container");
-
-  if (!toastContainer) {
-    toastContainer = document.createElement("div");
-    toastContainer.className = "toast-container";
-    document.body.appendChild(toastContainer);
-  }
-
-  // Create toast
-  const toast = document.createElement("div");
-  toast.className = "toast";
-  toast.innerHTML = `
-    <div class="toast-content">
-      <span class="material-icons toast-icon">check_circle</span>
-      <span class="toast-message">${message}</span>
-    </div>
-    <span class="toast-close">&times;</span>
-  `;
-
-  // Add toast to container
-  toastContainer.appendChild(toast);
-
-  // Animation
-  setTimeout(() => toast.classList.add("show"), 10);
-
-  // Close button functionality
-  toast.querySelector(".toast-close").addEventListener("click", () => {
-    toast.classList.remove("show");
-    setTimeout(() => toast.remove(), 300);
-  });
-
-  setTimeout(() => {
-    toast.classList.remove("show");
-    setTimeout(() => toast.remove(), 300);
-  }, 5000);
-}
-
-// Utility functions for handling forms
-function showFormError(formId, message) {
-  const form = document.getElementById(formId);
-  let errorDiv = form.querySelector(".error-message");
-
-  if (!errorDiv) {
-    errorDiv = document.createElement("div");
-    errorDiv.className = "error-message";
-    form.insertBefore(errorDiv, form.firstChild);
-  }
-
-  errorDiv.textContent = message;
-  errorDiv.style.display = "block";
-
-  // Hide error after 5 seconds
-  setTimeout(() => {
-    errorDiv.style.display = "none";
-  }, 5000);
-}
-
-// close edit user modal
-function closeEditUserModal() {
-  const modal = document.querySelector("#editUserModal");
-  modal.style.display = "none";
-}
-
-function showUserDetails(user) {
-  const usersWrapper = document.querySelector(".list-users-wrapper");
-  const detailsWrapper = document.querySelector(".user-details-wrapper");
-  console.log("Showing details for user:", user);
-  if (!usersWrapper || !detailsWrapper) return;
-  const initials = user.fullName
-    .split(" ")
-    .map((name) => name.charAt(0))
-    .join("")
-    .substring(0, 2)
-    .toUpperCase();
-  detailsWrapper.innerHTML = `
-    <div class="back-button">
-      <span class="material-icons">arrow_back</span>
-      <span>Quay lại</span>
-    </div>
-    <div class="user-details">
-      <div class="user-details-header">
-        <div class="user-details-avatar">${initials}</div>
-        <div class="user-details-info">
-          <h2>${user.fullName}</h2>
-          <div class="user-details-role ${
-            user.role === "manager" ? "manager" : "employee"
-          }">
-            ${user.role === "manager" ? "Quản lý" : "Nhân viên"}
-          </div>
-        </div>
-      </div>
-      
-      <div class="user-details-field">
-        <label>Email</label>
-        <p>${user.email}</p>
-      </div>
-      
-      <div class="user-details-field">
-        <label>Số điện thoại</label>
-        <p>${user.phone}</p>
-      </div>
-      
-      <div class="user-details-field">
-        <label>Tên đăng nhập</label>
-        <p>${user.username || "N/A"}</p>
-      </div>
-      
-      <div class="user-details-field">
-        <label>Trạng thái</label>
-        <p>${user.active ? "Hoạt động" : "Vô hiệu hóa"}</p>
-      </div>
-      
-      <div class="user-actions">
-        <button id="edit-user-btn" class="btn btn-primary">
-          <span class="material-icons">edit</span>
-          Sửa thông tin
-        </button>
-        <button id="reset-password-btn" class="btn btn-secondary">
-          <span class="material-icons">lock</span>
-          Đặt lại mật khẩu
-        </button>
-      </div>
-    </div>
-  `;
-  //Add back button event listener
-  detailsWrapper.querySelector(".back-button").addEventListener("click", () => {
-    usersWrapper.classList.remove("slide-left");
-    detailsWrapper.classList.remove("slide-right");
-  });
-
-  // Add edit user button event listener
-  const editBtn = detailsWrapper.querySelector("#edit-user-btn");
-  if (editBtn) {
-    editBtn.clickHandler = () => openEditUserModal(user);
-    editBtn.addEventListener("click", editBtn.clickHandler);
-  }
-
-  // Add reset password button event listener
-  const resetPasswordBtn = detailsWrapper.querySelector("#reset-password-btn");
-  if (resetPasswordBtn) {
-    resetPasswordBtn.addEventListener("click", () => {
-      openResetPasswordModal(user);
-    });
-  }
-  // Apply sliding effect
-  usersWrapper.classList.add("slide-left");
-  detailsWrapper.classList.add("slide-right");
-}
-
-function initializeModals() {
-  // Close modal when clicking X or cancel button
-  document
-    .querySelectorAll(".close-modal, .close-modal-btn")
-    .forEach((element) => {
-      element.addEventListener("click", function () {
-        document.querySelectorAll(".modal").forEach((modal) => {
-          modal.style.display = "none";
-        });
-        // Reset current editing user when closing modal
-        currentEditingUser = null;
-      });
-    });
-
-  // Close modal when clicking outside
-  window.addEventListener("click", function (event) {
-    document.querySelectorAll(".modal").forEach((modal) => {
-      if (event.target === modal) {
-        modal.style.display = "none";
-        // Reset current editing user when closing modal
-        currentEditingUser = null;
-      }
-    });
-  });
-
-  // Handle edit user form submission
-  document
-    .getElementById("editUserForm")
-    .addEventListener("submit", handleEditUser);
-
-  // Handle reset password form submission
-  document
-    .getElementById("resetPasswordForm")
-    .addEventListener("submit", handleResetPassword);
-}
-
-// Open edit user modal
-function openEditUserModal(user) {
-  // Store the user being edited
-  currentEditingUser = { ...user };
-
-  const modal = document.querySelector("#editUserModal");
-  modal.style.display = "block";
-
-  // Add form submission handler
-  const editUserForm = document.getElementById("editUserForm");
-  if (editUserForm) {
-    editUserForm.addEventListener("submit", handleEditUser);
-  }
-
-  // Populate form fields
-  document.getElementById("edit-user-id").value = user.userId;
-  document.getElementById("edit-username").value = user.username || "";
-  document.getElementById("edit-fullname").value = user.fullName || "";
-  document.getElementById("edit-email").value = user.email || "";
-  document.getElementById("edit-phone").value = user.phone || "";
-  document.getElementById("edit-role").value = user.role;
-  document.getElementById("edit-status").value = user.active
-    ? "active"
-    : "inactive";
-}
-
-// Initialize password validation when modal opens
-function openResetPasswordModal(user) {
-  const modal = document.querySelector("#resetPasswordModal");
-  modal.style.display = "block";
-
-  // Populate form fields
-  document.getElementById("reset-user-id").value = user.userId;
-  document.getElementById("user-display").value = `${user.fullName} (${
-    user.username || user.email
-  })`;
-
-  // Clear password fields
-  document.getElementById("new-password").value = "";
-  document.getElementById("confirm-password").value = "";
-
-  // Reset field styles
-  document.getElementById("new-password").style.borderColor = "";
-  document.getElementById("confirm-password").style.borderColor = "";
-
-  // Reset password strength indicator
-  const strengthIndicator = document.getElementById("password-strength");
-  const strengthBar = document.querySelector(".strength-bar");
-  const strengthText = document.querySelector(".strength-text");
-
-  if (strengthIndicator) {
-    strengthIndicator.classList.remove("show");
-  }
-  if (strengthBar) {
-    strengthBar.className = "strength-bar";
-  }
-  if (strengthText) {
-    strengthText.className = "strength-text";
-    strengthText.textContent = "";
-  }
-
-  // Clear any previous error messages
-  const errorDiv = document.querySelector("#resetPasswordForm .error-message");
-  if (errorDiv) {
-    errorDiv.style.display = "none";
-  }
-
-  // Initialize password validation
-  initializePasswordValidation();
-}
-
-// Toggle password visibility
-function togglePasswordVisibility(inputId) {
-  const input = document.getElementById(inputId);
-  const button = input.parentElement.querySelector(".password-toggle");
-  const icon = button.querySelector(".material-icons");
-
-  if (input.type === "password") {
-    input.type = "text";
-    icon.textContent = "visibility_off";
-  } else {
-    input.type = "password";
-    icon.textContent = "visibility";
-  }
-}
-
-// Add password validation and UX improvements
-function initializePasswordValidation() {
-  const newPasswordInput = document.getElementById("new-password");
-  const confirmPasswordInput = document.getElementById("confirm-password");
-  const strengthIndicator = document.getElementById("password-strength");
-  const strengthBar = document.querySelector(".strength-bar");
-  const strengthText = document.querySelector(".strength-text");
-
-  if (newPasswordInput && confirmPasswordInput) {
-    // Real-time password matching validation
-    confirmPasswordInput.addEventListener("input", function () {
-      const newPassword = newPasswordInput.value;
-      const confirmPassword = confirmPasswordInput.value;
-
-      if (confirmPassword && newPassword !== confirmPassword) {
-        confirmPasswordInput.setCustomValidity("Mật khẩu xác nhận không khớp");
-        confirmPasswordInput.style.borderColor = "#e53e3e";
-      } else {
-        confirmPasswordInput.setCustomValidity("");
-        confirmPasswordInput.style.borderColor = "";
-      }
-    });
-
-    // Password strength validation
-    newPasswordInput.addEventListener("input", function () {
-      const password = newPasswordInput.value;
-
-      if (password.length === 0) {
-        strengthIndicator.classList.remove("show");
-        newPasswordInput.setCustomValidity("");
-        newPasswordInput.style.borderColor = "";
-        return;
-      }
-
-      // Show strength indicator
-      strengthIndicator.classList.add("show");
-
-      // Calculate password strength
-      const strength = calculatePasswordStrength(password);
-
-      // Update strength bar and text
-      strengthBar.className = "strength-bar";
-      strengthText.className = "strength-text";
-
-      if (strength.score < 30) {
-        strengthBar.classList.add("weak");
-        strengthText.classList.add("weak");
-        strengthText.textContent = "Yếu - " + strength.feedback;
-        newPasswordInput.setCustomValidity("Mật khẩu quá yếu");
-        newPasswordInput.style.borderColor = "#e53e3e";
-      } else if (strength.score < 70) {
-        strengthBar.classList.add("medium");
-        strengthText.classList.add("medium");
-        strengthText.textContent = "Trung bình - " + strength.feedback;
-        newPasswordInput.setCustomValidity("");
-        newPasswordInput.style.borderColor = "#f6ad55";
-      } else {
-        strengthBar.classList.add("strong");
-        strengthText.classList.add("strong");
-        strengthText.textContent = "Mạnh - Mật khẩu tốt";
-        newPasswordInput.setCustomValidity("");
-        newPasswordInput.style.borderColor = "#38a169";
-      }
-
-      // Recheck confirm password when new password changes
-      if (confirmPasswordInput.value) {
-        confirmPasswordInput.dispatchEvent(new Event("input"));
-      }
-    });
-  }
-}
-
-// Calculate password strength
-function calculatePasswordStrength(password) {
-  let score = 0;
-  let feedback = "";
-
-  // Length check
-  if (password.length >= 8) {
-    score += 25;
-  } else if (password.length >= 6) {
-    score += 10;
-    feedback = "Nên dài hơn 8 ký tự";
-  } else {
-    feedback = "Quá ngắn";
-    return { score, feedback };
-  }
-
-  // Character variety checks
-  if (/[a-z]/.test(password)) score += 15;
-  if (/[A-Z]/.test(password)) score += 15;
-  if (/[0-9]/.test(password)) score += 15;
-  if (/[^A-Za-z0-9]/.test(password)) score += 20;
-
-  // Additional complexity
-  if (password.length >= 12) score += 10;
-
-  // Feedback based on missing elements
-  const missing = [];
-  if (!/[a-z]/.test(password)) missing.push("chữ thường");
-  if (!/[A-Z]/.test(password)) missing.push("chữ hoa");
-  if (!/[0-9]/.test(password)) missing.push("số");
-  if (!/[^A-Za-z0-9]/.test(password)) missing.push("ký tự đặc biệt");
-
-  if (missing.length > 0 && feedback === "") {
-    feedback = "Thêm " + missing.join(", ");
-  }
-
-  if (feedback === "") {
-    feedback = "Mật khẩu mạnh";
-  }
-
-  return { score: Math.min(score, 100), feedback };
-}
-
-// Handle edit user form submission
-function handleEditUser(e) {
-  e.preventDefault();
-
-  // Get form data
-  const userId = document.getElementById("edit-user-id").value;
-  const userData = {
-    fullName: document.getElementById("edit-fullname").value,
-    email: document.getElementById("edit-email").value,
-    phone: document.getElementById("edit-phone").value,
-    role: document.getElementById("edit-role").value,
-    isActive: document.getElementById("edit-status").value === "active",
-  };
-  console.log("User data:", userData);
-
-  // Validate form data
-  if (!userData.fullName || !userData.email || !userData.phone) {
-    showFormError("editUserForm", "Vui lòng nhập đầy đủ thông tin");
-    return;
-  }
-  // Send API request to update user
-  updateUser(userId, userData);
-}
-
-// Update user via API
-function updateUser(userId, userData) {
-  showLoading("editUserModal");
-
-  fetch(`http://localhost:8080/admin/update-account/${userId}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(userData),
-  })
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error("Lỗi khi cập nhật thông tin tài khoản");
-      }
-      return response.json();
-    })
-    .then((data) => {
-      // Close modal
-      document.getElementById("editUserModal").style.display = "none";
-
-      // Show success message
-      showToast("Cập nhật thông tin tài khoản thành công");
-
-      // Update user info in real-time instead of reloading all data
-      updateUserInRealTime(userId, userData);
-    })
-    .catch((error) => {
-      console.error("Error updating user:", error);
-      showFormError("editUserForm", "Lỗi khi cập nhật thông tin tài khoản");
-    })
-    .finally(() => {
-      hideLoading("editUserModal");
-    });
-}
-
-// Update user info in real-time without reloading
-function updateUserInRealTime(userId, updatedData) {
-  if (!currentEditingUser) return;
-
-  // Update user data in the global cache
-  updateUserInCache(userId, updatedData);
-
-  // Update pharmacy employee count display
-  updatePharmacyEmployeeCount();
-
-  // Store the updated user info for reference
-  let updatedUser = null;
-
-  // Find the current user details view to get original data
-  const userDetailsWrapper = document.querySelector(".user-details-wrapper");
-  if (
-    userDetailsWrapper &&
-    userDetailsWrapper.classList.contains("slide-right")
-  ) {
-    // Create updated user object with all necessary data
-    updatedUser = {
-      userId: userId,
-      fullName: updatedData.fullName,
-      email: updatedData.email,
-      phone: updatedData.phone,
-      role: updatedData.role,
-      username: currentEditingUser.username || "",
-      status: updatedData.isActive ? "active" : "inactive",
-    };
-
-    // Update the user details view
-    updateUserDetailsView(updatedUser);
-  }
-
-  // Find and update user in the currently displayed user list
-  // Use the original user data before update to find the correct user
-  const userItems = document.querySelectorAll(".user-item");
-  userItems.forEach((userItem) => {
-    const userInfo = userItem.querySelector(".user-info");
-    const emailElement = userInfo?.querySelector("p:first-of-type");
-    const nameElement = userInfo?.querySelector("h4");
-
-    // Find user by original email and name combination
-    if (
-      emailElement &&
-      nameElement &&
-      emailElement.textContent === currentEditingUser.email &&
-      nameElement.textContent === currentEditingUser.fullName
-    ) {
-      // Update user info in the list
-      nameElement.textContent = updatedData.fullName;
-      emailElement.textContent = updatedData.email;
-
-      // Update phone
-      const phoneElement = userInfo.querySelector("p:last-of-type");
-      if (phoneElement) phoneElement.textContent = updatedData.phone;
-
-      // Update role
-      const roleElement = userItem.querySelector(".user-role");
-      if (roleElement) {
-        roleElement.textContent =
-          updatedData.role === "manager" ? "Quản lý" : "Nhân viên";
-        roleElement.className = `user-role ${updatedData.role}`;
-      }
-
-      // Update avatar
-      const avatarElement = userItem.querySelector(".user-avatar");
-      if (avatarElement) {
-        const initials = updatedData.fullName
-          .split(" ")
-          .map((name) => name.charAt(0))
-          .join("")
-          .substring(0, 2)
-          .toUpperCase();
-        avatarElement.textContent = initials;
-      }
-
-      // Update the click handler with new user data
-      if (updatedUser) {
-        userItem.removeEventListener("click", userItem.clickHandler);
-        userItem.clickHandler = () => showUserDetails(updatedUser);
-        userItem.addEventListener("click", userItem.clickHandler);
-      }
-    }
-  });
-
-  // Clear the current editing user
-  currentEditingUser = null;
-}
-
-// Helper function to update user details view
-function updateUserDetailsView(updatedUser) {
-  const userDetails = document.querySelector(".user-details");
-  if (!userDetails) return;
-
-  // Update name and avatar
-  const nameElement = userDetails.querySelector(".user-details-info h2");
-  const avatarElement = userDetails.querySelector(".user-details-avatar");
-
-  if (nameElement) nameElement.textContent = updatedUser.fullName;
-  if (avatarElement) {
-    const initials = updatedUser.fullName
-      .split(" ")
-      .map((name) => name.charAt(0))
-      .join("")
-      .substring(0, 2)
-      .toUpperCase();
-    avatarElement.textContent = initials;
-  }
-
-  // Update role
-  const roleElement = userDetails.querySelector(".user-details-role");
-  if (roleElement) {
-    roleElement.textContent =
-      updatedUser.role === "manager" ? "Quản lý" : "Nhân viên";
-    roleElement.className = `user-details-role ${updatedUser.role}`;
-  }
-
-  // Update contact info
-  const emailField = userDetails.querySelector(
-    ".user-details-field:nth-child(3) p"
-  );
-  const phoneField = userDetails.querySelector(
-    ".user-details-field:nth-child(4) p"
-  );
-
-  if (emailField) emailField.textContent = updatedUser.email;
-  if (phoneField) phoneField.textContent = updatedUser.phone;
-
-  // Update the edit button click handler with new user data
-  const editBtn = userDetails.querySelector("#edit-user-btn");
-  if (editBtn) {
-    editBtn.removeEventListener("click", editBtn.clickHandler);
-    editBtn.clickHandler = () => openEditUserModal(updatedUser);
-    editBtn.addEventListener("click", editBtn.clickHandler);
-  }
-}
-
-// Update user data in the global cache
-function updateUserInCache(userId, updatedData) {
-  // Find and update user in all pharmacy caches
-  Object.keys(listUsersByPharmacy).forEach((pharmacyId) => {
-    const users = listUsersByPharmacy[pharmacyId];
-    const userIndex = users.findIndex((user) => user.userId === userId);
-
-    if (userIndex !== -1) {
-      // Update user data in cache
-      listUsersByPharmacy[pharmacyId][userIndex] = {
-        ...listUsersByPharmacy[pharmacyId][userIndex],
-        fullName: updatedData.fullName,
-        email: updatedData.email,
-        phone: updatedData.phone,
-        role: updatedData.role,
-        status: updatedData.isActive ? "active" : "inactive",
-      };
-    }
-  });
-}
-
-// Show loading state in modal
-function showLoading(modalId) {
-  const modal = document.getElementById(modalId);
-  const submitBtn = modal.querySelector('button[type="submit"]');
-  if (submitBtn) {
-    submitBtn.disabled = true;
-    submitBtn.innerHTML =
-      '<span class="material-icons spinning">refresh</span> Đang xử lý...';
-  }
-}
-
-// Hide loading state in modal
-function hideLoading(modalId) {
-  const modal = document.getElementById(modalId);
-  const submitBtn = modal.querySelector('button[type="submit"]');
-
-  if (submitBtn) {
-    submitBtn.disabled = false;
-
-    if (modalId === "editUserModal") {
-      submitBtn.innerHTML = "Lưu thay đổi";
-    } else if (modalId === "resetPasswordModal") {
-      submitBtn.innerHTML = "Đặt lại mật khẩu";
-    }
-  }
-}
-
-// Toast notification
-function showToast(message) {
-  // Create toast container if it doesn't exist
-  let toastContainer = document.querySelector(".toast-container");
-
-  if (!toastContainer) {
-    toastContainer = document.createElement("div");
-    toastContainer.className = "toast-container";
-    document.body.appendChild(toastContainer);
-  }
-
-  // Create toast
-  const toast = document.createElement("div");
-  toast.className = "toast";
-  toast.innerHTML = `
-    <div class="toast-content">
-      <span class="material-icons toast-icon">check_circle</span>
-      <span class="toast-message">${message}</span>
-    </div>
-    <span class="toast-close">&times;</span>
-  `;
-
-  // Add toast to container
-  toastContainer.appendChild(toast);
-
-  // Animation
-  setTimeout(() => toast.classList.add("show"), 10);
-
-  // Close button functionality
-  toast.querySelector(".toast-close").addEventListener("click", () => {
-    toast.classList.remove("show");
-    setTimeout(() => toast.remove(), 300);
-  });
-
-  setTimeout(() => {
-    toast.classList.remove("show");
-    setTimeout(() => toast.remove(), 300);
-  }, 5000);
-}
-
-// Utility functions for handling forms
-function showFormError(formId, message) {
-  const form = document.getElementById(formId);
-  let errorDiv = form.querySelector(".error-message");
-
-  if (!errorDiv) {
-    errorDiv = document.createElement("div");
-    errorDiv.className = "error-message";
-    form.insertBefore(errorDiv, form.firstChild);
-  }
-
-  errorDiv.textContent = message;
-  errorDiv.style.display = "block";
-
-  // Hide error after 5 seconds
-  setTimeout(() => {
-    errorDiv.style.display = "none";
-  }, 5000);
-}
-
-// close edit user modal
-function closeEditUserModal() {
-  const modal = document.querySelector("#editUserModal");
-  modal.style.display = "none";
 }
 
 // Render add account panel
@@ -1696,14 +1299,10 @@ function renderAddAccount() {
 // SEARCH FUNCTIONALITY
 // ============================================================================
 
-// Initialize search functionality for accounts
+// Initialize search functionality
 function initializeSearch() {
   const searchInput = document.querySelector(".search-input");
   const searchSelect = document.querySelector(".search-select");
-
-  if (searchBtn) {
-    searchBtn.addEventListener("click", performSearch);
-  }
 
   if (searchInput) {
     // Real-time search as the user types
@@ -1812,11 +1411,76 @@ function performSearch() {
             break;
         }
       }
-
       const storeItem = document.querySelectorAll(".store-item")[index];
       if (storeItem) {
         storeItem.style.display = isMatch ? "flex" : "none";
       }
+    });
+  }, 300);
+}
+
+let searchTimeout1 = null;
+
+function performUserSearch() {
+  if (searchTimeout1) {
+    clearTimeout(searchTimeout1);
+  }
+  searchTimeout1 = setTimeout(() => {
+    const searchType =
+      document.querySelector(".user-search-select")?.value || "all";
+    const searchContent =
+      document.querySelector(".user-search-input")?.value || "";
+    const searchTerm = searchContent.toLowerCase();
+
+    // Get all user items in the list
+    const userItems = document.querySelectorAll(".user-item");
+
+    userItems.forEach((userItem) => {
+      // Extract the text content from relevant user item elements
+      const fullName =
+        userItem.querySelector(".user-info h4")?.textContent?.toLowerCase() ||
+        "";
+      const email =
+        userItem
+          .querySelector(".user-info p:nth-child(2)")
+          ?.textContent?.toLowerCase() || "";
+      const phone =
+        userItem
+          .querySelector(".user-info p:nth-child(3)")
+          ?.textContent?.toLowerCase() || "";
+      const role =
+        userItem.querySelector(".user-role")?.textContent?.toLowerCase() || "";
+
+      let isMatch = false;
+
+      // Luôn áp dụng lọc theo loại tìm kiếm, cho dù có từ khóa hay không
+      switch (searchType) {
+        case "all":
+          // Với "all", nếu không có từ khóa thì hiển thị tất cả
+          isMatch =
+            searchTerm === ""
+              ? true
+              : fullName.includes(searchTerm) ||
+                email.includes(searchTerm) ||
+                phone.includes(searchTerm) ||
+                role.includes(searchTerm);
+          break;
+        case "name":
+          isMatch = searchTerm === "" ? true : fullName.includes(searchTerm);
+          break;
+        case "email":
+          isMatch = searchTerm === "" ? true : email.includes(searchTerm);
+          break;
+        case "phone":
+          isMatch = searchTerm === "" ? true : phone.includes(searchTerm);
+          break;
+        case "role":
+          isMatch = searchTerm === "" ? true : role.includes(searchTerm);
+          break;
+      }
+
+      // Show or hide based on match
+      userItem.style.display = isMatch ? "flex" : "none";
     });
   }, 300);
 }
@@ -1827,16 +1491,22 @@ function performSearch() {
 
 // Render list products with pagination
 function renderListProducts() {
-  fetch("http://localhost:8080/admin/list-products", {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  })
+  fetch(
+    `http://localhost:8080/admin/list-products-paginated?page=${
+      currentPage - 1
+    }&size=${pageSize}`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  )
     .then((response) => response.json())
-    .then((products) => {
-      allProducts = products || [];
-      currentPage = 1;
+    .then((data) => {
+      allProducts = data.products || [];
+      totalPages = data.totalPages || 0;
+      currentPage = data.currentPage + 1; // Convert to 1-based for display
       renderProductTable();
       renderPagination();
     })
@@ -1845,7 +1515,7 @@ function renderListProducts() {
       const tbody = document.querySelector("#product-list-table tbody");
       if (tbody)
         tbody.innerHTML =
-          '<tr><td colspan="7" style="color:red;text-align:center;">Không thể tải danh sách sản phẩm</td></tr>';
+          '<tr><td colspan="9" style="color:red;text-align:center;">Không thể tải danh sách sản phẩm</td></tr>';
     });
 }
 
@@ -1861,15 +1531,20 @@ function renderProductTable() {
   }
   if (emptyDiv) emptyDiv.style.display = "none";
 
-  const start = (currentPage - 1) * pageSize;
-  const end = start + pageSize;
-  const pageProducts = allProducts.slice(start, end);
-
   let html = "";
-  pageProducts.forEach((p, idx) => {
+  allProducts.forEach((p, idx) => {
+    // Tạo HTML cho ảnh sản phẩm
+    let imageHtml = "";
+    if (p.imageUrl) {
+      imageHtml = `<img src="http://localhost:8080${p.imageUrl}" alt="${p.productName}" class="product-image" title="${p.productName}" onclick="openImageModal('http://localhost:8080${p.imageUrl}', '${p.productName}')" />`;
+    } else {
+      imageHtml = `<div class="product-image-placeholder">No img</div>`;
+    }
+
     html += `
       <tr>
-        <td>${start + idx + 1}</td>
+        <td>${(currentPage - 1) * pageSize + idx + 1}</td>
+        <td>${imageHtml}</td>
         <td title="${p.productName}">${p.productName}</td>
         <td title="${p.productType}">${p.productType}</td>
         <td title="${p.unit}">${p.unit}</td>
@@ -1888,7 +1563,9 @@ function renderProductTable() {
           <div class="action-buttons">
             <button class="btn-edit" onclick="editProduct(${
               p.productId
-            })">Sửa</button>
+            })" title="Sửa">
+              <span class='material-icons' style='font-size:20px;vertical-align:middle;'>edit</span>
+            </button>
           </div>
         </td>
       </tr>
@@ -1901,10 +1578,10 @@ function renderProductTable() {
 function renderPagination() {
   const container = document.getElementById("product-list-pagination");
   if (!container) return;
-  const totalPages = Math.ceil(allProducts.length / pageSize);
   if (totalPages <= 1) {
-    container.innerHTML =
-      '<span style="color: #718096; font-size: 14px; font-weight: 500;">Trang 1 / 1</span>';
+    container.innerHTML = `<span style="color: #718096; font-size: 14px; font-weight: 500;">Trang ${currentPage} / ${
+      totalPages || 1
+    }</span>`;
     return;
   }
   let html = "";
@@ -1929,8 +1606,7 @@ function renderPagination() {
       const page = parseInt(this.getAttribute("data-page"));
       if (page && page !== currentPage) {
         currentPage = page;
-        renderProductTable();
-        renderPagination();
+        renderListProducts(); // Gọi lại API để load dữ liệu mới
       }
     });
   });
@@ -1971,9 +1647,9 @@ function performProductSearch() {
   }
 
   fetch(
-    `http://localhost:8080/admin/search-products?keyword=${encodeURIComponent(
+    `http://localhost:8080/admin/search-products-paginated?keyword=${encodeURIComponent(
       keyword
-    )}&type=${searchType}`,
+    )}&type=${searchType}&page=${currentPage - 1}&size=${pageSize}`,
     {
       method: "GET",
       headers: {
@@ -1982,9 +1658,10 @@ function performProductSearch() {
     }
   )
     .then((response) => response.json())
-    .then((products) => {
-      allProducts = products || [];
-      currentPage = 1;
+    .then((data) => {
+      allProducts = data.products || [];
+      totalPages = data.totalPages || 0;
+      currentPage = data.currentPage + 1; // Convert to 1-based for display
       renderProductTable();
       renderPagination();
     })
@@ -2046,7 +1723,7 @@ function editProduct(productId) {
       loadProductTypes();
       loadProductUnits();
 
-      // Fill form with product data after a short delay to ensure options are loaded
+      // Fill form with product data after a longer delay to ensure options are loaded
       setTimeout(() => {
         document.getElementById("edit-product-id").value = product.productId;
         document.getElementById("edit-product-name").value =
@@ -2101,7 +1778,18 @@ function editProduct(productId) {
 
         // Initialize custom inputs for edit form
         initializeEditProductCustomInputs();
-      }, 100);
+
+        // Handle image display
+        const editImagePreview = document.getElementById("edit-image-preview");
+        const editPreviewImg = document.getElementById("edit-preview-img");
+        if (product.imageUrl) {
+          editPreviewImg.src = "http://localhost:8080" + product.imageUrl;
+          editImagePreview.style.display = "block";
+        } else {
+          editImagePreview.style.display = "none";
+          editPreviewImg.src = "";
+        }
+      }, 300);
     })
     .catch((error) => {
       console.error("Error loading product:", error);
@@ -2223,7 +1911,6 @@ function handleProductUnitChange() {
     productUnitCustom.value = "";
   }
 }
-
 // Render add product panel
 function renderAddProduct() {
   loadProductTypes();
@@ -2276,7 +1963,9 @@ function initializeCustomInputs() {
   }
 }
 
-// ========== STORES MANAGEMENT (SERVER-SIDE PAGINATION) =============
+// ============================================================================
+// STORES MANAGEMENT (SERVER-SIDE PAGINATION)
+// ============================================================================
 
 function renderCreateStore() {
   loadManagerOptions();
@@ -2284,8 +1973,8 @@ function renderCreateStore() {
 }
 
 function renderListStores(keepPage = false) {
-  if (!keepPage) currentPage = 0;
-  loadStoresFromAPI(currentPage, pageSize);
+  if (!keepPage) currentPage = 1;
+  loadStoresFromAPI(currentPage - 1, pageSize); // Convert to 0-based for API
   const paginationSection = document.getElementById("store-pagination-section");
   if (paginationSection) {
     paginationSection.style.display = "block";
@@ -2309,7 +1998,7 @@ function loadStoresFromAPI(page, size) {
     .then((data) => {
       allStores = data.pharmacies || [];
       totalPages = data.totalPages || 0;
-      currentPage = data.currentPage || 0;
+      currentPage = data.currentPage + 1; // Convert to 1-based for display
       renderStoreTable();
       renderStorePagination();
     })
@@ -2331,7 +2020,7 @@ function renderStoreTable() {
   }
   let html = "";
   allStores.forEach((store, idx) => {
-    const globalIndex = currentPage * pageSize + idx + 1;
+    const globalIndex = (currentPage - 1) * pageSize + idx + 1;
     html += `
       <tr>
         <td>${globalIndex}</td>
@@ -2361,13 +2050,13 @@ function renderStoreTable() {
           <div class="action-buttons">
             ${
               store.isActive
-                ? `<button class="btn-edit" data-id="${store.pharmacyId}">Sửa</button>`
+                ? `<button class="btn-edit" data-id="${store.pharmacyId}" title="Sửa"><span class='material-icons' style='font-size:20px;vertical-align:middle;'>edit</span></button>`
                 : ""
             }
             ${
               store.isActive
-                ? `<button class="btn-disable" data-id="${store.pharmacyId}">Vô hiệu hóa</button>`
-                : `<button class="btn-enable" data-id="${store.pharmacyId}">Kích hoạt</button>`
+                ? `<button class="btn-disable" data-id="${store.pharmacyId}" title="Vô hiệu hóa"><span class='material-icons' style='font-size:20px;vertical-align:middle;'>block</span></button>`
+                : `<button class="btn-enable" data-id="${store.pharmacyId}" title="Kích hoạt"><span class='material-icons' style='font-size:20px;vertical-align:middle;'>check_circle</span></button>`
             }
           </div>
         </td>
@@ -2382,23 +2071,23 @@ function renderStorePagination() {
   const container = document.getElementById("store-list-pagination");
   if (!container) return;
   if (totalPages <= 1) {
-    container.innerHTML = `<span style="color: #718096; font-size: 14px; font-weight: 500;">Trang ${
-      currentPage + 1
-    } / ${totalPages || 1}</span>`;
+    container.innerHTML = `<span style="color: #718096; font-size: 14px; font-weight: 500;">Trang ${currentPage} / ${
+      totalPages || 1
+    }</span>`;
     return;
   }
   let html = "";
-  if (currentPage > 0) {
+  if (currentPage > 1) {
     html += `<button class="pagination-btn" data-page="${
       currentPage - 1
     }">‹</button>`;
   }
-  for (let i = 0; i < totalPages; i++) {
+  for (let i = 1; i <= totalPages; i++) {
     html += `<button class="pagination-btn${
       i === currentPage ? " active" : ""
-    }" data-page="${i}">${i + 1}</button>`;
+    }" data-page="${i}">${i}</button>`;
   }
-  if (currentPage < totalPages - 1) {
+  if (currentPage < totalPages) {
     html += `<button class="pagination-btn" data-page="${
       currentPage + 1
     }">›</button>`;
@@ -2407,9 +2096,9 @@ function renderStorePagination() {
   container.querySelectorAll(".pagination-btn").forEach((btn) => {
     btn.addEventListener("click", function () {
       const page = parseInt(this.getAttribute("data-page"));
-      if (page !== null && page !== currentPage) {
+      if (page && page !== currentPage) {
         currentPage = page;
-        loadStoresFromAPI(currentPage, pageSize);
+        loadStoresFromAPI(currentPage - 1, pageSize); // Convert to 0-based for API
       }
     });
   });
@@ -2422,14 +2111,14 @@ function performStoreSearch() {
     document.getElementById("store-search-type")?.value || "all";
   if (!keyword) {
     isSearching = false;
-    currentPage = 0;
-    loadStoresFromAPI(currentPage, pageSize);
+    currentPage = 1;
+    loadStoresFromAPI(currentPage - 1, pageSize); // Convert to 0-based for API
     return;
   }
   isSearching = true;
   currentSearchParams = { keyword, type: searchType };
-  currentPage = 0;
-  loadStoresFromAPI(currentPage, pageSize);
+  currentPage = 1;
+  loadStoresFromAPI(currentPage - 1, pageSize); // Convert to 0-based for API
 }
 
 function clearStoreSearch() {
@@ -2438,8 +2127,8 @@ function clearStoreSearch() {
   if (searchInput) searchInput.value = "";
   if (searchType) searchType.value = "all";
   isSearching = false;
-  currentPage = 0;
-  loadStoresFromAPI(currentPage, pageSize);
+  currentPage = 1;
+  loadStoresFromAPI(currentPage - 1, pageSize); // Convert to 0-based for API
 }
 
 function attachStoreActionEvents() {
@@ -2665,6 +2354,7 @@ function handleAddProduct(e) {
   const productDescriptionInput = document.getElementById(
     "product-description"
   );
+  const productImageInput = document.getElementById("product-image");
   const productName = productNameInput.value.trim();
 
   if (!productName) {
@@ -2716,52 +2406,75 @@ function handleAddProduct(e) {
   }
 
   const description = productDescriptionInput.value.trim();
-  const formData = {
-    productName: productName,
-    productType: productType,
-    unit: productUnit,
-    description: description,
-    price: price.toFixed(2),
-    quantity: quantity, // Gửi số lượng lên backend
-  };
 
-  const submitBtn = e.target.querySelector('button[type="submit"]');
-  const originalText = submitBtn.textContent;
-  submitBtn.textContent = "Đang thêm...";
-  submitBtn.disabled = true;
+  // Xử lý ảnh
+  let imageBase64 = null;
+  if (productImageInput.files.length > 0) {
+    const file = productImageInput.files[0];
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      imageBase64 = e.target.result;
+      submitProductData();
+    };
+    reader.readAsDataURL(file);
+  } else {
+    submitProductData();
+  }
 
-  fetch(`http://localhost:8080/admin/add-product`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(formData),
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      if (data.message) {
-        showToast(data.message);
-        if (data.message.includes("thành công")) {
-          e.target.reset();
-          if (productTypeCustom) {
-            productTypeCustom.style.display = "none";
-            productTypeCustom.required = false;
-          }
-          if (productUnitCustom) {
-            productUnitCustom.style.display = "none";
-            productUnitCustom.required = false;
+  function submitProductData() {
+    const formData = {
+      productName: productName,
+      productType: productType,
+      unit: productUnit,
+      description: description,
+      price: price.toFixed(2),
+      quantity: quantity, // Gửi số lượng lên backend
+      imageBase64: imageBase64,
+    };
+
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = "Đang thêm...";
+    submitBtn.disabled = true;
+
+    fetch(`http://localhost:8080/admin/add-product`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(formData),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.message) {
+          showToast(data.message);
+          if (data.message.includes("thành công")) {
+            e.target.reset();
+            // Reset image preview
+            const imagePreview = document.getElementById("image-preview");
+            const previewImg = document.getElementById("preview-img");
+            if (imagePreview) imagePreview.style.display = "none";
+            if (previewImg) previewImg.src = "";
+            if (productTypeCustom) {
+              productTypeCustom.style.display = "none";
+              productTypeCustom.required = false;
+            }
+            if (productUnitCustom) {
+              productUnitCustom.style.display = "none";
+              productUnitCustom.required = false;
+            }
           }
         }
-      }
-    })
-    .catch((error) => {
-      console.error("Error creating product:", error);
-      showToast("Có lỗi xảy ra khi thêm sản phẩm. Vui lòng thử lại.");
-    })
-    .finally(() => {
-      submitBtn.textContent = originalText;
-      submitBtn.disabled = false;
-    });
+      })
+      .catch((error) => {
+        console.error("Error creating product:", error);
+        showToast("Có lỗi xảy ra khi thêm sản phẩm. Vui lòng thử lại.");
+      })
+      .finally(() => {
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
+      });
+  }
 }
 
 function handleEditProduct(e) {
@@ -2778,6 +2491,7 @@ function handleEditProduct(e) {
   const productDescription = document
     .getElementById("edit-product-description")
     .value.trim();
+  const productImageInput = document.getElementById("edit-product-image");
 
   if (!productName) {
     showToast("Vui lòng nhập tên sản phẩm");
@@ -2807,42 +2521,59 @@ function handleEditProduct(e) {
     return;
   }
 
-  const formData = {
-    productName: productName,
-    productType: productType,
-    unit: productUnit,
-    price: productPrice,
-    description: productDescription,
-  };
+  // Xử lý ảnh
+  let imageBase64 = null;
+  if (productImageInput.files.length > 0) {
+    const file = productImageInput.files[0];
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      imageBase64 = e.target.result;
+      submitEditData();
+    };
+    reader.readAsDataURL(file);
+  } else {
+    submitEditData();
+  }
 
-  const submitBtn = e.target.querySelector('button[type="submit"]');
-  const originalText = submitBtn.textContent;
-  submitBtn.textContent = "Đang cập nhật...";
-  submitBtn.disabled = true;
+  function submitEditData() {
+    const formData = {
+      productName: productName,
+      productType: productType,
+      unit: productUnit,
+      price: productPrice,
+      description: productDescription,
+      imageBase64: imageBase64,
+    };
 
-  fetch(`http://localhost:8080/admin/edit-product/${productId}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(formData),
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      showToast(data.message);
-      if (data.message.includes("thành công")) {
-        cancelEditProduct();
-        renderListProducts();
-      }
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = "Đang cập nhật...";
+    submitBtn.disabled = true;
+
+    fetch(`http://localhost:8080/admin/edit-product/${productId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(formData),
     })
-    .catch((error) => {
-      console.error("Error updating product:", error);
-      showToast("Có lỗi xảy ra khi cập nhật sản phẩm");
-    })
-    .finally(() => {
-      submitBtn.textContent = originalText;
-      submitBtn.disabled = false;
-    });
+      .then((response) => response.json())
+      .then((data) => {
+        showToast(data.message);
+        if (data.message.includes("thành công")) {
+          cancelEditProduct();
+          renderListProducts();
+        }
+      })
+      .catch((error) => {
+        console.error("Error updating product:", error);
+        showToast("Có lỗi xảy ra khi cập nhật sản phẩm");
+      })
+      .finally(() => {
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
+      });
+  }
 }
 
 function handleCreateStore(e) {
@@ -2972,7 +2703,6 @@ function loadManagerOptions() {
 function loadRevenueData() {
   // Placeholder: Implement fetching revenue data if needed
 }
-
 async function logout() {
   showToast("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
   const response = await fetch("http://localhost:8080/api/auth/logout", {
@@ -3078,53 +2808,39 @@ function getRoleDisplayName(role) {
   return roleNames[role] || role;
 }
 
-function showToast(message) {
-  let toastContainer = document.querySelector(".toast-container");
-  if (!toastContainer) {
-    toastContainer = document.createElement("div");
-    toastContainer.className = "toast-container";
-    document.body.appendChild(toastContainer);
-  }
-
-  const toast = document.createElement("div");
-  toast.className = "toast";
-  toast.innerHTML = `
-    <div class="toast-content">
-      <span class="material-icons toast-icon">check_circle</span>
-      <span class="toast-message">${message}</span>
-    </div>
-    <span class="toast-close">×</span>
-  `;
-
-  toastContainer.appendChild(toast);
-  setTimeout(() => toast.classList.add("show"), 10);
-
-  toast.querySelector(".toast-close").addEventListener("click", () => {
-    toast.classList.remove("show");
-    setTimeout(() => toast.remove(), 300);
-  });
-
-  setTimeout(() => {
-    toast.classList.remove("show");
-    setTimeout(() => toast.remove(), 300);
-  }, 5000);
+// Render add account panel
+function renderAddAccount() {
+  loadPharmacyOptions();
+  loadRoles();
+  updateHeaderTitle("add-account");
 }
 
 function attachAddStoreButtonEvent() {
-  if (form) {
-    form.reset();
-    const customInputs = form.querySelectorAll(".custom-input");
-    customInputs.forEach((input) => {
-      input.style.display = "none";
-      input.classList.remove("show");
-      input.required = false;
-      input.value = "";
-    });
+  // Gắn sự kiện cho nút "Thêm nhà thuốc" trong panel list-stores
+  const addBtn = document.querySelector(
+    "#panel-list-stores .panel-header .btn.btn-primary"
+  );
+  if (addBtn) {
+    addBtn.onclick = function () {
+      // Ẩn tất cả panel
+      document
+        .querySelectorAll(".panel")
+        .forEach((panel) => panel.classList.remove("active"));
+      // Hiện panel tạo nhà thuốc
+      document.getElementById("panel-create-store").classList.add("active");
+      // Cập nhật sidebar
+      document
+        .querySelectorAll(".nav-item")
+        .forEach((item) => item.classList.remove("active"));
+      document
+        .querySelector('.nav-item[data-type="create-store"]')
+        .classList.add("active");
+      // Cập nhật header
+      updateHeaderTitle("create-store");
+      // Render lại nội dung nếu cần
+      renderCreateStore();
+    };
   }
-  loadProductTypes();
-  loadProductUnits();
-  initializeEditProductCustomInputs();
-  updateHeaderTitle("edit-product");
 }
 
 function loadProductTypes() {
@@ -3285,16 +3001,23 @@ function updateProductQuantity(productId, quantity, operation, inputEl) {
       showToast(data.message || "Cập nhật số lượng thành công");
       // Lưu trang hiện tại
       const currentPageBefore = currentPage;
-      // Reload lại danh sách sản phẩm để đồng bộ số lượng
-      fetch("http://localhost:8080/admin/list-products", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      })
+      // Reload lại danh sách sản phẩm với phân trang để đồng bộ số lượng
+      fetch(
+        `http://localhost:8080/admin/list-products-paginated?page=${
+          currentPageBefore - 1
+        }&size=6`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      )
         .then((response) => response.json())
-        .then((products) => {
-          allProducts = products || [];
+        .then((data) => {
+          allProducts = data.products || [];
+          totalPages = data.totalPages || 0;
+          totalProducts = data.totalProducts || 0;
           // Khôi phục lại trang hiện tại
           currentPage = currentPageBefore;
           renderProductTable();
@@ -3427,162 +3150,71 @@ async function showUserInfo() {
   }
 }
 
-// Handle reset password form submission
-function handleResetPassword(e) {
-  e.preventDefault();
-
-  // Get form data
-  const userId = document.getElementById("reset-user-id").value;
-  const newPassword = document.getElementById("new-password").value;
-  const confirmPassword = document.getElementById("confirm-password").value;
-
-  // Validate form data
-  if (!newPassword || !confirmPassword) {
-    showFormError("resetPasswordForm", "Vui lòng nhập đầy đủ thông tin");
-    return;
-  }
-
-  if (newPassword.length < 6) {
-    showFormError("resetPasswordForm", "Mật khẩu phải có ít nhất 6 ký tự");
-    return;
-  }
-
-  if (newPassword !== confirmPassword) {
-    showFormError("resetPasswordForm", "Mật khẩu xác nhận không khớp");
-    return;
-  }
-
-  // Check password strength
-  const strength = calculatePasswordStrength(newPassword);
-  if (strength.score < 30) {
-    showFormError(
-      "resetPasswordForm",
-      "Mật khẩu quá yếu. Vui lòng chọn mật khẩu mạnh hơn."
-    );
-    return;
-  }
-
-  // Send API request to reset password
-  resetUserPassword(userId, newPassword);
+// Image modal functionality
+function openImageModal(imageSrc, productName) {
+  const modal = document.getElementById("imageModal");
+  const modalImage = document.getElementById("modalImage");
+  modalImage.src = imageSrc;
+  modalImage.alt = productName;
+  modal.style.display = "block";
 }
 
-// Reset user password via API
-function resetUserPassword(userId, newPassword) {
-  showLoading("resetPasswordModal");
+function closeImageModal() {
+  const modal = document.getElementById("imageModal");
+  modal.style.display = "none";
+}
 
-  fetch(`http://localhost:8080/admin/reset-password/${userId}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      newPassword: newPassword,
-    }),
-  })
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error("Lỗi khi đặt lại mật khẩu");
+// Close modal when clicking outside
+window.onclick = function (event) {
+  const modal = document.getElementById("imageModal");
+  if (event.target === modal) {
+    closeImageModal();
+  }
+};
+
+// Close modal when clicking X
+document.addEventListener("DOMContentLoaded", function () {
+  const closeBtn = document.querySelector(".image-modal-close");
+  if (closeBtn) {
+    closeBtn.addEventListener("click", closeImageModal);
+  }
+});
+
+// Image preview functionality
+document.addEventListener("DOMContentLoaded", function () {
+  // Add product image preview
+  const productImageInput = document.getElementById("product-image");
+  if (productImageInput) {
+    productImageInput.addEventListener("change", function (e) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const preview = document.getElementById("image-preview");
+          const previewImg = document.getElementById("preview-img");
+          previewImg.src = e.target.result;
+          preview.style.display = "block";
+        };
+        reader.readAsDataURL(file);
       }
-      return response.json();
-    })
-    .then((data) => {
-      // Close modal
-      document.getElementById("resetPasswordModal").style.display = "none";
-
-      // Show success message
-      showToast(data.message || "Đặt lại mật khẩu thành công");
-
-      // Clear form
-      document.getElementById("new-password").value = "";
-      document.getElementById("confirm-password").value = "";
-    })
-    .catch((error) => {
-      showFormError(
-        "resetPasswordForm",
-        error.message || "Lỗi khi đặt lại mật khẩu"
-      );
-    })
-    .finally(() => {
-      hideLoading("resetPasswordModal");
     });
-}
-
-// Handle reset password form submission
-function handleResetPassword(e) {
-  e.preventDefault();
-
-  // Get form data
-  const userId = document.getElementById("reset-user-id").value;
-  const newPassword = document.getElementById("new-password").value;
-  const confirmPassword = document.getElementById("confirm-password").value;
-
-  // Validate form data
-  if (!newPassword || !confirmPassword) {
-    showFormError("resetPasswordForm", "Vui lòng nhập đầy đủ thông tin");
-    return;
   }
 
-  if (newPassword.length < 6) {
-    showFormError("resetPasswordForm", "Mật khẩu phải có ít nhất 6 ký tự");
-    return;
-  }
-
-  if (newPassword !== confirmPassword) {
-    showFormError("resetPasswordForm", "Mật khẩu xác nhận không khớp");
-    return;
-  }
-
-  // Check password strength
-  const strength = calculatePasswordStrength(newPassword);
-  if (strength.score < 30) {
-    showFormError(
-      "resetPasswordForm",
-      "Mật khẩu quá yếu. Vui lòng chọn mật khẩu mạnh hơn."
-    );
-    return;
-  }
-
-  // Send API request to reset password
-  resetUserPassword(userId, newPassword);
-}
-
-// Reset user password via API
-function resetUserPassword(userId, newPassword) {
-  showLoading("resetPasswordModal");
-
-  fetch(`http://localhost:8080/admin/reset-password/${userId}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      newPassword: newPassword,
-    }),
-  })
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error("Lỗi khi đặt lại mật khẩu");
+  // Edit product image preview
+  const editProductImageInput = document.getElementById("edit-product-image");
+  if (editProductImageInput) {
+    editProductImageInput.addEventListener("change", function (e) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const preview = document.getElementById("edit-image-preview");
+          const previewImg = document.getElementById("edit-preview-img");
+          previewImg.src = e.target.result;
+          preview.style.display = "block";
+        };
+        reader.readAsDataURL(file);
       }
-      return response.json();
-    })
-    .then((data) => {
-      // Close modal
-      document.getElementById("resetPasswordModal").style.display = "none";
-
-      // Show success message
-      showToast(data.message || "Đặt lại mật khẩu thành công");
-
-      // Clear form
-      document.getElementById("new-password").value = "";
-      document.getElementById("confirm-password").value = "";
-    })
-    .catch((error) => {
-      showFormError(
-        "resetPasswordForm",
-        error.message || "Lỗi khi đặt lại mật khẩu"
-      );
-    })
-    .finally(() => {
-      hideLoading("resetPasswordModal");
     });
-}
+  }
+});
