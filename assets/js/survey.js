@@ -131,12 +131,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const messageEl = document.getElementById("message");
     if (messageEl) {
       messageEl.textContent = msg;
-      messageEl.className = "message " + type + " show";
-      messageEl.classList.remove("hidden");
-      // Ẩn thông báo sau 3 giây
+      messageEl.className = `message ${type} show`;
+      // Tự động ẩn sau 3 giây
       setTimeout(() => {
-        messageEl.classList.add("hidden");
-        messageEl.classList.remove("show");
+        messageEl.className = `message ${type}`;
       }, 3000);
     }
   }
