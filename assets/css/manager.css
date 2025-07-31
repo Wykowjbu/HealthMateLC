@@ -97,6 +97,7 @@ body {
 
 
 .header {
+
  grid-area: header;
  background: white;
  display: flex;
@@ -154,6 +155,7 @@ body {
 
 
 .user-dropdown {
+
  position: absolute;
  top: 100%;
  right: 0;
@@ -167,6 +169,7 @@ body {
  visibility: hidden;
  transform: translateY(-10px);
  transition: all 0.3s ease;
+
 }
 
 
@@ -585,7 +588,6 @@ body {
  background-color: rgba(0, 0, 0, 0.5);
 }
 
-
 .modal-content {
  background-color: white;
  margin: 5% auto;
@@ -673,3 +675,4 @@ body {
    width: 95%;
  }
 }
+

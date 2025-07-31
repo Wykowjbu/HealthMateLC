@@ -33,7 +33,7 @@ async function handleUserProfile() {
         alert('Không thể tải thông tin người dùng. Vui lòng thử lại. Lỗi: ' + error.message);
         window.location.href = '/HealthMateLC/index.html';
     }
-}
+
 
 function initializeUserDropdown() {
     const userProfile = document.querySelector(".user-profile");
@@ -53,6 +53,26 @@ function initializeUserDropdown() {
 
         userDropdown.addEventListener("click", (e) => e.stopPropagation());
     }
+    if (userPharmacyNameElement && data.pharmacyName) {
+      userPharmacyNameElement.textContent = data.pharmacyName;
+    } else if (userPharmacyNameElement && data.pharmacyAddress) {
+      userPharmacyNameElement.textContent = data.pharmacyAddress;
+    }
+    if (branchElement && data.branch) {
+      branchElement.textContent = data.branch;
+    } else if (branchElement) {
+      branchElement.textContent = "Chưa gán chi nhánh";
+    }
+
+    console.log("Thông tin người dùng đã được tải và hiển thị.");
+  } catch (error) {
+    console.error("Lỗi khi lấy thông tin user profile:", error);
+    alert(
+      "Không thể tải thông tin người dùng. Vui lòng thử lại. Lỗi: " +
+        error.message
+    );
+    window.location.href = "/HealthMateLC/index.html";
+  }
 }
 
 async function showUserInfo() {
@@ -180,8 +200,29 @@ function navigate(section) {
                 actionBtn.onclick = exportAttendance;
                 break;
         }
-    }
+
+function initializeUserDropdown() {
+  const userProfile = document.querySelector(".user-profile");
+  const userDropdown = document.getElementById("userDropdown");
+
+  if (userProfile && userDropdown) {
+    userProfile.addEventListener("click", function (e) {
+      e.stopPropagation();
+      userDropdown.classList.toggle("show");
+    });
+
+    document.addEventListener("click", function (e) {
+      if (!userProfile.contains(e.target)) {
+        userDropdown.classList.remove("show");
+      }
+    });
+
+    userDropdown.addEventListener("click", function (e) {
+      e.stopPropagation();
+    });
+  }
 }
+
 
 function formatTime(timeStr) {
     let [hours, minutes] = timeStr.slice(0, 5).split(':').map(Number);
@@ -397,7 +438,10 @@ async function loadEmployeeSchedules(userId) {
   if (!userId) {
     document.getElementById('employeeScheduleList').innerHTML = '<p>Vui lòng chọn nhân viên.</p>';
     return;
+
   }
+}
+
 
   try {
     console.log('Fetching schedules for user:', userId);
