@@ -262,7 +262,7 @@ textarea::placeholder {
 }
 
 .message.success {
-  background: linear-gradient(135deg, #60a5fa, #3b82f6);
+  background: linear-gradient(135deg, #4ede8a, #06d477);
   transform: translateY(0);
   opacity: 1;
   color: white;
