@@ -1,5 +1,4 @@
 document.addEventListener("DOMContentLoaded", () => {
-
   // Get hidden fields
   const params = new URLSearchParams(window.location.search);
   const customerId = params.get("customerId");
@@ -104,14 +103,11 @@ document.addEventListener("DOMContentLoaded", () => {
         comment,
       };
       try {
-        const res = await fetch(
-          "http://localhost:8080/survey",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          }
-        );
+        const res = await fetch("http://localhost:8080/survey", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
         if (res.ok) {
           showMessage("Cảm ơn bạn đã gửi phản hồi!", "success");
           surveyForm.reset();
@@ -135,8 +131,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const messageEl = document.getElementById("message");
     if (messageEl) {
       messageEl.textContent = msg;
-      messageEl.className = "message " + type;
-    } else {
+      messageEl.className = `message ${type} show`;
+      // Tự động ẩn sau 3 giây
+      setTimeout(() => {
+        messageEl.className = `message ${type}`;
+      }, 3000);
     }
   }
 });
