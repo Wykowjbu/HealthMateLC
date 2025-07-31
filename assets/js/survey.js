@@ -105,11 +105,10 @@ document.addEventListener("DOMContentLoaded", () => {
       };
       try {
         const res = await fetch(
-          "http://localhost:8080/customer-service/reviews",
+          "http://localhost:8080/survey",
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            credentials: "include",
             body: JSON.stringify(payload),
           }
         );
