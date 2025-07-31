@@ -251,27 +251,37 @@ textarea::placeholder {
   border-radius: 12px;
   font-weight: 500;
   transition: all 0.3s ease;
-  transform: translateY(10px);
-  opacity: 0;
-}
-
-.message.show {
-  transform: translateY(0);
-  opacity: 1;
+  position: relative;
+  left: unset;
+  right: unset;
+  top: unset;
+  z-index: 10;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 12px;
 }
 
 .message.success {
-  background: linear-gradient(135deg, #60a5fa, #3b82f6);
+  background: linear-gradient(135deg, #4ede8a, #06d477);
+  transform: translateY(0);
+  opacity: 1;
   color: white;
 }
 
 .message.error {
   background: linear-gradient(135deg, #f56565, #e53e3e);
+  transform: translateY(0);
+  opacity: 1;
   color: white;
 }
 
 .hidden {
   display: none;
+}
+
+.submit-button {
+  position: relative;
+  z-index: 1;
 }
 
 /* Responsive Design */

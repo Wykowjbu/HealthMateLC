@@ -950,25 +950,109 @@
             </div>
 
             <!-- Schedule Container -->
-            <div class="schedule-container" id="scheduleContainer" style="display: none;">
-                <h3 class="form-title">
-                    <span class="material-icons">today</span>
-                    Lịch làm việc hôm nay
-                </h3>
-                <div class="schedule-today">
-                    <div class="schedule-info">
-                        <div class="schedule-time">8:00 - 16:00</div>
-                        <div class="schedule-details">
-                            <div style="font-weight: 500;">Ca sáng</div>
-                            <div style="font-size: 12px; color: #718096;">Thứ 2, 12/05/2025</div>
+            <div id="scheduleContainer" style="display: none;">
+                <div class="calendar-header">
+                    <h2>Lịch làm việc</h2>
+                    <div class="calendar-navigation">
+                        <button class="nav-btn" id="prevMonth" onclick="navigateMonth(-1)">
+                            <span class="material-icons">chevron_left</span>
+                        </button>
+                        <h3 id="currentMonthYear"></h3>
+                        <button class="nav-btn" id="nextMonth" onclick="navigateMonth(1)">
+                            <span class="material-icons">chevron_right</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="calendar-container">
+                    <div class="calendar-weekdays">
+                        <div class="weekday">CN</div>
+                        <div class="weekday">T2</div>
+                        <div class="weekday">T3</div>
+                        <div class="weekday">T4</div>
+                        <div class="weekday">T5</div>
+                        <div class="weekday">T6</div>
+                        <div class="weekday">T7</div>
+                    </div>
+                    <div class="calendar-grid" id="calendarGrid">
+                        <!-- Calendar days will be generated here -->
+                    </div>
+                </div>
+
+                <!-- Check-in/Check-out Section - Auto Display -->
+                <div class="checkin-container" id="checkinContainer">
+                    <div class="checkin-header">
+                        <h3 class="section-title">
+                            <span class="material-icons">access_time</span>
+                            Chấm công hôm nay
+                        </h3>
+                        <div class="current-time" id="currentTime"></div>
+                    </div>
+
+                    <div class="checkin-content">
+                        <!-- Status Card -->
+                        <div class="status-card">
+                            <div class="status-header">
+                                <span class="material-icons">schedule</span>
+                                <h4>Trạng thái làm việc</h4>
+                            </div>
+                            <div class="status-body">
+                                <div class="status-item">
+                                    <span class="status-label">Check-in:</span>
+                                    <span class="status-value" id="checkinStatus">Chưa check-in</span>
+                                </div>
+                                <div class="status-item">
+                                    <span class="status-label">Check-out:</span>
+                                    <span class="status-value" id="checkoutStatus">Chưa check-out</span>
+                                </div>
+                                <div class="status-item">
+                                    <span class="status-label">Thời gian làm việc:</span>
+                                    <span class="status-value" id="workDuration">0 giờ 0 phút</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="checkin-actions">
+                            <button class="checkin-btn" id="checkinBtn" onclick="handleCheckIn()">
+                                <span class="material-icons">login</span>
+                                <span class="btn-text">Check-in</span>
+                                <span class="loading-spinner" style="display: none;">
+                    <span class="material-icons spinning">refresh</span>
+                </span>
+                            </button>
+
+                            <button class="checkout-btn" id="checkoutBtn" onclick="handleCheckOut()" disabled>
+                                <span class="material-icons">logout</span>
+                                <span class="btn-text">Check-out</span>
+                                <span class="loading-spinner" style="display: none;">
+                    <span class="material-icons spinning">refresh</span>
+                </span>
+                            </button>
+
+                            <button class="refresh-btn" id="refreshBtn" onclick="refreshTimesheetStatus()">
+                                <span class="material-icons">refresh</span>
+                                Làm mới
+                            </button>
+                        </div>
+
+                        <!-- Work Schedule Today -->
+                        <div class="schedule-today">
+                            <h4>
+                                <span class="material-icons">today</span>
+                                Lịch làm việc hôm nay
+                            </h4>
+                            <div class="schedule-list" id="scheduleToday">
+                                <p>Đang tải lịch làm việc...</p>
+                            </div>
                         </div>
                     </div>
-                    <div class="status-working">Đang làm việc</div>
                 </div>
             </div>
         </main>
     </div>
 
     <script src="assets/js/employee.js"></script>
+<script src="assets/js/employee_CheckIn_CheckOut.js"></script>
 </body>
 </html>

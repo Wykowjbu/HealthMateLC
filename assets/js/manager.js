@@ -214,9 +214,10 @@ function formatDateLocal(date) {
     return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
 }
 
+// Replace the loadSchedules function with this updated version
 async function loadSchedules() {
   try {
-    console.log('Fetching schedules from /manager/schedules...'); // Debug
+    console.log('Fetching schedules from /manager/schedules...');
     const response = await fetch('http://localhost:8080/manager/schedules', {
       method: 'GET',
       credentials: 'include',
@@ -229,7 +230,7 @@ async function loadSchedules() {
     }
 
     const schedules = await response.json();
-    console.log('Schedules data:', schedules); // Debug dữ liệu trả về
+    console.log('Schedules data:', schedules);
 
     const groupedSchedules = schedules.reduce((acc, schedule) => {
       const pid = schedule.pharmacyId || 'unknown';
@@ -238,78 +239,188 @@ async function loadSchedules() {
       return acc;
     }, {});
 
-    console.log('Grouped schedules:', groupedSchedules); // Debug dữ liệu sau khi nhóm
+    console.log('Grouped schedules:', groupedSchedules);
 
     let allHtml = '';
     for (const [pharmacyId, pharmSchedules] of Object.entries(groupedSchedules)) {
-      pharmSchedules.sort((a, b) => new Date(a.date) - new Date(b.date));
-
-      const today = new Date();
-      const dayOfWeek = today.getDay();
-      const startOfWeek = new Date(today);
-      startOfWeek.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
-      const endOfWeek = new Date(startOfWeek);
-      endOfWeek.setDate(startOfWeek.getDate() + 6);
-
-      const weekSchedules = pharmSchedules.filter(s => {
-        const d = new Date(s.date);
-        return d >= startOfWeek && d <= endOfWeek;
-      });
-
-      console.log('Week schedules for pharmacy', pharmacyId, ':', weekSchedules); // Debug lịch tuần
-
-      const dayNames = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
-
-      let gridHtml = '';
-      for (let i = 0; i < 7; i++) {
-        const currentDay = new Date(startOfWeek);
-        currentDay.setDate(startOfWeek.getDate() + i);
-
-        const dayStr = dayNames[i];
-        const dateStr = `${currentDay.getDate().toString().padStart(2, '0')}/${(currentDay.getMonth() + 1).toString().padStart(2, '0')}/${currentDay.getFullYear()}`;
-        const dayDateStr = formatDateLocal(currentDay);
-
-        const daySchedules = weekSchedules.filter(s => s.date === dayDateStr);
-        const shiftsHtml = daySchedules.length > 0 ? daySchedules.sort((a, b) => a.startTime.localeCompare(b.startTime)).map(schedule => `
-          <div class="employee-shift">${schedule.fullName} (${formatTime(schedule.startTime)} - ${formatTime(schedule.endTime)})</div>
-        `).join('') : '';
-
-        gridHtml += `
-          <div class="schedule-day">
-            <div class="day-name">${dayStr}</div>
-            <div class="day-date">${dateStr}</div>
-            ${shiftsHtml}
-          </div>
-        `;
-      }
-
       const pharmacyName = pharmSchedules[0]?.pharmacyName || `Nhà thuốc ID: ${pharmacyId}`;
+
       allHtml += `
-        <h2>Lịch làm việc tuần này - ${pharmacyName}</h2>
-        <div style="margin-top: 20px;"></div>
-        <div class="schedule-grid">${gridHtml}</div>
-        <br>
+        <div class="calendar-container">
+          <div class="calendar-header">
+            <h3 class="chart-title">Lịch làm việc - ${pharmacyName}</h3>
+            <div class="calendar-nav">
+              <button onclick="changeMonth(-1)" title="Tháng trước">
+                <span class="material-icons">chevron_left</span>
+              </button>
+              <h3 id="currentMonth">${getCurrentMonthYear()}</h3>
+              <button onclick="changeMonth(1)" title="Tháng sau">
+                <span class="material-icons">chevron_right</span>
+              </button>
+            </div>
+          </div>
+          ${generateCalendar(pharmSchedules)}
+        </div>
       `;
     }
 
     const scheduleSection = document.getElementById('work_schedule-section');
     if (scheduleSection) {
-      console.log('Updating work_schedule-section with HTML:', allHtml); // Debug HTML
+      console.log('Updating work_schedule-section with calendar HTML');
       scheduleSection.innerHTML = allHtml || '<p>Không có lịch làm việc.</p>';
     } else {
       console.error('Element work_schedule-section not found');
     }
 
-    const pharmacyNameElement = document.getElementById('pharmacyName');
-    if (pharmacyNameElement && Object.values(groupedSchedules)[0]) {
-      pharmacyNameElement.textContent = Object.values(groupedSchedules)[0][0]?.pharmacyName || 'Chưa gán chi nhánh';
-      console.log('Updated pharmacyName:', pharmacyNameElement.textContent); // Debug
-    }
   } catch (error) {
     console.error('Lỗi khi lấy lịch làm việc:', error);
     alert('Không thể tải lịch làm việc. Vui lòng thử lại. Lỗi: ' + error.message);
   }
 }
+
+// Add these new functions for calendar functionality
+let currentDate = new Date();
+
+function getCurrentMonthYear() {
+  const monthNames = [
+    'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
+    'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'
+  ];
+  return `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+}
+
+function changeMonth(direction) {
+  currentDate.setMonth(currentDate.getMonth() + direction);
+  document.getElementById('currentMonth').textContent = getCurrentMonthYear();
+  loadSchedules(); // Reload schedules for new month
+}
+
+function generateCalendar(schedules) {
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+
+  // Get first day of month and number of days
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const daysInMonth = lastDay.getDate();
+  const startingDayOfWeek = firstDay.getDay();
+
+  // Adjust for Monday start (0 = Sunday, 1 = Monday, etc.)
+  const adjustedStartDay = startingDayOfWeek === 0 ? 6 : startingDayOfWeek - 1;
+
+  const dayHeaders = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+
+  let calendarHTML = '<div class="calendar-grid">';
+
+  // Add day headers
+  dayHeaders.forEach(day => {
+    calendarHTML += `<div class="calendar-day-header">${day}</div>`;
+  });
+
+  // Add empty cells for days before month starts
+  for (let i = 0; i < adjustedStartDay; i++) {
+    const prevMonthDay = new Date(year, month, 0 - (adjustedStartDay - 1 - i));
+    calendarHTML += `
+      <div class="calendar-day other-month">
+        <div class="calendar-day-number">${prevMonthDay.getDate()}</div>
+      </div>
+    `;
+  }
+
+  // Add days of current month
+  const today = new Date();
+  for (let day = 1; day <= daysInMonth; day++) {
+    const currentDateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+    const isToday = today.getDate() === day && today.getMonth() === month && today.getFullYear() === year;
+
+    // Get schedules for this day
+    const daySchedules = schedules.filter(s => s.date === currentDateStr);
+
+    let shiftsHTML = '';
+    if (daySchedules.length > 0) {
+      shiftsHTML = daySchedules.map(schedule => `
+        <div class="calendar-shift"
+             onmouseover="showShiftTooltip(event, '${schedule.fullName}', '${formatTime(schedule.startTime)}', '${formatTime(schedule.endTime)}')"
+             onmouseout="hideShiftTooltip()"
+             onclick="editScheduleFromCalendar(${schedule.scheduleId}, ${schedule.userId}, '${schedule.fullName}', '${schedule.date}', '${schedule.startTime}', '${schedule.endTime}')">
+          ${(schedule.fullName || 'NV').substring(0, 8)}
+          <span class="calendar-shift-time">${formatTime(schedule.startTime).substring(0, 5)}</span>
+        </div>
+      `).join('');
+    }
+
+    calendarHTML += `
+      <div class="calendar-day ${isToday ? 'today' : ''}">
+        <div class="calendar-day-number">${day}</div>
+        <div class="calendar-shifts">${shiftsHTML}</div>
+      </div>
+    `;
+  }
+
+  // Add remaining cells to complete the grid
+  const totalCells = Math.ceil((daysInMonth + adjustedStartDay) / 7) * 7;
+  const remainingCells = totalCells - (daysInMonth + adjustedStartDay);
+
+  for (let i = 1; i <= remainingCells; i++) {
+    calendarHTML += `
+      <div class="calendar-day other-month">
+        <div class="calendar-day-number">${i}</div>
+      </div>
+    `;
+  }
+
+  calendarHTML += '</div>';
+
+  return calendarHTML;
+}
+
+// Add tooltip functionality
+function showShiftTooltip(event, employeeName, startTime, endTime) {
+  let tooltip = document.getElementById('shift-tooltip');
+  if (!tooltip) {
+    tooltip = document.createElement('div');
+    tooltip.id = 'shift-tooltip';
+    tooltip.className = 'shift-tooltip';
+    document.body.appendChild(tooltip);
+  }
+
+  tooltip.innerHTML = `
+    <strong>${employeeName}</strong><br>
+    ${startTime} - ${endTime}
+  `;
+
+  tooltip.style.left = event.pageX + 10 + 'px';
+  tooltip.style.top = event.pageY - 10 + 'px';
+  tooltip.classList.add('show');
+}
+
+function hideShiftTooltip() {
+  const tooltip = document.getElementById('shift-tooltip');
+  if (tooltip) {
+    tooltip.classList.remove('show');
+  }
+}
+
+// Add function to edit schedule from calendar
+function editScheduleFromCalendar(scheduleId, userId, fullName, date, startTime, endTime) {
+  // Switch to edit schedule section
+  navigate('edit_schedule');
+
+  // Load the employee in the dropdown
+  setTimeout(() => {
+    const employeeSelect = document.getElementById('editEmployeeSelect');
+    if (employeeSelect) {
+      employeeSelect.value = userId;
+      loadEmployeeSchedules(userId);
+    }
+  }, 100);
+}
+
+// Add these functions to window object so they can be called from HTML
+window.changeMonth = changeMonth;
+window.showShiftTooltip = showShiftTooltip;
+window.hideShiftTooltip = hideShiftTooltip;
+window.editScheduleFromCalendar = editScheduleFromCalendar;
 
 async function handleCreateSchedule() {
     try {
