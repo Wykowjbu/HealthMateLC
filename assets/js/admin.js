@@ -49,41 +49,33 @@ window.addEventListener("pageshow", function (event) {
 // Form submission handlers
 document.addEventListener("DOMContentLoaded", function () {
   // Add Account form
-  const addAccountForm = document.querySelector(
-    "#panel-add-account .panel-form"
-  );
-  if (addAccountForm) {
-    addAccountForm.addEventListener("submit", handleAddAccount);
+  const createAccountBtn = document.getElementById("create-account-btn");
+  if (createAccountBtn) {
+    createAccountBtn.addEventListener("click", handleAddAccount);
   }
 
   // Add Product form
-  const addProductForm = document.querySelector(
-    "#panel-add-product .panel-form"
-  );
-  if (addProductForm) {
-    addProductForm.addEventListener("submit", handleAddProduct);
+  const addProductBtn = document.getElementById("add-product-btn");
+  if (addProductBtn) {
+    addProductBtn.addEventListener("click", handleAddProduct);
   }
 
   // Edit Product form
-  const editProductForm = document.querySelector(
-    "#panel-edit-product .panel-form"
-  );
-  if (editProductForm) {
-    editProductForm.addEventListener("submit", handleEditProduct);
+  const updateProductBtn = document.getElementById("update-product-btn");
+  if (updateProductBtn) {
+    updateProductBtn.addEventListener("click", handleEditProduct);
   }
 
   // Create Store form
-  const createStoreForm = document.querySelector(
-    "#panel-create-store .panel-form"
-  );
-  if (createStoreForm) {
-    createStoreForm.addEventListener("submit", handleCreateStore);
+  const createStoreBtn = document.getElementById("create-store-btn");
+  if (createStoreBtn) {
+    createStoreBtn.addEventListener("click", handleCreateStore);
   }
 
   // Edit Store form
-  const editStoreForm = document.querySelector("#panel-edit-store .panel-form");
-  if (editStoreForm) {
-    editStoreForm.addEventListener("submit", handleEditStore);
+  const updateStoreBtn = document.getElementById("update-store-btn");
+  if (updateStoreBtn) {
+    updateStoreBtn.addEventListener("click", handleEditStore);
   }
 });
 
@@ -450,14 +442,21 @@ function initializeModals() {
 
   // Set up form submission handlers
   const editUserForm = document.getElementById("editUserForm");
-  if (editUserForm) {
-    editUserForm.onsubmit = handleEditUser;
+  const saveUserChangesBtn = document.getElementById("save-user-changes-btn");
+  if (editUserForm && saveUserChangesBtn) {
+    // Remove any existing event listeners
+    const newSaveButton = saveUserChangesBtn.cloneNode(true);
+    saveUserChangesBtn.parentNode.replaceChild(
+      newSaveButton,
+      saveUserChangesBtn
+    );
+    newSaveButton.addEventListener("click", handleEditUser);
   }
 
   const resetPasswordForm = document.getElementById("resetPasswordForm");
-  if (resetPasswordForm) {
-    resetPasswordForm.addEventListener("submit", function (e) {
-      e.preventDefault(); // Make sure the default form submission is prevented
+  const resetPasswordBtn = document.getElementById("reset-password-submit-btn");
+  if (resetPasswordForm && resetPasswordBtn) {
+    resetPasswordBtn.addEventListener("click", function (e) {
       handleResetPassword(e);
     });
   }
@@ -474,6 +473,7 @@ function closeAllModals() {
 function openEditUserModal(user) {
   // Store the user being edited
   currentEditingUser = { ...user };
+  console.log("Current editing user:", currentEditingUser);
 
   // Make sure modal close buttons have the correct onclick handler
   const modal = document.querySelector("#editUserModal");
@@ -481,6 +481,15 @@ function openEditUserModal(user) {
   closeButtons.forEach((button) => {
     button.setAttribute("onclick", "closeAllModals()");
   });
+
+  // Make sure the save button has the correct event handler
+  const saveButton = modal.querySelector("#save-user-changes-btn");
+  if (saveButton) {
+    // Remove existing event listeners to avoid duplicates
+    const newSaveButton = saveButton.cloneNode(true);
+    saveButton.parentNode.replaceChild(newSaveButton, saveButton);
+    newSaveButton.addEventListener("click", handleEditUser);
+  }
 
   // Display the modal
   modal.style.display = "block";
@@ -660,7 +669,10 @@ function calculatePasswordStrength(password) {
 
 // Handle edit user form submission
 function handleEditUser(e) {
-  e.preventDefault();
+  if (e) e.preventDefault();
+
+  // Thêm debug để xác nhận hàm được gọi
+  console.log("handleEditUser function called");
 
   // Get form data
   const userId = document.getElementById("edit-user-id").value;
@@ -669,7 +681,7 @@ function handleEditUser(e) {
     email: document.getElementById("edit-email").value,
     phone: document.getElementById("edit-phone").value,
     role: document.getElementById("edit-role").value,
-    isActive: document.getElementById("edit-status").value === "active",
+    active: document.getElementById("edit-status").value === "active", // Thay đổi từ isActive sang active để khớp với cấu trúc dữ liệu
   };
   console.log("User data:", userData);
 
@@ -685,21 +697,36 @@ function handleEditUser(e) {
 // Update user via API
 function updateUser(userId, userData) {
   showLoading("editUserModal");
+  console.log("Updating user:", userId, userData);
 
-  fetch(`http://localhost:8080/admin/update-account/${userId}`, {
+  // Kiểm tra URL API
+  const apiUrl = `http://localhost:8080/admin/update-account/${userId}`;
+  console.log("API URL:", apiUrl);
+
+  // Kiểm tra dữ liệu JSON
+  const jsonData = JSON.stringify(userData);
+  console.log("JSON Data:", jsonData);
+
+  fetch(apiUrl, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(userData),
+    body: jsonData,
   })
     .then((response) => {
+      console.log("API Response Status:", response.status);
       if (!response.ok) {
-        throw new Error("Lỗi khi cập nhật thông tin tài khoản");
+        throw new Error(
+          `Lỗi khi cập nhật thông tin tài khoản: ${response.status}`
+        );
       }
       return response.json();
     })
     .then((data) => {
+      // Kiểm tra dữ liệu phản hồi
+      console.log("API Response Data:", data);
+
       // Close modal
       document.getElementById("editUserModal").style.display = "none";
 
@@ -711,7 +738,10 @@ function updateUser(userId, userData) {
     })
     .catch((error) => {
       console.error("Error updating user:", error);
-      showFormError("editUserForm", "Lỗi khi cập nhật thông tin tài khoản");
+      showFormError(
+        "editUserForm",
+        `Lỗi khi cập nhật thông tin tài khoản: ${error.message}`
+      );
     })
     .finally(() => {
       hideLoading("editUserModal");
@@ -745,7 +775,7 @@ function updateUserInRealTime(userId, updatedData) {
       phone: updatedData.phone,
       role: updatedData.role,
       username: currentEditingUser.username || "",
-      status: updatedData.isActive ? "active" : "inactive",
+      active: updatedData.active, // Thay đổi từ status sang active
     };
 
     // Update the user details view
@@ -858,6 +888,9 @@ function updateUserDetailsView(updatedUser) {
 
 // Update user data in the global cache
 function updateUserInCache(userId, updatedData) {
+  console.log("Updating user in cache:", userId, updatedData);
+  let userUpdated = false;
+
   // Find and update user in all pharmacy caches
   Object.keys(listUsersByPharmacy).forEach((pharmacyId) => {
     const users = listUsersByPharmacy[pharmacyId];
@@ -865,16 +898,26 @@ function updateUserInCache(userId, updatedData) {
 
     if (userIndex !== -1) {
       // Update user data in cache
+      console.log("Found user to update in pharmacy:", pharmacyId);
+      console.log("Before update:", listUsersByPharmacy[pharmacyId][userIndex]);
+
       listUsersByPharmacy[pharmacyId][userIndex] = {
         ...listUsersByPharmacy[pharmacyId][userIndex],
         fullName: updatedData.fullName,
         email: updatedData.email,
         phone: updatedData.phone,
         role: updatedData.role,
-        status: updatedData.isActive ? "active" : "inactive",
+        active: updatedData.active, // Thay đổi từ status thành active
       };
+
+      console.log("After update:", listUsersByPharmacy[pharmacyId][userIndex]);
+      userUpdated = true;
     }
   });
+
+  if (!userUpdated) {
+    console.error("User not found in any pharmacy cache!");
+  }
 }
 
 // Show loading state in modal
@@ -884,6 +927,8 @@ function showLoading(modalId) {
 
   if (modalId === "resetPasswordModal") {
     submitBtn = document.getElementById("reset-password-submit-btn");
+  } else if (modalId === "editUserModal") {
+    submitBtn = document.getElementById("save-user-changes-btn");
   } else {
     submitBtn = modal.querySelector('button[type="submit"]');
   }
@@ -902,6 +947,8 @@ function hideLoading(modalId) {
 
   if (modalId === "resetPasswordModal") {
     submitBtn = document.getElementById("reset-password-submit-btn");
+  } else if (modalId === "editUserModal") {
+    submitBtn = document.getElementById("save-user-changes-btn");
   } else {
     submitBtn = modal.querySelector('button[type="submit"]');
   }
@@ -1065,41 +1112,7 @@ function showUserDetails(user) {
   detailsWrapper.classList.add("slide-right");
 }
 
-// Update user via API
-function updateUser(userId, userData) {
-  showLoading("editUserModal");
-
-  fetch(`http://localhost:8080/admin/update-account/${userId}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(userData),
-  })
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error("Lỗi khi cập nhật thông tin tài khoản");
-      }
-      return response.json();
-    })
-    .then((data) => {
-      // Close modal
-      document.getElementById("editUserModal").style.display = "none";
-
-      // Show success message
-      showToast("Cập nhật thông tin tài khoản thành công");
-
-      // Update user info in real-time instead of reloading all data
-      updateUserInRealTime(userId, userData);
-    })
-    .catch((error) => {
-      console.error("Error updating user:", error);
-      showFormError("editUserForm", "Lỗi khi cập nhật thông tin tài khoản");
-    })
-    .finally(() => {
-      hideLoading("editUserModal");
-    });
-}
+// Removed duplicate function definition
 
 // ============================================================================
 // SEARCH FUNCTIONALITY
