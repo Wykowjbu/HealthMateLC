@@ -2364,10 +2364,10 @@ function showMedicineInfoSection() {
     if (medicineInfoContainer) {
         medicineInfoContainer.style.display = "block";
     }
-    fetchInventory();
-    // Load medicine info when showing the section
-    //loadMedicineInfo();
-    //setupMedicineFilters();
+    //fetchInventory();
+    //Load medicine info when showing the section
+    loadMedicineInfo();
+    setupMedicineFilters();
 }
 
 // Load Medicine Info from Backend
@@ -2377,49 +2377,50 @@ async function loadMedicineInfo() {
         showMedicineLoading(true);
         
         // Fetch products and inventory data
-        // const [productsResponse, inventoryResponse] = await Promise.all([
-        //     fetch("http://localhost:8080/employee/danh-sach-san-pham", {
-        //         method: "GET",
-        //         headers: {
-        //             "Content-Type": "application/json",
-        //         },
-        //     }),
-        //     fetch("http://localhost:8080/employee/inventory", {
-        //         method: "GET",
-        //         headers: {
-        //             "Content-Type": "application/json",
-        //         },
-        //     })
-        // ]);
-        //const productsResponse=products;
-        const inventoryResponse = await fetch("http://localhost:8080/employee/inventory", {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-            },
-        });
+        const [productsResponse, inventoryResponse] = await Promise.all([
+            fetch("http://localhost:8080/employee/danh-sach-san-pham", {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            }),
+            fetch("http://localhost:8080/employee/inventory", {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            })
+        ]);
+        // const productsResponse=products;
+        // const inventoryResponse = await fetch("http://localhost:8080/employee/inventory", {
+        //     method: "GET",
+        //     headers: {
+        //         "Content-Type": "application/json",
+        //     },
+        // });
 
         
-        if (!inventoryResponse.ok) {
+        if (inventoryResponse.ok) {
            
-            const inventory = await inventoryResponse.json();
             
-            // console.log("Products:", products);
-            // console.log("Inventory:", inventory);
+             inventory = await inventoryResponse.json();
+             products = await productsResponse.json(); // Assuming productsResponse is already an array
+            console.log("Products:", products);
+            console.log("Inventory:", inventory);
+            medicine=products;
+            // Map inventory data to products
+            const medicinesWithInventory = products.map(product => {
+                const inventoryItem = inventory.find(inv => inv.productId === product.id);
+                return {
+                    ...product,
+                    quantity: inventoryItem ? inventoryItem.number : 0
+                };
+            });
             
-            // // Map inventory data to products
-            // const medicinesWithInventory = products.map(product => {
-            //     const inventoryItem = inventory.find(inv => inv.productId === product.id);
-            //     return {
-            //         ...product,
-            //         quantity: inventoryItem ? inventoryItem.number : 0
-            //     };
-            // });
+            allMedicines = medicinesWithInventory;
+            filteredMedicines = [...medicinesWithInventory];
             
-            // allMedicines = medicinesWithInventory;
-            // filteredMedicines = [...medicinesWithInventory];
-            
-            // displayMedicines();
+            displayMedicines();
             
         } else {
             throw new Error(`HTTP Error: ${productsResponse.status} or ${inventoryResponse.status}`);
@@ -2453,7 +2454,7 @@ function displayMedicines() {
     const medicinesToShow = filteredMedicines.slice(startIndex, endIndex);
     
     medicineGrid.innerHTML = medicinesToShow.map(medicine => {
-        const stockStatus = getStockStatus(medicine.quantity);
+        const stockStatus = getStockStatus(inventory.number);
         
         return `
             <div class="medicine-card">
@@ -2465,15 +2466,15 @@ function displayMedicines() {
                         ${stockStatus.text}
                     </div>
                 </div>
-                <div class="medicine-name">${medicine.name || 'Tên thuốc'}</div>
-                <div class="medicine-id">ID: ${medicine.id}</div>
+                <div class="medicine-name">${medicine.productName || 'Tên thuốc'}</div>
+                <div class="medicine-id">ID: ${medicine.productType}</div>
                 <div class="medicine-details">
                     <div class="medicine-price">
                         ${formatCurrency(medicine.price || 0)}
                     </div>
                     <div class="medicine-quantity">
                         <span class="material-icons">inventory</span>
-                        <span class="quantity-number">${medicine.quantity}</span>
+                        <span class="quantity-number">${inventory.number}</span>
                     </div>
                 </div>
             </div>
@@ -2516,7 +2517,7 @@ function filterMedicines() {
     filteredMedicines = allMedicines.filter(medicine => {
         // Stock filter
         if (stockFilter !== "all") {
-            const stockStatus = getStockStatus(medicine.quantity);
+            const stockStatus = getStockStatus(inventory.number);
             if (stockFilter === "in-stock" && stockStatus.class !== "in-stock") return false;
             if (stockFilter === "low-stock" && stockStatus.class !== "low-stock") return false;
             if (stockFilter === "out-of-stock" && stockStatus.class !== "out-of-stock") return false;
@@ -2524,8 +2525,8 @@ function filterMedicines() {
         
         // Search filter
         if (searchTerm) {
-            const nameMatch = (medicine.name || '').toLowerCase().includes(searchTerm);
-            const idMatch = medicine.id.toString().includes(searchTerm);
+            const nameMatch = (medicine.productName || '').toLowerCase().includes(searchTerm);
+            const idMatch = medicine.productType.toString().includes(searchTerm);
             
             if (!nameMatch && !idMatch) return false;
         }
