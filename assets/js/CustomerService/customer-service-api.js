@@ -67,7 +67,6 @@ async function fetchApi(endpoint, options = {}) {
   if (useCache) {
     const cachedData = apiCache.get(cacheKey);
     if (cachedData) {
-      console.log(`Using cached data for: ${endpoint}`);
       return cachedData;
     }
   }
@@ -385,23 +384,16 @@ const customerAPI = {
 const chartAPI = {
   // Tạo dữ liệu biểu đồ mức độ hài lòng từ feedback có sẵn
   getSatisfactionData: function (days) {
-    console.log(
-      "Calculating satisfaction data from feedback for",
-      days,
-      "days"
-    );
     // Lấy feedback từ localStorage
     let feedbacks = [];
     try {
       const storedFeedbacks = localStorage.getItem("feedbacks");
       if (storedFeedbacks) {
         feedbacks = JSON.parse(storedFeedbacks);
-        console.log("Found", feedbacks.length, "feedbacks in localStorage");
       } else {
-        console.log("No feedbacks found in localStorage, using empty array");
       }
     } catch (e) {
-      console.warn("Cannot load feedbacks from localStorage:", e);
+      console.error("Failed to parse feedbacks from localStorage:", e);
     }
 
     return this.calculateSatisfactionFromFeedbacks(feedbacks, days);
@@ -663,11 +655,6 @@ const invoiceAPI = {
     const param = customerId ? `?customerId=${customerId}` : "";
     return await fetchApi(`/invoices/reminders${param}`);
   },
-
-  // Gửi nhắc nhở hàng loạt cho tất cả khách hàng có hóa đơn paid trong 3 ngày
-  sendBulkReminders: async function () {
-    return await fetchApi("/invoices/reminders/send", { method: "POST" });
-  },
 };
 
 //#endregion
@@ -758,10 +745,8 @@ async function checkApiConnection() {
       mode: "no-cors",
       timeout: 5000,
     });
-    console.log("API server is available");
     return true;
   } catch (error) {
-    console.error("API server is unavailable:", error);
     return false;
   }
 }

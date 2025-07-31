@@ -3,27 +3,32 @@
  * Data and API Module - Quản lý dữ liệu và API
  */
 
+// =============================
+// #region IMPORTS & GLOBALS
+// =============================
+
 // Import các API từ module API
 import {
   pharmacyAPI,
   reviewAPI,
   customerAPI,
-  chartAPI,
-  statsAPI,
-  messageAPI,
   invoiceAPI,
-  userAPI,
 } from "./customer-service-api.js";
 
 // Global variable for selected customer ID - accessible to both modules
 window.selectedCustomerId = null;
+
+// #endregion
+
+// =============================
+// #region DEBUG & DROPDOWN HELPERS
+// =============================
 
 // Debug Functions - Embedded in this file instead of separate file
 // Function to log the current state of the dropdown
 function logDropdownState(selectElement) {
   if (!selectElement) return;
   const options = Array.from(selectElement.options);
-  console.log(`Pharmacy dropdown has ${options.length} options:`);
 
   // Create a map to identify duplicates
   const optionMap = new Map();
@@ -41,7 +46,6 @@ function logDropdownState(selectElement) {
     } else {
       optionMap.set(key, index);
     }
-    console.log(`${index}: ${option.value} - ${option.textContent}`);
   });
 }
 
@@ -60,7 +64,6 @@ function monitorPharmacyDropdown() {
   const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
       if (mutation.type === "childList") {
-        console.log("Pharmacy dropdown modified - current state:");
         logDropdownState(pharmacyFilter);
       }
     });
@@ -68,12 +71,13 @@ function monitorPharmacyDropdown() {
 
   // Start observing
   observer.observe(pharmacyFilter, { childList: true });
-  console.log("Pharmacy dropdown monitoring activated");
 }
 
-// ====================================
-// DATA STRUCTURES - Cấu trúc dữ liệu
-// ===================================
+// #endregion
+
+// =============================
+// #region DATA STRUCTURES & INITIAL LOAD
+// =============================
 
 // Biến để lưu trữ dữ liệu từ API
 let pharmacies = [];
@@ -86,8 +90,6 @@ let customers = [];
   try {
     // Tải dữ liệu nhà thuốc
     pharmacies = await pharmacyAPI.getAll();
-    console.log("Pharmacy data loaded:", pharmacies);
-
     // Hiển thị các phần tử UI phụ thuộc vào pharmacies
     populatePharmacyFilters();
   } catch (error) {
@@ -100,22 +102,16 @@ let customers = [];
   // Tải dữ liệu đánh giá
   try {
     reviewsData = await reviewAPI.getAll();
-    console.log("Reviews data loaded:", reviewsData);
   } catch (error) {
     console.error("Failed to load reviews data:", error);
     // Dữ liệu đánh giá sẽ là mảng rỗng nếu có lỗi
     reviewsData = [];
   }
 
-  // NOTE: Upgraded customers data loading removed
-  // Customer service staff cannot access rank upgrade information
-
   // Tải dữ liệu khách hàng
   try {
     customers = await customerAPI.getAll();
-    console.log("Customers data loaded:", customers);
   } catch (error) {
-    console.error("Failed to load customers data:", error);
     customers = [];
   }
 
@@ -177,11 +173,6 @@ function populatePharmacyFilters() {
       }
     });
 
-    // Debug log
-    console.log(
-      `Populated pharmacy dropdown with ${addedPharmacyIds.size} unique pharmacies`
-    );
-
     // Use the debug helper to log the current state of the dropdown
     try {
       logDropdownState(pharmacyFilter);
@@ -191,104 +182,150 @@ function populatePharmacyFilters() {
   }
 }
 
-// ====================================
-// CACHE AND FILTERS - Cache và bộ lọc
-// ===================================
+// Hàm kiểm tra kết nối API server
+async function checkApiConnection() {
+  try {
+    const response = await fetch(
+      "http://localhost:8080/customer-service/pharmacies",
+      {
+        method: "GET",
+      }
+    );
+    return response.ok;
+  } catch (error) {
+    return false;
+  }
+}
 
-// Cache để lưu trữ dữ liệu chi tiết khách hàng để tránh truy vấn lặp lại
-const customerDetailCache = {};
+// #endregion
 
-// API cho khách hàng
-// const customerAPI = {
-//   getAll: function () {
-//     return customers;
-//   },
-//   search: function (query) {
-//     if (!query || query.length < 2) {
-//       return [];
-//     }
-//     return customers.filter(
-//       (customer) =>
-//         customer.name.toLowerCase().includes(query.toLowerCase()) ||
-//         customer.phone.includes(query)
-//     );
-//   },
-//   getById: function (id) {
-//     return customers.find((c) => c.id === parseInt(id));
-//   },
-//   getLatestInvoice: async function (customerId) {
-//     // Giả lập API call bằng Promise
-//     return new Promise((resolve) => {
-//       setTimeout(() => {
-//         const customerInvoices = invoices.filter(
-//           (inv) => inv.customerId === parseInt(customerId)
-//         );
-//         if (customerInvoices.length === 0) {
-//           resolve(null);
-//         } else {
-//           // Sắp xếp theo ngày và lấy cái mới nhất
-//           const latestInvoice = customerInvoices.sort(
-//             (a, b) => new Date(b.date) - new Date(a.date)
-//           )[0];
-//           resolve(latestInvoice);
-//         }
-//       }, 300); // Giả lập độ trễ mạng
-//     });
-//   },
-//   getCustomerDetail: async function (customerId) {
-//     // Chuyển đổi id thành số nguyên để đảm bảo so sánh chính xác
-//     const id = parseInt(customerId);
+// =============================
+// #region REVENUE REPORT
+// =============================
 
-//     // Kiểm tra cache trước
-//     if (customerDetailCache[id]) {
-//       return customerDetailCache[id];
-//     }
+/**
+ * Fetch and render revenue report for dashboard
+ * @param {string|number} pharmacyId - Pharmacy ID or 'all'
+ * @param {string} startDate - YYYY-MM-DD
+ * @param {string} endDate - YYYY-MM-DD
+ */
+async function loadRevenueReport(
+  pharmacyId = "all",
+  startDate = "",
+  endDate = ""
+) {
+  const revenueSummaryEl = document.getElementById("totalRevenue");
+  const revenueTableBody = document.getElementById("revenueTableBody");
+  if (!revenueSummaryEl || !revenueTableBody) return;
 
-//     try {
-//       // Gọi API để lấy thông tin chi tiết khách hàng
-//       const customerDetail = await customerAPI.getCustomerDetail(id);
+  // Show loading state
+  revenueSummaryEl.textContent = "Đang tải...";
+  revenueTableBody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:#718096;">Đang tải dữ liệu...</td></tr>`;
 
-//       // Lưu vào cache để sử dụng sau này
-//       if (customerDetail) {
-//         customerDetailCache[id] = customerDetail;
-//       }
+  try {
+    // Build API URL with query params
+    let url = "http://localhost:8080/customer-service/stats/revenue-report?";
+    if (pharmacyId !== "all" && pharmacyId) url += `pharmacyId=${pharmacyId}&`;
+    if (startDate) url += `startDate=${startDate}&`;
+    if (endDate) url += `endDate=${endDate}&`;
+    url = url.replace(/&$/, ""); // Remove trailing &
 
-//       return customerDetail;
-//     } catch (error) {
-//       console.error(`Failed to get customer detail for ID ${id}:`, error);
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("API error");
+    const data = await res.json();
 
-//       // Nếu API lỗi, thử tìm trong dữ liệu cơ bản
-//       const basicCustomer = customers.find((c) => c.id === id);
+    // Update total revenue stat
+    revenueSummaryEl.textContent = formatCurrency(data.totalRevenue);
 
-//       if (basicCustomer) {
-//         // Tạo thông tin chi tiết cơ bản từ dữ liệu cơ bản
-//         return {
-//           id: basicCustomer.id,
-//           name: basicCustomer.name,
-//           phone: basicCustomer.phone,
-//           email: "(Chưa cập nhật)",
-//           rank: "Thường",
-//           favoriteStore: null,
-//           totalPurchase: 0,
-//           orderCount: 0,
-//           lastPurchaseDate: null,
-//         };
-//       }
+    // Render table rows
+    const rows =
+      (data.pharmacyReports || [])
+        .map(
+          (report) => `
+      <tr>
+        <td>${report.pharmacyName}</td>
+        <td>${formatCurrency(report.revenue)}</td>
+        <td>${report.orderCount}</td>
+      </tr>
+    `
+        )
+        .join("") ||
+      `<tr><td colspan="3" style="text-align:center;color:#718096;">Không có dữ liệu</td></tr>`;
+    revenueTableBody.innerHTML = rows;
+  } catch (err) {
+    revenueSummaryEl.textContent = "Lỗi";
+    revenueTableBody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:#e53e3e;">Không thể tải dữ liệu</td></tr>`;
+  }
+}
 
-//       // Không tìm thấy khách hàng
-//       return null;
-//     }
-//   },
-// };
+// Format currency for VND
+function formatCurrency(amount) {
+  if (typeof amount !== "number") amount = parseFloat(amount) || 0;
+  return amount.toLocaleString("vi-VN", {
+    style: "currency",
+    currency: "VND",
+    maximumFractionDigits: 0,
+  });
+}
 
-// ====================================
-// CUSTOMER INFORMATION MODAL FUNCTIONS
-// ====================================
+// Populate pharmacy filter dropdown for revenue report
+async function populateRevenuePharmacyFilter() {
+  const filter = document.getElementById("revenuePharmacyFilter");
+  if (!filter) return;
+  filter.innerHTML = `<option value="all">Tất cả nhà thuốc</option>`;
+  try {
+    const res = await fetch(
+      "http://localhost:8080/customer-service/pharmacies"
+    );
+    if (!res.ok) throw new Error("API error");
+    const pharmacies = await res.json();
+    pharmacies.forEach((ph) => {
+      const opt = document.createElement("option");
+      opt.value = ph.pharmacyId || ph.id;
+      opt.textContent = ph.name || ph.pharmacyName;
+      filter.appendChild(opt);
+    });
+  } catch (err) {
+    // fallback: only 'all' option
+  }
+}
+
+// Event listener for pharmacy filter (revenue)
+const revenuePharmacyFilter = document.getElementById("revenuePharmacyFilter");
+if (revenuePharmacyFilter) {
+  revenuePharmacyFilter.addEventListener("change", function () {
+    loadRevenueReport(this.value);
+  });
+}
+
+// Event listener for time range filter
+const revenueFilterBtn = document.getElementById("revenueFilterBtn");
+if (revenueFilterBtn) {
+  revenueFilterBtn.addEventListener("click", function () {
+    const pharmacyId =
+      document.getElementById("revenuePharmacyFilter")?.value || "all";
+    const startDate = document.getElementById("revenueStartDate")?.value || "";
+    const endDate = document.getElementById("revenueEndDate")?.value || "";
+    loadRevenueReport(pharmacyId, startDate, endDate);
+  });
+}
+
+// Update initial load to use current filter values
+populateRevenuePharmacyFilter().then(() => {
+  const filter = document.getElementById("revenuePharmacyFilter");
+  const startDate = document.getElementById("revenueStartDate")?.value || "";
+  const endDate = document.getElementById("revenueEndDate")?.value || "";
+  loadRevenueReport(filter ? filter.value : "all", startDate, endDate);
+});
+
+// #endregion
+
+// =============================
+// #region CUSTOMER INFO MODAL
+// =============================
 
 // Hiển thị thông tin khách hàng trong modal
 async function showCustomerInfo(customerId) {
-  console.log(`Hiển thị thông tin khách hàng ID: ${customerId}`);
-
   // Hiển thị loading state
   const modalContent = document.querySelector(".modal-content");
   const loadingIndicator = document.createElement("div");
@@ -517,9 +554,14 @@ function sendMessageToCustomer() {
 // Add debugging
 const originalShowCustomerInfo = showCustomerInfo;
 showCustomerInfo = function (customerId) {
-  console.log("showCustomerInfo called with ID:", customerId);
   originalShowCustomerInfo(customerId);
 };
+
+// #endregion
+
+// =============================
+// #region UTILS & EXPORTS
+// =============================
 
 // Kiểm tra trạng thái kết nối API khi khởi động
 (async function checkApiStatus() {
@@ -551,7 +593,7 @@ showCustomerInfo = function (customerId) {
   setTimeout(() => {
     apiStatusElement.classList.add("fade-out");
     setTimeout(() => apiStatusElement.remove(), 500);
-  }, 5000);
+  }, 500);
 })();
 
 // Export các hàm cần thiết

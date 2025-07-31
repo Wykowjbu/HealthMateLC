@@ -23,7 +23,7 @@ async function checkSessionOnLoad() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-  checkSessionOnLoad(); // <--- Add this line
+  checkSessionOnLoad();
   loadInitialData();
   initializeNavigation();
   initializeUserDropdown();
@@ -33,32 +33,40 @@ document.addEventListener("DOMContentLoaded", function () {
   initializeModals();
 });
 
-window.addEventListener("pageshow", function(event) {
+window.addEventListener("pageshow", function (event) {
   checkSessionOnLoad();
 });
 
 // Form submission handlers
 document.addEventListener("DOMContentLoaded", function () {
   // Add Account form
-  const addAccountForm = document.querySelector("#panel-add-account .panel-form");
+  const addAccountForm = document.querySelector(
+    "#panel-add-account .panel-form"
+  );
   if (addAccountForm) {
     addAccountForm.addEventListener("submit", handleAddAccount);
   }
 
   // Add Product form
-  const addProductForm = document.querySelector("#panel-add-product .panel-form");
+  const addProductForm = document.querySelector(
+    "#panel-add-product .panel-form"
+  );
   if (addProductForm) {
     addProductForm.addEventListener("submit", handleAddProduct);
   }
 
   // Edit Product form
-  const editProductForm = document.querySelector("#panel-edit-product .panel-form");
+  const editProductForm = document.querySelector(
+    "#panel-edit-product .panel-form"
+  );
   if (editProductForm) {
     editProductForm.addEventListener("submit", handleEditProduct);
   }
 
   // Create Store form
-  const createStoreForm = document.querySelector("#panel-create-store .panel-form");
+  const createStoreForm = document.querySelector(
+    "#panel-create-store .panel-form"
+  );
   if (createStoreForm) {
     createStoreForm.addEventListener("submit", handleCreateStore);
   }
@@ -249,6 +257,7 @@ function loadInitialData() {
   }
 }
 
+
 // ============================================================================
 // ACCOUNTS MANAGEMENT
 // ============================================================================
@@ -267,7 +276,6 @@ function renderListAccounts() {
       const listPharmacyData = data.listPharmacies;
       console.log("List pharmacies:", listPharmacyData);
       const listUser = data.listUsersByPharmacy;
-      console.log("List users by pharmacy:", listUser);
 
       // Store pharmacy data globally
       listPharmacy = listPharmacyData;
@@ -356,6 +364,7 @@ function renderPharmacyList(pharmacyData, userData) {
   });
 }
 
+
 // Update employee count display for pharmacy items
 function updatePharmacyEmployeeCount() {
   const storeItems = document.querySelectorAll(".store-item");
@@ -433,7 +442,6 @@ function showUsersForPharmacy(users) {
 function showUserDetails(user) {
   const usersWrapper = document.querySelector(".list-users-wrapper");
   const detailsWrapper = document.querySelector(".user-details-wrapper");
-  console.log("Showing details for user:", user);
   if (!usersWrapper || !detailsWrapper) return;
   const initials = user.fullName
     .split(" ")
@@ -972,6 +980,7 @@ function updateUserInCache(userId, updatedData) {
   });
 }
 
+
 // Show loading state in modal
 function showLoading(modalId) {
   const modal = document.getElementById(modalId);
@@ -1064,6 +1073,325 @@ function closeEditUserModal() {
   const modal = document.querySelector("#editUserModal");
   modal.style.display = "none";
 }
+
+function initializeModals() {
+  // Close modal when clicking X or cancel button
+  document
+    .querySelectorAll(".close-modal, .close-modal-btn")
+    .forEach((element) => {
+      element.addEventListener("click", function () {
+        document.querySelectorAll(".modal").forEach((modal) => {
+          modal.style.display = "none";
+        });
+        // Reset current editing user when closing modal
+        currentEditingUser = null;
+      });
+    });
+
+  // Close modal when clicking outside
+  window.addEventListener("click", function (event) {
+    document.querySelectorAll(".modal").forEach((modal) => {
+      if (event.target === modal) {
+        modal.style.display = "none";
+        // Reset current editing user when closing modal
+        currentEditingUser = null;
+      }
+    });
+  });
+
+  // Handle edit user form submission
+  document
+    .getElementById("editUserForm")
+    .addEventListener("submit", handleEditUser);
+
+  // Handle reset password form submission
+  document
+    .getElementById("resetPasswordForm")
+    .addEventListener("submit", handleResetPassword);
+}
+
+// Open edit user modal
+function openEditUserModal(user) {
+  // Store the user being edited
+  currentEditingUser = { ...user };
+
+  const modal = document.querySelector("#editUserModal");
+  modal.style.display = "block";
+
+  // Add form submission handler
+  const editUserForm = document.getElementById("editUserForm");
+  if (editUserForm) {
+    editUserForm.addEventListener("submit", handleEditUser);
+  }
+
+  // Populate form fields
+  document.getElementById("edit-user-id").value = user.userId;
+  document.getElementById("edit-username").value = user.username || "";
+  document.getElementById("edit-fullname").value = user.fullName || "";
+  document.getElementById("edit-email").value = user.email || "";
+  document.getElementById("edit-phone").value = user.phone || "";
+  document.getElementById("edit-role").value = user.role;
+  document.getElementById("edit-status").value = user.active
+    ? "active"
+    : "inactive";
+}
+
+
+// Handle edit user form submission
+function handleEditUser(e) {
+  e.preventDefault();
+
+  // Get form data
+  const userId = document.getElementById("edit-user-id").value;
+  const userData = {
+    fullName: document.getElementById("edit-fullname").value,
+    email: document.getElementById("edit-email").value,
+    phone: document.getElementById("edit-phone").value,
+    role: document.getElementById("edit-role").value,
+    isActive: document.getElementById("edit-status").value === "active",
+  };
+  console.log("User data:", userData);
+
+  // Validate form data
+  if (!userData.fullName || !userData.email || !userData.phone) {
+    showFormError("editUserForm", "Vui lòng nhập đầy đủ thông tin");
+    return;
+  }
+  // Send API request to update user
+  updateUser(userId, userData);
+}
+
+// Update user via API
+function updateUser(userId, userData) {
+  showLoading("editUserModal");
+
+  fetch(`http://localhost:8080/admin/update-account/${userId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(userData),
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error("Lỗi khi cập nhật thông tin tài khoản");
+      }
+      return response.json();
+    })
+    .then((data) => {
+      // Close modal
+      document.getElementById("editUserModal").style.display = "none";
+
+      // Show success message
+      showToast("Cập nhật thông tin tài khoản thành công");
+
+      // Update user info in real-time instead of reloading all data
+      updateUserInRealTime(userId, userData);
+    })
+    .catch((error) => {
+      console.error("Error updating user:", error);
+      showFormError("editUserForm", "Lỗi khi cập nhật thông tin tài khoản");
+    })
+    .finally(() => {
+      hideLoading("editUserModal");
+    });
+}
+
+// Update user info in real-time without reloading
+function updateUserInRealTime(userId, updatedData) {
+  if (!currentEditingUser) return;
+
+  // Update user data in the global cache
+  updateUserInCache(userId, updatedData);
+
+  // Update pharmacy employee count display
+  updatePharmacyEmployeeCount();
+
+  // Store the updated user info for reference
+  let updatedUser = null;
+
+  // Find the current user details view to get original data
+  const userDetailsWrapper = document.querySelector(".user-details-wrapper");
+  if (
+    userDetailsWrapper &&
+    userDetailsWrapper.classList.contains("slide-right")
+  ) {
+    // Create updated user object with all necessary data
+    updatedUser = {
+      userId: userId,
+      fullName: updatedData.fullName,
+      email: updatedData.email,
+      phone: updatedData.phone,
+      role: updatedData.role,
+      username: currentEditingUser.username || "",
+      status: updatedData.isActive ? "active" : "inactive",
+    };
+
+    // Update the user details view
+    updateUserDetailsView(updatedUser);
+  }
+
+  // Find and update user in the currently displayed user list
+  // Use the original user data before update to find the correct user
+  const userItems = document.querySelectorAll(".user-item");
+  userItems.forEach((userItem) => {
+    const userInfo = userItem.querySelector(".user-info");
+    const emailElement = userInfo?.querySelector("p:first-of-type");
+    const nameElement = userInfo?.querySelector("h4");
+
+    // Find user by original email and name combination
+    if (
+      emailElement &&
+      nameElement &&
+      emailElement.textContent === currentEditingUser.email &&
+      nameElement.textContent === currentEditingUser.fullName
+    ) {
+      // Update user info in the list
+      nameElement.textContent = updatedData.fullName;
+      emailElement.textContent = updatedData.email;
+
+      // Update phone
+      const phoneElement = userInfo.querySelector("p:last-of-type");
+      if (phoneElement) phoneElement.textContent = updatedData.phone;
+
+      // Update role
+      const roleElement = userItem.querySelector(".user-role");
+      if (roleElement) {
+        roleElement.textContent =
+          updatedData.role === "manager" ? "Quản lý" : "Nhân viên";
+        roleElement.className = `user-role ${updatedData.role}`;
+      }
+
+      // Update avatar
+      const avatarElement = userItem.querySelector(".user-avatar");
+      if (avatarElement) {
+        const initials = updatedData.fullName
+          .split(" ")
+          .map((name) => name.charAt(0))
+          .join("")
+          .substring(0, 2)
+          .toUpperCase();
+        avatarElement.textContent = initials;
+      }
+
+      // Update the click handler with new user data
+      if (updatedUser) {
+        userItem.removeEventListener("click", userItem.clickHandler);
+        userItem.clickHandler = () => showUserDetails(updatedUser);
+        userItem.addEventListener("click", userItem.clickHandler);
+      }
+    }
+  });
+
+  // Clear the current editing user
+  currentEditingUser = null;
+}
+
+// Helper function to update user details view
+function updateUserDetailsView(updatedUser) {
+  const userDetails = document.querySelector(".user-details");
+  if (!userDetails) return;
+
+  // Update name and avatar
+  const nameElement = userDetails.querySelector(".user-details-info h2");
+  const avatarElement = userDetails.querySelector(".user-details-avatar");
+
+  if (nameElement) nameElement.textContent = updatedUser.fullName;
+  if (avatarElement) {
+    const initials = updatedUser.fullName
+      .split(" ")
+      .map((name) => name.charAt(0))
+      .join("")
+      .substring(0, 2)
+      .toUpperCase();
+    avatarElement.textContent = initials;
+  }
+
+  // Update role
+  const roleElement = userDetails.querySelector(".user-details-role");
+  if (roleElement) {
+    roleElement.textContent =
+      updatedUser.role === "manager" ? "Quản lý" : "Nhân viên";
+    roleElement.className = `user-details-role ${updatedUser.role}`;
+  }
+
+  // Update contact info
+  const emailField = userDetails.querySelector(
+    ".user-details-field:nth-child(3) p"
+  );
+  const phoneField = userDetails.querySelector(
+    ".user-details-field:nth-child(4) p"
+  );
+
+  if (emailField) emailField.textContent = updatedUser.email;
+  if (phoneField) phoneField.textContent = updatedUser.phone;
+
+  // Update the edit button click handler with new user data
+  const editBtn = userDetails.querySelector("#edit-user-btn");
+  if (editBtn) {
+    editBtn.removeEventListener("click", editBtn.clickHandler);
+    editBtn.clickHandler = () => openEditUserModal(updatedUser);
+    editBtn.addEventListener("click", editBtn.clickHandler);
+  }
+}
+
+// Update user data in the global cache
+function updateUserInCache(userId, updatedData) {
+  // Find and update user in all pharmacy caches
+  Object.keys(listUsersByPharmacy).forEach((pharmacyId) => {
+    const users = listUsersByPharmacy[pharmacyId];
+    const userIndex = users.findIndex((user) => user.userId === userId);
+
+    if (userIndex !== -1) {
+      // Update user data in cache
+      listUsersByPharmacy[pharmacyId][userIndex] = {
+        ...listUsersByPharmacy[pharmacyId][userIndex],
+        fullName: updatedData.fullName,
+        email: updatedData.email,
+        phone: updatedData.phone,
+        role: updatedData.role,
+        status: updatedData.isActive ? "active" : "inactive",
+      };
+    }
+  });
+}
+
+// Show loading state in modal
+function showLoading(modalId) {
+  const modal = document.getElementById(modalId);
+  const submitBtn = modal.querySelector('button[type="submit"]');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML =
+      '<span class="material-icons spinning">refresh</span> Đang xử lý...';
+  }
+}
+
+// Hide loading state in modal
+function hideLoading(modalId) {
+  const modal = document.getElementById(modalId);
+  const submitBtn = modal.querySelector('button[type="submit"]');
+
+  if (submitBtn) {
+    submitBtn.disabled = false;
+
+    if (modalId === "editUserModal") {
+      submitBtn.innerHTML = "Lưu thay đổi";
+    } else if (modalId === "resetPasswordModal") {
+      submitBtn.innerHTML = "Đặt lại mật khẩu";
+    }
+  }
+}
+
+// Render add account panel
+function renderAddAccount() {
+  loadPharmacyOptions();
+  loadRoles();
+}
+
+// ============================================================================
+// SEARCH FUNCTIONALITY
+// ============================================================================
 
 // Initialize search functionality
 function initializeSearch() {
@@ -1184,6 +1512,7 @@ function performSearch() {
     });
   }, 300);
 }
+
 // ============================================================================
 // PRODUCTS MANAGEMENT
 // ============================================================================
@@ -1563,7 +1892,6 @@ function handleProductUnitChange() {
     productUnitCustom.value = "";
   }
 }
-
 // Render add product panel
 function renderAddProduct() {
   loadProductTypes();
@@ -1616,7 +1944,9 @@ function initializeCustomInputs() {
   }
 }
 
-// ========== STORES MANAGEMENT (SERVER-SIDE PAGINATION) =============
+// ============================================================================
+// STORES MANAGEMENT (SERVER-SIDE PAGINATION)
+// ============================================================================
 
 function renderCreateStore() {
   loadManagerOptions();
@@ -2190,13 +2520,24 @@ function handleCreateStore(e) {
   })
     .then((res) => res.json())
     .then((res) => {
-      showToast(res.message || (res.message && res.message.includes("thành công") ? res.message : "Có lỗi xảy ra"));
+      showToast(
+        res.message ||
+          (res.message && res.message.includes("thành công")
+            ? res.message
+            : "Có lỗi xảy ra")
+      );
       if (res.message && res.message.includes("thành công")) {
         e.target.reset();
-        document.querySelectorAll(".panel").forEach((panel) => panel.classList.remove("active"));
+        document
+          .querySelectorAll(".panel")
+          .forEach((panel) => panel.classList.remove("active"));
         document.getElementById("panel-list-stores").classList.add("active");
-        document.querySelectorAll(".nav-item").forEach((item) => item.classList.remove("active"));
-        document.querySelector('.nav-item[data-type="list-stores"]').classList.add("active");
+        document
+          .querySelectorAll(".nav-item")
+          .forEach((item) => item.classList.remove("active"));
+        document
+          .querySelector('.nav-item[data-type="list-stores"]')
+          .classList.add("active");
         updateHeaderTitle("list-stores");
         renderListStores();
       }
@@ -2234,8 +2575,12 @@ function handleEditStore(e) {
         showToast(result.message || "Cập nhật thành công!");
         document.getElementById("panel-edit-store").classList.remove("active");
         document.getElementById("panel-list-stores").classList.add("active");
-        document.querySelectorAll(".nav-item").forEach((item) => item.classList.remove("active"));
-        document.querySelector('.nav-item[data-type="list-stores"]').classList.add("active");
+        document
+          .querySelectorAll(".nav-item")
+          .forEach((item) => item.classList.remove("active"));
+        document
+          .querySelector('.nav-item[data-type="list-stores"]')
+          .classList.add("active");
         updateHeaderTitle("list-stores");
         renderListStores();
         document.getElementById("edit-store-id").value = "";
@@ -2272,8 +2617,6 @@ function loadManagerOptions() {
 function loadRevenueData() {
   // Placeholder: Implement fetching revenue data if needed
 }
-
-
 async function logout() {
     showToast('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
     const response = await fetch('http://localhost:8080/api/auth/logout', {
@@ -2374,77 +2717,12 @@ function getRoleDisplayName(role) {
   };
   return roleNames[role] || role;
 }
+
 // Render add account panel
 function renderAddAccount() {
   loadPharmacyOptions();
   loadRoles();
   updateHeaderTitle("add-account");
-}
-
-function showToast(message, type = 'info', callback = null) {
-  let toastContainer = document.querySelector(".toast-container");
-  if (!toastContainer) {
-    toastContainer = document.createElement("div");
-    toastContainer.className = "toast-container";
-    document.body.appendChild(toastContainer);
-  }
-
-  const toast = document.createElement("div");
-  toast.className = `toast ${type}`;
-
-  let icon = 'check_circle';
-  let buttons = '';
-
-  if (type === 'confirm') {
-    icon = 'help';
-    buttons = `
-      <div class="toast-actions">
-        <button class="toast-btn toast-btn-cancel">Hủy</button>
-        <button class="toast-btn toast-btn-confirm">Xác nhận</button>
-      </div>
-    `;
-  }
-
-  toast.innerHTML = `
-    <div class="toast-content">
-      <span class="material-icons toast-icon">${icon}</span>
-      <span class="toast-message">${message}</span>
-    </div>
-    ${buttons}
-    <span class="toast-close">×</span>
-  `;
-
-  toastContainer.appendChild(toast);
-  setTimeout(() => toast.classList.add("show"), 10);
-
-  // Handle close button
-  toast.querySelector(".toast-close").addEventListener("click", () => {
-    toast.classList.remove("show");
-    setTimeout(() => toast.remove(), 300);
-  });
-
-  // Handle confirm dialog buttons
-  if (type === 'confirm') {
-    const cancelBtn = toast.querySelector(".toast-btn-cancel");
-    const confirmBtn = toast.querySelector(".toast-btn-confirm");
-
-    cancelBtn.addEventListener("click", () => {
-      toast.classList.remove("show");
-      setTimeout(() => toast.remove(), 300);
-    });
-
-    confirmBtn.addEventListener("click", () => {
-      toast.classList.remove("show");
-      setTimeout(() => toast.remove(), 300);
-      if (callback) callback();
-    });
-  } else {
-    // Auto remove for regular toasts
-    setTimeout(() => {
-      toast.classList.remove("show");
-      setTimeout(() => toast.remove(), 300);
-    }, 5000);
-  }
 }
 
 function attachAddStoreButtonEvent() {

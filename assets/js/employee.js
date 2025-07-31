@@ -11,6 +11,7 @@ let orderTotal = 0;
 // Product Management Variables
 let products = [];
 let filteredProducts = [];
+let inventory=[]
 
 // Utility functions to get current user info
 function getCurrentUserId() {
@@ -105,50 +106,502 @@ function setupNavigation() {
 
     if (navCreateCustomer) {
         navCreateCustomer.addEventListener("click", () => {
-            setActiveNav(navCreateCustomer)
-            showCustomerSection()
-            openAddCustomerForm()
+            setActiveNavItem(navCreateCustomer)
+            showCreateCustomerForm()
         })
     }
 
     if (navCustomerList) {
         navCustomerList.addEventListener("click", () => {
-            setActiveNav(navCustomerList)
+            setActiveNavItem(navCustomerList)
             showCustomerSection()
-            openCustomerList()
         })
     }
 
     if (navCreateOrder) {
         navCreateOrder.addEventListener("click", () => {
-            setActiveNav(navCreateOrder)
+            setActiveNavItem(navCreateOrder)
             showCreateOrderForm()
         })
     }
 
     if (navOrderList) {
         navOrderList.addEventListener("click", () => {
-            setActiveNav(navOrderList)
-            showNotification("Chức năng danh sách đơn hàng đang được phát triển", "info")
+            setActiveNavItem(navOrderList)
+            showOrderListSection()
         })
     }
 
     if (navSchedule) {
         navSchedule.addEventListener("click", () => {
-            setActiveNav(navSchedule)
-            showSchedule()
+            setActiveNavItem(navSchedule)
+            showScheduleSection()
         })
     }
 
     if (navMedicineInfo) {
         navMedicineInfo.addEventListener("click", () => {
-            setActiveNav(navMedicineInfo)
-            // Log user info và fetch employee info khi click vào thông tin thuốc
-            logCurrentUserInfo()
-            getCurrentEmployeeInfo()
-            showNotification("Chức năng thông tin thuốc đang được phát triển", "info")
+            setActiveNavItem(navMedicineInfo)
+            showMedicineInfoSection()
         })
     }
+}
+
+// Set active navigation item
+function setActiveNavItem(activeItem) {
+    // Remove active class from all nav items
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    
+    // Add active class to the clicked item
+    activeItem.classList.add('active');
+}
+
+// Show different sections
+function showCustomerSection() {
+    const customerContainer = document.querySelector(".customer-container");
+    const createOrderForm = document.getElementById("createOrderForm");
+    const orderListContainer = document.getElementById("orderListContainer");
+    const scheduleContainer = document.getElementById("scheduleContainer");
+    
+    if (customerContainer) customerContainer.style.display = "block";
+    if (createOrderForm) createOrderForm.style.display = "none";
+    if (orderListContainer) orderListContainer.style.display = "none";
+    if (scheduleContainer) scheduleContainer.style.display = "none";
+    
+    // Hide any open forms
+    closeAddCustomerForm();
+    closeCustomerDetails();
+    closeMainEditCustomer();
+    
+    currentSection = "customers";
+}
+
+function showOrderListSection() {
+    hideAllSections();
+    currentSection = "orders";
+    
+    const orderListContainer = document.getElementById("orderListContainer");
+    if (orderListContainer) {
+        orderListContainer.style.display = "block";
+    }
+    
+    // Reset all filters when showing order list section
+    resetOrderFilters();
+    
+    // Load orders when showing the section
+    loadOrders();
+}
+
+function showScheduleSection() {
+    hideAllSections();
+    currentSection = "schedule";
+    
+    const scheduleContainer = document.getElementById("scheduleContainer");
+    if (scheduleContainer) {
+        scheduleContainer.style.display = "block";
+    }
+}
+
+function showCreateCustomerForm() {
+    showCustomerSection();
+    openAddCustomerForm();
+}
+
+// Order List Management
+let allOrders = [];
+let filteredOrders = [];
+let currentOrderPage = 1;
+let ordersPerPage = 10;
+let selectedOrderForDetail = null;
+
+// Load Orders from Backend
+async function loadOrders() {
+    try {
+        showOrdersLoading(true);
+        
+        console.log("=== LOADING ALL PHARMACY ORDERS ===");
+        console.log("Displaying all orders from the pharmacy");
+        console.log("====================================");
+        
+        const response = await fetch("http://localhost:8080/employee/danh-sach-don-hang", {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        });
+        
+        if (response.ok) {
+            const allOrdersFromAPI = await response.json();
+            console.log("All pharmacy orders from API:", allOrdersFromAPI);
+            console.log(`Total orders found: ${allOrdersFromAPI.length}`);
+            
+            // Hiển thị TẤT CẢ đơn hàng của nhà thuốc
+            allOrders = allOrdersFromAPI;
+            filteredOrders = [...allOrdersFromAPI];
+            
+            displayOrders();
+            updateOrderStats();
+            setupOrderFilters();
+            
+        } else {
+            throw new Error(`HTTP Error: ${response.status}`);
+        }
+        
+    } catch (error) {
+        console.error("Error loading orders:", error);
+        showNotification("Lỗi khi tải danh sách đơn hàng: " + error.message, "error");
+    } finally {
+        showOrdersLoading(false);
+    }
+}
+
+// Display Orders in Table
+function displayOrders() {
+    const tableBody = document.getElementById("ordersTableBody");
+    const ordersEmpty = document.getElementById("ordersEmpty");
+    const ordersTableContainer = document.getElementById("ordersTableContainer");
+    
+    if (filteredOrders.length === 0) {
+        ordersEmpty.style.display = "flex";
+        ordersTableContainer.style.display = "none";
+        return;
+    }
+    
+    ordersEmpty.style.display = "none";
+    ordersTableContainer.style.display = "block";
+    
+    // Calculate pagination
+    const startIndex = (currentOrderPage - 1) * ordersPerPage;
+    const endIndex = startIndex + ordersPerPage;
+    const ordersToShow = filteredOrders.slice(startIndex, endIndex);
+    
+    tableBody.innerHTML = ordersToShow.map(order => {
+        return `
+            <tr>
+                <td onclick="viewOrderDetail(${order.invoiceId})">
+                    <span class="order-id">#${order.invoiceId}</span>
+                </td>
+                <td onclick="viewOrderDetail(${order.invoiceId})">
+                    <div class="customer-info">
+                        <div class="customer-name">${order.customerName || 'N/A'}</div>
+                    </div>
+                </td>
+                <td onclick="viewOrderDetail(${order.invoiceId})">
+                    <div class="order-date">${formatDateTime(order.invoiceDate)}</div>
+                </td>
+                <td onclick="viewOrderDetail(${order.invoiceId})">
+                    <div class="order-amount">${formatCurrency(order.totalAmount)}</div>
+                </td>
+                <td onclick="viewOrderDetail(${order.invoiceId})">
+                    <span class="payment-method payment-${order.payment}">${getPaymentDisplayName(order.payment)}</span>
+                </td>
+                <td onclick="viewOrderDetail(${order.invoiceId})">
+                    <span class="order-status status-${order.status}">${getStatusDisplayName(order.status)}</span>
+                </td>
+                <td onclick="viewOrderDetail(${order.invoiceId})">
+                    <div class="employee-name">${order.employeeName || 'N/A'}</div>
+                </td>
+                <td>
+                    <div class="order-actions-cell">
+                        <button class="action-btn view-btn" onclick="viewOrderDetail(${order.invoiceId})">
+                            <span class="material-icons">visibility</span>
+                            Xem
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+    
+    updatePagination();
+}
+
+// Update Order Statistics
+function updateOrderStats() {
+    const today = new Date().toDateString();
+    const todayOrders = allOrders.filter(order => 
+        new Date(order.invoiceDate).toDateString() === today
+    );
+    
+    const pendingCount = allOrders.filter(order => order.status === 'pending').length;
+    const completedCount = allOrders.filter(order => order.status === 'paid').length;
+    const totalCount = allOrders.length;
+    
+   
+    
+    document.getElementById("pendingOrdersCount").textContent = pendingCount;
+    document.getElementById("completedOrdersCount").textContent = completedCount;
+    document.getElementById("totalOrdersCount").textContent = totalCount;
+}
+
+// Setup Order Filters
+function setupOrderFilters() {
+    const statusFilter = document.getElementById("orderStatusFilter");
+    const paymentFilter = document.getElementById("orderPaymentFilter");
+    const dateFilter = document.getElementById("orderDateFilter");
+    const searchInput = document.getElementById("orderSearchInput");
+    
+    if (statusFilter) {
+        statusFilter.addEventListener("change", filterOrders);
+    }
+    
+    if (paymentFilter) {
+        paymentFilter.addEventListener("change", filterOrders);
+    }
+    
+    if (dateFilter) {
+        dateFilter.addEventListener("change", filterOrders);
+    }
+    
+    if (searchInput) {
+        searchInput.addEventListener("input", filterOrders);
+    }
+}
+
+// Filter Orders
+function filterOrders() {
+    const statusFilter = document.getElementById("orderStatusFilter").value;
+    const paymentFilter = document.getElementById("orderPaymentFilter").value;
+    const dateFilter = document.getElementById("orderDateFilter").value;
+    const searchTerm = document.getElementById("orderSearchInput").value.toLowerCase();
+    
+    filteredOrders = allOrders.filter(order => {
+        // Status filter
+        if (statusFilter !== "all" && order.status !== statusFilter) {
+            return false;
+        }
+        
+        // Payment filter
+        if (paymentFilter !== "all" && order.payment !== paymentFilter) {
+            return false;
+        }
+        
+        // Date filter
+        if (dateFilter) {
+            const orderDate = new Date(order.invoiceDate).toDateString();
+            const filterDate = new Date(dateFilter).toDateString();
+            if (orderDate !== filterDate) {
+                return false;
+            }
+        }
+        
+        // Search filter
+        if (searchTerm) {
+            const orderIdMatch = order.invoiceId.toString().includes(searchTerm);
+            const customerNameMatch = (order.customerName || '').toLowerCase().includes(searchTerm);
+            
+            if (!orderIdMatch && !customerNameMatch) {
+                return false;
+            }
+        }
+        
+        return true;
+    });
+    
+    currentOrderPage = 1;
+    displayOrders();
+}
+
+// Clear All Order Filters
+function clearOrderFilters() {
+    // Reset all filter inputs
+    document.getElementById("orderStatusFilter").value = "all";
+    document.getElementById("orderPaymentFilter").value = "all";
+    document.getElementById("orderDateFilter").value = "";
+    document.getElementById("orderSearchInput").value = "";
+    
+    // Reset filtered orders to show all orders
+    filteredOrders = [...allOrders];
+    
+    currentOrderPage = 1;
+    displayOrders();
+    updatePagination();
+    
+    showNotification("Đã xóa tất cả bộ lọc", "success");
+}
+
+// Reset Order Filters (Silent - no notification)
+function resetOrderFilters() {
+    // Reset all filter inputs silently
+    const statusFilter = document.getElementById("orderStatusFilter");
+    const paymentFilter = document.getElementById("orderPaymentFilter");
+    const dateFilter = document.getElementById("orderDateFilter");
+    const searchInput = document.getElementById("orderSearchInput");
+    
+    if (statusFilter) statusFilter.value = "all";
+    if (paymentFilter) paymentFilter.value = "all";
+    if (dateFilter) dateFilter.value = "";
+    if (searchInput) searchInput.value = "";
+    
+    // Reset filtered orders to show all orders (will be set by loadOrders)
+    // Note: We don't call displayOrders here because loadOrders will do it
+}
+
+// View Order Detail
+function viewOrderDetail(orderId) {
+    const order = allOrders.find(o => o.invoiceId === orderId);
+    if (!order) {
+        showNotification("Không tìm thấy đơn hàng", "error");
+        return;
+    }
+    
+    selectedOrderForDetail = order;
+    populateOrderDetailModal(order);
+    document.getElementById("orderDetailModal").style.display = "flex";
+}
+
+// Populate Order Detail Modal
+function populateOrderDetailModal(order) {
+    // Order info
+    document.getElementById("orderDetailId").textContent = order.invoiceId;
+    document.getElementById("detailOrderId").textContent = `#${order.invoiceId}`;
+    document.getElementById("detailOrderDate").textContent = formatDateTime(order.invoiceDate);
+    document.getElementById("detailOrderStatus").textContent = getStatusDisplayName(order.status);
+    document.getElementById("detailOrderStatus").className = `info-value status status-${order.status}`;
+    document.getElementById("detailOrderPayment").textContent = getPaymentDisplayName(order.payment);
+    document.getElementById("detailOrderEmployee").textContent = order.employeeName || 'N/A';
+    document.getElementById("detailOrderPoints").textContent = order.pointsEarned || 0;
+    
+    // Customer info
+    document.getElementById("detailCustomerName").textContent = order.customerName || 'N/A';
+    document.getElementById("detailCustomerAvatar").textContent = (order.customerName || 'KH').charAt(0).toUpperCase();
+    
+    // Order notes
+    const orderNotesSection = document.getElementById("orderNotesSection");
+    const detailOrderNotes = document.getElementById("detailOrderNotes");
+    if (order.notes && order.notes.trim()) {
+        orderNotesSection.style.display = "block";
+        detailOrderNotes.textContent = order.notes;
+    } else {
+        orderNotesSection.style.display = "none";
+    }
+    
+    // Order items
+    const orderItemsBody = document.getElementById("detailOrderItems");
+    if (order.invoiceDetails && order.invoiceDetails.length > 0) {
+        orderItemsBody.innerHTML = order.invoiceDetails.map(item => `
+            <tr>
+                <td>${item.productName || 'N/A'}</td>
+                <td>${item.quantity}</td>
+                <td>${formatCurrency(item.price)}</td>
+                <td>${formatCurrency(item.quantity * item.price)}</td>
+            </tr>
+        `).join('');
+    } else {
+        orderItemsBody.innerHTML = '<tr><td colspan="4">Không có sản phẩm</td></tr>';
+    }
+    
+    // Totals
+    document.getElementById("detailSubTotal").textContent = formatCurrency(order.totalAmount);
+    document.getElementById("detailTotalAmount").textContent = formatCurrency(order.totalAmount);
+}
+
+// Close Order Detail Modal
+function closeOrderDetail() {
+    document.getElementById("orderDetailModal").style.display = "none";
+    selectedOrderForDetail = null;
+}
+
+// Print Invoice
+function printInvoice() {
+    if (!selectedOrderForDetail) return;
+    
+    // Implementation for printing invoice
+    console.log("Printing invoice for order:", selectedOrderForDetail);
+    showNotification("Chức năng in hóa đơn sẽ được cập nhật", "info");
+}
+
+// Edit Order
+function editOrder() {
+    if (!selectedOrderForDetail) return;
+    
+    // Implementation for editing order
+    console.log("Editing order:", selectedOrderForDetail);
+    showNotification("Chi Quan Ly Moi Duoc Chinh Sua", "info");
+}
+
+// Pagination Functions
+function updatePagination() {
+    const totalPages = Math.ceil(filteredOrders.length / ordersPerPage);
+    const pagination = document.getElementById("ordersPagination");
+    const currentPageSpan = document.getElementById("currentOrdersPage");
+    const totalPagesSpan = document.getElementById("totalOrdersPages");
+    const prevBtn = document.getElementById("prevOrdersPage");
+    const nextBtn = document.getElementById("nextOrdersPage");
+    
+    if (totalPages <= 1) {
+        pagination.style.display = "none";
+        return;
+    }
+    
+    pagination.style.display = "flex";
+    currentPageSpan.textContent = currentOrderPage;
+    totalPagesSpan.textContent = totalPages;
+    
+    prevBtn.disabled = currentOrderPage <= 1;
+    nextBtn.disabled = currentOrderPage >= totalPages;
+}
+
+function changeOrdersPage(direction) {
+    const totalPages = Math.ceil(filteredOrders.length / ordersPerPage);
+    
+    if (direction === -1 && currentOrderPage > 1) {
+        currentOrderPage--;
+    } else if (direction === 1 && currentOrderPage < totalPages) {
+        currentOrderPage++;
+    }
+    
+    displayOrders();
+}
+
+// Show/Hide Loading State
+function showOrdersLoading(show) {
+    const loading = document.getElementById("ordersLoading");
+    const tableContainer = document.getElementById("ordersTableContainer");
+    
+    if (show) {
+        loading.style.display = "flex";
+        tableContainer.style.display = "none";
+    } else {
+        loading.style.display = "none";
+    }
+}
+
+// Utility Functions for Orders
+function formatDateTime(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleString('vi-VN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+function formatCurrency(amount) {
+    if (!amount) return '0 VND';
+    return new Intl.NumberFormat('vi-VN').format(amount) + ' VND';
+}
+
+function getStatusDisplayName(status) {
+    const statusMap = {
+        'pending': 'Chờ xử lý',
+        'paid': 'Hoàn thành',
+        'cancelled': 'Đã hủy'
+    };
+    return statusMap[status] || status;
+}
+
+function getPaymentDisplayName(payment) {
+    const paymentMap = {
+        'Tiền mặt': 'Tiền mặt',
+        'Thẻ tín dụng': 'Thẻ',
+        'Chuyên khoản': 'Chuyển khoản'
+    };
+    return paymentMap[payment] || payment;
 }
 
 function setActiveNav(activeElement) {
@@ -167,13 +620,17 @@ function hideAllSections() {
     // Ẩn tất cả các section
     const customerContainer = document.querySelector(".customer-container")
     const createOrderForm = document.getElementById("createOrderForm")
+    const orderListContainer = document.getElementById("orderListContainer")
     const scheduleContainer = document.getElementById("scheduleContainer")
     const mainEditCustomerSection = document.getElementById("mainEditCustomerSection")
+    const medicineInfoContainer = document.getElementById("medicineInfoContainer")
 
     if (customerContainer) customerContainer.style.display = "none"
     if (createOrderForm) createOrderForm.style.display = "none"
+    if (orderListContainer) orderListContainer.style.display = "none"
     if (scheduleContainer) scheduleContainer.style.display = "none"
     if (mainEditCustomerSection) mainEditCustomerSection.style.display = "none"
+    if (medicineInfoContainer) medicineInfoContainer.style.display = "none"
 }
 // 
 function showCustomerSection() {
@@ -187,37 +644,6 @@ function showCustomerSection() {
 
     // Reset customer section states
     resetCustomerSectionStates()
-}
-
-function showCreateOrderForm() {
-    hideAllSections()
-    currentSection = "orders"
-
-    const createOrderForm = document.getElementById("createOrderForm")
-    if (createOrderForm) {
-        createOrderForm.style.display = "flex"
-    }
-    
-    // Reset form and ensure all elements are visible
-    resetOrderForm()
-    
-    // Display products when form opens
-    if (products.length > 0) {
-        displayProducts(products)
-    } else {
-        // If products not loaded yet, fetch them
-        fetchProducts()
-    }
-}
-
-function showSchedule() {
-    hideAllSections()
-    currentSection = "schedule"
-
-    const scheduleContainer = document.getElementById("scheduleContainer")
-    if (scheduleContainer) {
-        scheduleContainer.style.display = "block"
-    }
 }
 
 function resetCustomerSectionStates() {
@@ -367,11 +793,23 @@ function displayCustomers(customerList) {
             .join("")
             .toUpperCase()
 
+        // Format ngày tạo
+        const createdDate = customer.createdDate ? 
+            new Date(customer.createdDate).toLocaleDateString('vi-VN', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            }) : 'N/A'
+
         customerItem.innerHTML = `
             <div class="customer-avatar">${initials}</div>
             <div class="customer-info">
                 <h4>${customer.fullName}</h4>
-                <p>${customer.phone || "N/A"} • Điểm: ${customer.totalPoints || 0}</p>
+                <p>${customer.phone || "N/A"} ${customer.email ? ' • ' + customer.email : ''}</p>
+            </div>
+            <div class="customer-meta">
+                <div class="customer-points">${customer.totalPoints || 0} điểm</div>
+                <div class="customer-date">${createdDate}</div>
             </div>
         `
 
@@ -592,13 +1030,6 @@ function showNotification(message, type = "info") {
     }, 3000)
 }
 
-// Additional feature functions (placeholders)
-function historyOrderByCustomer() {
-    if (!currentCustomer) return
-    showNotification(`Xem lịch sử đơn hàng của ${currentCustomer.fullName}`, "info")
-    // Implement order history functionality here
-}
-
 // Setup main edit form
 function setupMainEditForm() {
     const mainEditForm = document.getElementById("mainEditCustomerForm")
@@ -798,6 +1229,7 @@ function validateMainEditForm(formData) {
 function showCreateOrderForm() {
     // Hide other sections first
     hideAllSections();
+    currentSection = "create-order";
     
     // Show the create order form
     document.getElementById("createOrderForm").style.display = "flex";
@@ -824,6 +1256,12 @@ function resetOrderForm() {
     // Clear form fields
     document.getElementById("orderCustomerSearch").value = "";
     document.getElementById("medicineSearch").value = "";
+    
+    // Clear order notes
+    const orderNotesField = document.getElementById("orderNotes");
+    if (orderNotesField) {
+        orderNotesField.value = "";
+    }
     
     // Hide selected customer
     document.getElementById("selectedCustomer").style.display = "none";
@@ -1126,12 +1564,21 @@ async function createOrder() {
         return;
     }
     
+    // Cảnh báo nếu không chọn khách hàng nhưng vẫn cho phép tiếp tục
     if (!selectedCustomerForOrder) {
-        showNotification("Vui lòng chọn khách hàng", "error");
-        return;
+        const continueWithoutCustomer = confirm(
+            "Bạn chưa chọn khách hàng cho đơn hàng này.\n\n" +
+            "Đơn hàng sẽ được tạo như đơn hàng khách vãng lai.\n" +
+            "Bạn có muốn tiếp tục không?"
+        );
+        
+        if (!continueWithoutCustomer) {
+            return;
+        }
     }
     
-    const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked')?.value || "cash";
+    const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked')?.value || "Tiền Mặt";
+    const orderNotes = document.getElementById("orderNotes")?.value?.trim() || "";
     
     // Debug log để kiểm tra selectedCustomerForOrder
     console.log("=== DEBUG CREATE ORDER ===");
@@ -1139,12 +1586,23 @@ async function createOrder() {
     console.log("selectedCustomerForOrder.id:", selectedCustomerForOrder?.id);
     console.log("getCurrentUserId():", getCurrentUserId());
     console.log("orderItems:", orderItems);
+    console.log("orderNotes:", orderNotes);
     console.log("=========================");
+    
+    // Xử lý customerId - nếu không có khách hàng được chọn thì set null
+    const customerId = selectedCustomerForOrder ? selectedCustomerForOrder.id : null;
+    
+    console.log("Final customerId being sent:", customerId);
+    if (customerId === null) {
+        console.log("⚠️  Tạo đơn hàng khách vãng lai (không có khách hàng)");
+    } else {
+        console.log("✅  Tạo đơn hàng cho khách hàng:", selectedCustomerForOrder.fullName);
+    }
     
     // Prepare order data for backend
     const orderData = {
         employeeId: getCurrentUserId(),
-        customerId: selectedCustomerForOrder.id,
+        customerId: customerId,
         orderItems: orderItems.map(item => ({
             productId: item.id,
             quantity: item.quantity,
@@ -1153,8 +1611,9 @@ async function createOrder() {
         })),
         totalAmount: orderTotal,
         paymentMethod: paymentMethod,
-        status: "pending", // Trạng thái pending cho invoice
+        status: "paid", // Trạng thái pending cho invoice
         invoiceDate: new Date().toISOString(),
+        notes: orderNotes, // Thêm ghi chú đơn hàng
         
     };
     
@@ -1326,6 +1785,27 @@ function displayProducts(productList) {
         productListContainer.appendChild(productItem)
     })
 }
+// lay so luong san pham trong kho
+async function fetchInventory() {
+    try {
+        console.log("Fetching inventory...")
+        const response = await fetch("http://localhost:8080/employee/inventory", {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+        })
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`)
+        }
+
+        inventory = await response.json()
+        console.log("Received inventory:", inventory)
+        //displayInventory(inventory)
+    } catch (error) {
+        console.error("Error fetching customers:", error)
+    }
+}
+
 
 function searchProducts(searchTerm) {
     console.log("Searching products with term:", searchTerm);
@@ -1376,40 +1856,7 @@ function addProductToOrder(productId, productName, price) {
     showNotification(`Đã thêm ${productName} vào đơn hàng`, "success")
 }
 
-// Function to display sample products if API is not available
-function displaySampleProducts() {
-    const sampleProducts = [
-        {
-            productId: 1,
-            productName: "Paracetamol 500mg",
-            productType: "Thuốc",
-            unit: "Viên",
-            description: "Giảm đau, hạ sốt",
-            price: 2500
-        },
-        {
-            productId: 2,
-            productName: "Amoxicillin 250mg",
-            productType: "Thuốc",
-            unit: "Viên", 
-            description: "Kháng sinh",
-            price: 3500
-        },
-        {
-            productId: 3,
-            productName: "Vitamin C 1000mg",
-            productType: "Thuốc",
-            unit: "Viên",
-            description: "Bổ sung vitamin",
-            price: 1500
-        }
-    ];
-    
-    products = sampleProducts;
-    filteredProducts = [...products];
-    displayProducts(filteredProducts);
-    console.log("Displaying sample products as fallback");
-}
+
 
 // Employee Information Functions
 async function fetchEmployeeInfo(employeeId) {
@@ -1798,63 +2245,22 @@ function closeEmployeeDetailsModal() {
     }
 }
 
-// Change Password Modal
-function showChangePasswordModal() {
-    const modal = document.createElement("div");
-    modal.className = "modal-overlay";
-    modal.innerHTML = `
-        <div class="modal-content change-password-modal">
-            <div class="modal-header">
-                <h3>Đổi mật khẩu</h3>
-                <button class="close-btn" onclick="closeChangePasswordModal()">
-                    <span class="material-icons">close</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <form id="changePasswordForm" onsubmit="handleChangePassword(event)">
-                    <div class="form-group">
-                        <label>Mật khẩu hiện tại</label>
-                        <input type="password" id="currentPassword" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Mật khẩu mới</label>
-                        <input type="password" id="newPassword" required minlength="6">
-                    </div>
-                    <div class="form-group">
-                        <label>Xác nhận mật khẩu mới</label>
-                        <input type="password" id="confirmPassword" required>
-                    </div>
-                    <div class="form-actions">
-                        <button type="button" onclick="closeChangePasswordModal()">Hủy</button>
-                        <button type="submit" class="primary-button">Đổi mật khẩu</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-}
 
-function closeChangePasswordModal() {
-    const modal = document.querySelector(".modal-overlay");
-    if (modal) {
-        modal.remove();
-    }
-}
+
+
 
 async function handleChangePassword(event) {
     event.preventDefault();
-    
+
     const currentPassword = document.getElementById("currentPassword").value;
     const newPassword = document.getElementById("newPassword").value;
     const confirmPassword = document.getElementById("confirmPassword").value;
-    
+
     if (newPassword !== confirmPassword) {
         showNotification("Mật khẩu xác nhận không khớp", "error");
         return;
     }
-    
+
     try {
         const userId = getCurrentUserId();
         const response = await fetch(`http://localhost:8080/employee/doi-mat-khau`, {
@@ -1868,7 +2274,7 @@ async function handleChangePassword(event) {
                 newPassword: newPassword
             }),
         });
-        
+
         if (response.ok) {
             showNotification("Đổi mật khẩu thành công!", "success");
             closeChangePasswordModal();
@@ -1880,7 +2286,6 @@ async function handleChangePassword(event) {
         showNotification("Lỗi: " + error.message, "error");
     }
 }
-
 // Logout Function
 function performLogout() {
     // Clear localStorage
@@ -1897,11 +2302,261 @@ function performLogout() {
     }, 1000);
 }
 
+// ====================== MEDICINE INFO MANAGEMENT ======================
+
+// Medicine Info Variables
+let allMedicines = [];
+let filteredMedicines = [];
+let currentMedicinePage = 1;
+let medicinesPerPage = 12;
+
+// Show Medicine Info Section
+function showMedicineInfoSection() {
+    hideAllSections();
+    currentSection = "medicine-info";
+    
+    const medicineInfoContainer = document.getElementById("medicineInfoContainer");
+    if (medicineInfoContainer) {
+        medicineInfoContainer.style.display = "block";
+    }
+    //fetchInventory();
+    //Load medicine info when showing the section
+    loadMedicineInfo();
+    setupMedicineFilters();
+}
+
+// Load Medicine Info from Backend
+
+async function loadMedicineInfo() {
+    try {
+        showMedicineLoading(true);
+        
+        // Fetch products and inventory data
+        const [productsResponse, inventoryResponse] = await Promise.all([
+            fetch("http://localhost:8080/employee/danh-sach-san-pham", {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            }),
+            fetch("http://localhost:8080/employee/inventory", {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            })
+        ]);
+        // const productsResponse=products;
+        // const inventoryResponse = await fetch("http://localhost:8080/employee/inventory", {
+        //     method: "GET",
+        //     headers: {
+        //         "Content-Type": "application/json",
+        //     },
+        // });
+
+        
+        if (inventoryResponse.ok) {
+           
+            
+             inventory = await inventoryResponse.json();
+             products = await productsResponse.json(); // Assuming productsResponse is already an array
+            console.log("Products:", products);
+            console.log("Inventory:", inventory);
+            medicine=products;
+            // Map inventory data to products
+            const medicinesWithInventory = products.map(product => {
+                const inventoryItem = inventory.find(inv => inv.productId === product.id);
+                return {
+                    ...product,
+                    quantity: inventoryItem ? inventoryItem.number : 0
+                };
+            });
+            
+            allMedicines = medicinesWithInventory;
+            filteredMedicines = [...medicinesWithInventory];
+            
+            displayMedicines();
+            
+        } else {
+            throw new Error(`HTTP Error: ${productsResponse.status} or ${inventoryResponse.status}`);
+        }
+        
+    } catch (error) {
+        console.error("Error loading medicine info:", error);
+        showNotification("Lỗi khi tải thông tin thuốc: " + error.message, "error");
+    } finally {
+        showMedicineLoading(false);
+    }
+}
+
+// Display Medicines in Grid
+function displayMedicines() {
+    const medicineGrid = document.getElementById("medicineGrid");
+    const medicineEmpty = document.getElementById("medicineEmpty");
+    
+    if (filteredMedicines.length === 0) {
+        medicineEmpty.style.display = "flex";
+        medicineGrid.style.display = "none";
+        return;
+    }
+    
+    medicineEmpty.style.display = "none";
+    medicineGrid.style.display = "grid";
+    
+    // Calculate pagination
+    const startIndex = (currentMedicinePage - 1) * medicinesPerPage;
+    const endIndex = startIndex + medicinesPerPage;
+    const medicinesToShow = filteredMedicines.slice(startIndex, endIndex);
+    
+    medicineGrid.innerHTML = medicinesToShow.map(medicine => {
+        const stockStatus = getStockStatus(inventory.number);
+        
+        return `
+            <div class="medicine-card">
+                <div class="medicine-card-header">
+                    <div class="medicine-icon">
+                        <span class="material-icons">medication</span>
+                    </div>
+                    <div class="stock-status ${stockStatus.class}">
+                        ${stockStatus.text}
+                    </div>
+                </div>
+                <div class="medicine-name">${medicine.productName || 'Tên thuốc'}</div>
+                <div class="medicine-id">ID: ${medicine.productType}</div>
+                <div class="medicine-details">
+                    <div class="medicine-price">
+                        ${formatCurrency(medicine.price || 0)}
+                    </div>
+                    <div class="medicine-quantity">
+                        <span class="material-icons">inventory</span>
+                        <span class="quantity-number">${inventory.number}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    updateMedicinePagination();
+}
+
+// Get Stock Status
+function getStockStatus(quantity) {
+    if (quantity === 0) {
+        return { class: 'out-of-stock', text: 'Hết hàng' };
+    } else if (quantity <= 10) {
+        return { class: 'low-stock', text: 'Sắp hết' };
+    } else {
+        return { class: 'in-stock', text: 'Còn hàng' };
+    }
+}
+
+// Setup Medicine Filters
+function setupMedicineFilters() {
+    const stockFilter = document.getElementById("stockStatusFilter");
+    const searchInput = document.getElementById("medicineSearchInput");
+    
+    if (stockFilter) {
+        stockFilter.addEventListener("change", filterMedicines);
+    }
+    
+    if (searchInput) {
+        searchInput.addEventListener("input", filterMedicines);
+    }
+}
+
+// Filter Medicines
+function filterMedicines() {
+    const stockFilter = document.getElementById("stockStatusFilter").value;
+    const searchTerm = document.getElementById("medicineSearchInput").value.toLowerCase();
+    
+    filteredMedicines = allMedicines.filter(medicine => {
+        // Stock filter
+        if (stockFilter !== "all") {
+            const stockStatus = getStockStatus(inventory.number);
+            if (stockFilter === "in-stock" && stockStatus.class !== "in-stock") return false;
+            if (stockFilter === "low-stock" && stockStatus.class !== "low-stock") return false;
+            if (stockFilter === "out-of-stock" && stockStatus.class !== "out-of-stock") return false;
+        }
+        
+        // Search filter
+        if (searchTerm) {
+            const nameMatch = (medicine.productName || '').toLowerCase().includes(searchTerm);
+            const idMatch = medicine.productType.toString().includes(searchTerm);
+            
+            if (!nameMatch && !idMatch) return false;
+        }
+        
+        return true;
+    });
+    
+    currentMedicinePage = 1;
+    displayMedicines();
+}
+
+// Refresh Medicine Info
+function refreshMedicineInfo() {
+    showNotification("Đang làm mới thông tin thuốc...", "info");
+    loadMedicineInfo();
+}
+
+// Medicine Pagination Functions
+function updateMedicinePagination() {
+    const totalPages = Math.ceil(filteredMedicines.length / medicinesPerPage);
+    const pagination = document.getElementById("medicinePagination");
+    const currentPageSpan = document.getElementById("currentMedicinePage");
+    const totalPagesSpan = document.getElementById("totalMedicinePages");
+    const prevBtn = document.getElementById("prevMedicinePage");
+    const nextBtn = document.getElementById("nextMedicinePage");
+    
+    if (totalPages <= 1) {
+        pagination.style.display = "none";
+        return;
+    }
+    
+    pagination.style.display = "flex";
+    currentPageSpan.textContent = currentMedicinePage;
+    totalPagesSpan.textContent = totalPages;
+    
+    prevBtn.disabled = currentMedicinePage <= 1;
+    nextBtn.disabled = currentMedicinePage >= totalPages;
+}
+
+function changeMedicinePage(direction) {
+    const totalPages = Math.ceil(filteredMedicines.length / medicinesPerPage);
+    
+    if (direction === -1 && currentMedicinePage > 1) {
+        currentMedicinePage--;
+    } else if (direction === 1 && currentMedicinePage < totalPages) {
+        currentMedicinePage++;
+    }
+    
+    displayMedicines();
+}
+
+// Show/Hide Medicine Loading State
+function showMedicineLoading(show) {
+    const loading = document.getElementById("medicineLoading");
+    const grid = document.getElementById("medicineGrid");
+    
+    if (show) {
+        loading.style.display = "flex";
+        grid.style.display = "none";
+    } else {
+        loading.style.display = "none";
+    }
+}
+
 // Add to window for debugging
 if (typeof window !== 'undefined') {
     window.refreshEmployeeInfo = refreshEmployeeInfo;
     window.showSampleEmployeeData = showSampleEmployeeData;
     window.loadEmployeeInfo = loadEmployeeInfo;
+    window.clearOrderFilters = clearOrderFilters;
+    window.resetOrderFilters = resetOrderFilters;
+    window.showMedicineInfoSection = showMedicineInfoSection;
+    window.loadMedicineInfo = loadMedicineInfo;
+    window.refreshMedicineInfo = refreshMedicineInfo;
+    window.changeMedicinePage = changeMedicinePage;
 }
 
 

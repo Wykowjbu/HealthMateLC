@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Khảo Sát Sau Khi Mua</title>
+    <link rel="stylesheet" href="assets/css/survey.css">
+</head>
+
+<body>
+    <div class="survey-container">
+        <div class="header">
+            <h2>Chúng tôi trân trọng ý kiến của bạn</h2>
+            <p>Giúp chúng tôi cải thiện trải nghiệm tại nhà thuốc của bạn</p>
+        </div>
+
+        <form id="surveyForm">
+            <input type="hidden" id="customerId" name="customerId">
+            <input type="hidden" id="pharmacyId" name="pharmacyId">
+            <input type="hidden" id="invoiceId" name="invoiceId">
+
+            <div class="rating-section">
+                <div class="rating-label">Bạn muốn đánh giá trải nghiệm của mình như thế nào?</div>
+                <div class="rating" id="ratingContainer">
+                    <span class="star" data-rating="1">☆</span>
+                    <span class="star" data-rating="2">☆</span>
+                    <span class="star" data-rating="3">☆</span>
+                    <span class="star" data-rating="4">☆</span>
+                    <span class="star" data-rating="5">☆</span>
+                </div>
+                <div class="rating-feedback" id="ratingFeedback"></div>
+                <input type="hidden" id="rating" name="rating" value="">
+            </div>
+
+            <div class="comment-section">
+                <label class="comment-label" for="comment">Chia sẻ suy nghĩ của bạn (tùy chọn)</label>
+                <textarea id="comment" name="comment" rows="4"
+                    placeholder="Hãy cho chúng tôi biết trải nghiệm của bạn..."></textarea>
+            </div>
+
+            <button type="submit" class="submit-button">
+                <span id="buttonText">Gửi Phản Hồi</span>
+            </button>
+        </form>
+
+        <div id="message" class="message hidden"></div>
+    </div>
+
+
+    <script src="assets/js/survey.js"></script>
+</body>
+
+</html>

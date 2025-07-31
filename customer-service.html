@@ -14,6 +14,7 @@
 
 <body>
   <div class="dashboard">
+    <!-- #region Sidebar -->
     <aside class="sidebar">
       <div class="sidebar-header">
         <div class="logo">
@@ -32,15 +33,6 @@
           </div>
         </div>
         <div class="nav-group">
-          <div class="nav-group-title">Tin nhắn & Khảo sát</div>
-          <div class="nav-item" data-action="focusMessageComposer">
-            <span class="material-icons">message</span>
-            Soạn tin nhắn
-          </div>
-          <div class="nav-item" data-action="sendSurvey">
-            <span class="material-icons">poll</span>
-            Gửi khảo sát
-          </div>
           <div class="nav-item" data-action="showIndividualMessage">
             <span class="material-icons">person</span>
             Tin riêng tư
@@ -52,9 +44,16 @@
             <span class="material-icons">analytics</span>
             Biểu đồ hài lòng
           </div>
+          <div class="nav-item" data-action="scrollToRevenue">
+            <span class="material-icons">attach_money</span>
+            Báo cáo doanh thu
+          </div>
         </div>
       </nav>
     </aside>
+    <!-- #endregion Sidebar -->
+
+    <!-- #region Header -->
     <header class="header">
       <h1 class="header-title">Chăm sóc khách hàng</h1>
       <div class="header-actions">
@@ -80,8 +79,10 @@
         </div>
       </div>
     </header>
+    <!-- #endregion Header -->
 
     <main class="main-content">
+      <!-- #region Stats Grid -->
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-header">
@@ -89,7 +90,7 @@
               <span class="material-icons">message</span>
             </div>
           </div>
-          <div class="stat-value" id="statMessagesSent">247</div>
+          <div class="stat-value" id="statMessagesSent">0</div>
           <div class="stat-label">Tin nhắn đã gửi</div>
         </div>
 
@@ -99,7 +100,7 @@
               <span class="material-icons">star</span>
             </div>
           </div>
-          <div class="stat-value" id="statReviewsPending">5</div>
+          <div class="stat-value" id="statReviewsPending">0</div>
           <div class="stat-label">Đánh giá cần xử lý</div>
         </div>
 
@@ -109,7 +110,7 @@
               <span class="material-icons">people</span>
             </div>
           </div>
-          <div class="stat-value" id="statCustomersServed">1,456</div>
+          <div class="stat-value" id="statCustomersServed">0</div>
           <div class="stat-label">Khách hàng được chăm sóc</div>
         </div>
 
@@ -119,10 +120,13 @@
               <span class="material-icons">sentiment_very_satisfied</span>
             </div>
           </div>
-          <div class="stat-value" id="statSatisfactionRate">94%</div>
+          <div class="stat-value" id="statSatisfactionRate">0%</div>
           <div class="stat-label">Mức độ hài lòng</div>
         </div>
       </div>
+      <!-- #endregion Stats Grid -->
+
+      <!-- #region Reviews -->
       <div class="reviews-container section-container section-anchor" id="reviewsContainer">
         <div class="reviews-header">
           <div class="header-top">
@@ -207,6 +211,9 @@
           </div>
         </div>
       </div>
+      <!-- #endregion Reviews -->
+
+      <!-- #region Message Composer -->
       <div class="message-composer">
         <h3 class="chart-title" style="margin-bottom: 20px">
           Soạn tin nhắn
@@ -216,8 +223,6 @@
             <label class="form-label">Loại tin nhắn</label>
             <select class="form-select" id="messageType" onchange="loadMessageTemplate(this.value)">
               <option value="reminder">Nhắc lịch uống thuốc</option>
-              <option value="survey">Khảo sát trải nghiệm</option>
-              <!-- <option value="promotion">Thông báo khuyến mãi</option> -->
               <option value="custom">Tin nhắn tùy chỉnh</option>
             </select>
             <small id="reminderNote" style="color:#718096;display:none;">* Tin nhắn nhắc nhở uống thuốc sẽ được gửi dựa
@@ -227,16 +232,12 @@
             <label class="form-label">Kênh gửi</label>
             <div class="checkbox-group">
               <label><input type="checkbox" name="sendChannel" value="email" checked> Email</label>
-              <label><input type="checkbox" name="sendChannel" value="zalo"> Zalo (SDT)</label>
-
             </div>
           </div>
           <div class="form-group">
             <label class="form-label">Đối tượng gửi</label>
             <select class="form-select" onchange="toggleCustomerInput(this)">
-              <option value="all">Tất cả khách hàng</option>
-              <!-- <option>Khách hàng VIP</option>
-              <option>Khách hàng mới</option> -->
+              <option>Tất cả khách hàng</option>
               <option value="individual">Gửi tin riêng cho khách hàng</option>
             </select>
           </div>
@@ -272,13 +273,17 @@
           </button>
         </form>
       </div>
+      <!-- #endregion Message Composer -->
+
+      <!-- #region Satisfaction Chart -->
       <div class="chart-container" id="satisfactionChartContainer">
         <div class="reviews-header">
           <h3 class="chart-title">Biểu đồ mức độ hài lòng khách hàng <span id="chartPeriodInfo">(30 ngày qua)</span>
           </h3>
           <select class="filter-select" id="chartFilter">
+            <option value="30">30 ngày qua</option>
             <option value="7">7 ngày qua</option>
-            <option value="30" selected>30 ngày qua</option>
+            <option value="90">3 tháng qua</option>
             <option value="all">Từ trước đến nay</option>
           </select>
         </div>
@@ -288,10 +293,63 @@
           </div>
         </div>
       </div>
+      <!-- #endregion Satisfaction Chart -->
+
+      <!-- #region Revenue Report -->
+      <div class="revenue-report-container section-container section-anchor" id="revenueReportContainer"
+        style="margin-top:32px;">
+        <div class="reviews-header">
+          <h3 class="chart-title">Báo cáo doanh thu</h3>
+          <select class="filter-select" id="revenuePharmacyFilter">
+            <option value="all">Tất cả nhà thuốc</option>
+            <!-- Các option nhà thuốc sẽ được render động -->
+          </select>
+          <!-- Bộ lọc thời gian cho báo cáo doanh thu -->
+          <div class="revenue-time-filter" style="display:flex;gap:12px;align-items:center;margin:16px 0;">
+            <label for="revenueStartDate">Từ ngày:</label>
+            <input type="date" id="revenueStartDate"
+              style="padding:4px 8px;border-radius:4px;border:1px solid #CBD5E0;">
+            <label for="revenueEndDate">Đến ngày:</label>
+            <input type="date" id="revenueEndDate" style="padding:4px 8px;border-radius:4px;border:1px solid #CBD5E0;">
+            <button id="revenueFilterBtn" class="btn btn-primary"
+              style="height:32px;padding:0 16px;display:flex;align-items:center;gap:4px;">
+              <span class="material-icons" style="font-size:18px;">filter_alt</span> Lọc
+            </button>
+          </div>
+          <!-- end Bộ lọc thời gian -->
+          <div class="revenue-summary">
+            <div class="stat-card">
+              <div class="stat-header">
+                <div class="stat-icon revenue">
+                  <span class="material-icons" style="color: green;">attach_money</span>
+                </div>
+              </div>
+              <div class="stat-value" id="totalRevenue">0</div>
+              <div class="stat-label">Tổng doanh thu</div>
+            </div>
+          </div>
+          <div class="revenue-table-container">
+            <table class="reviews-table">
+              <thead>
+                <tr>
+                  <th>Nhà thuốc</th>
+                  <th>Doanh thu</th>
+                  <th>Số đơn hàng</th>
+                </tr>
+              </thead>
+              <tbody id="revenueTableBody">
+                <!-- Dữ liệu doanh thu sẽ được render động -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <!-- end Báo cáo doanh thu -->
+      </div>
+      <!-- #endregion Revenue Report -->
     </main>
   </div>
 
-  <!-- User Information Modal -->
+  <!-- #region User Information Modal -->
   <div class="modal-overlay" id="userInfoModal">
     <div class="modal-container">
       <div class="modal-header">
@@ -370,117 +428,8 @@
       </div>
     </div>
   </div>
+  <!-- #endregion User Information Modal -->
 
-  <!-- Customer Information Popup -->
-  <div class="modal-overlay" id="customerInfoModal">
-    <div class="modal-container">
-      <div class="modal-header">
-        <h3 class="modal-title">
-          <span class="material-icons">person</span>
-          Thông tin khách hàng
-        </h3>
-        <button class="modal-close" onclick="closeCustomerInfoModal()">
-          <span class="material-icons">close</span>
-        </button>
-      </div>
-
-      <div class="modal-body">
-        <div class="customer-info-card">
-          <div class="customer-avatar-large">
-            <span class="material-icons">person</span>
-          </div>
-
-          <div class="customer-details">
-            <!-- Thông tin cá nhân -->
-            <div class="info-row">
-              <span class="info-label">
-                <span class="material-icons">badge</span>
-                Họ và tên
-              </span>
-              <span class="info-value" id="modalCustomerName">---</span>
-            </div>
-
-            <div class="info-row">
-              <span class="info-label">
-                <span class="material-icons">phone</span>
-                Điện thoại
-              </span>
-              <span class="info-value" id="modalCustomerPhone">---</span>
-            </div>
-
-            <div class="info-row">
-              <span class="info-label">
-                <span class="material-icons">alternate_email</span>
-                Email
-              </span>
-              <span class="info-value" id="modalCustomerEmail">---</span>
-            </div>
-
-            <div class="info-row">
-              <span class="info-label">
-                <span class="material-icons">star</span>
-                Hạng thành viên
-              </span>
-              <span class="info-value" id="modalCustomerRank">---</span>
-            </div>
-
-            <div class="info-row">
-              <span class="info-label">
-                <span class="material-icons">store</span>
-                Cửa hàng thường mua
-              </span>
-              <span class="info-value" id="modalCustomerStore">---</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Lịch sử giao dịch -->
-        <div class="customer-history">
-          <h4 class="section-subtitle">Lịch sử đánh giá</h4>
-          <div class="review-history-list" id="customerReviewHistory">
-            <!-- Lịch sử đánh giá sẽ được thêm động -->
-            <div class="empty-state">Chưa có đánh giá nào</div>
-          </div>
-
-          <h4 class="section-subtitle mt-4">Đơn hàng gần nhất</h4>
-          <div class="recent-order" id="customerRecentOrder">
-            <!-- Chi tiết đơn hàng gần nhất -->
-            <div class="empty-state">Không có đơn hàng gần đây</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeCustomerInfoModal()">Đóng</button>
-        <button class="btn-primary-modal" onclick="sendMessageToCustomer()">
-          <span class="material-icons">message</span>
-          Gửi tin nhắn
-        </button>
-      </div>
-    </div>
-  </div>
-  <!-- Message History Section -->
-  <!-- <div class="section-container messages-history-container">
-    <h3 class="section-title">
-      <span class="material-icons">history</span>
-      Lịch sử tin nhắn
-    </h3>
-    <div class="reviews-table-container">
-      <table class="reviews-table messages-table">
-        <thead>
-          <tr>
-            <th>Thời gian</th>
-            <th>Kênh</th>
-            <th>Nội dung</th>
-            <th>Khách hàng</th>
-          </tr>
-        </thead>
-        <tbody id="messageHistoryBody"> -->
-          <!-- Message history will be rendered here -->
-        <!-- </tbody>
-      </table>
-    </div>
-  </div> -->
   <script src="assets/js/CustomerService/customer-service.js" type="module"></script>
   <script src="assets/js/CustomerService/cs-ui.js" type="module"></script>
 </body>
