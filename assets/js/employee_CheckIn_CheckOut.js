@@ -1,10 +1,11 @@
-// ===== PHẦN CHECK-IN/CHECK-OUT THEO CA - ĐÃ SỬA LỖI EVENT HANDLING =====
+// ===== PHẦN CHECK-IN/CHECK-OUT THEO CA VỚI GPS - ĐÃ SỬA LỖI EVENT HANDLING =====
 
 // Check-in/Check-out Global Variables (riêng biệt để tránh conflict)
 let currentUserIdCheckin = null;
 let timesheetInterval = null;
 let clockInterval = null;
 let currentShifts = [];
+let isGPSRequestInProgress = false; // THÊM MỚI: Prevent multiple GPS requests
 
 // Auto-initialize check-in section when page loads
 document.addEventListener('DOMContentLoaded', () => {
@@ -27,8 +28,8 @@ function setupShiftEventDelegation() {
                 event.preventDefault();
                 const button = target.classList.contains('shift-checkin-btn') ? target : target.closest('.shift-checkin-btn');
                 const scheduleId = button.closest('[data-schedule-id]').getAttribute('data-schedule-id');
-                if (scheduleId && !button.disabled) {
-                    handleShiftCheckIn(parseInt(scheduleId));
+                if (scheduleId && !button.disabled && !isGPSRequestInProgress) { // KIỂM TRA GPS PROGRESS
+                    handleShiftCheckInWithGPS(parseInt(scheduleId));
                 }
             }
 
@@ -41,7 +42,544 @@ function setupShiftEventDelegation() {
                     handleShiftCheckOut(parseInt(scheduleId));
                 }
             }
+
+            // Handle retry button clicks
+            if (target.classList.contains('shift-retry-btn') || target.closest('.shift-retry-btn')) {
+                event.preventDefault();
+                const button = target.classList.contains('shift-retry-btn') ? target : target.closest('.shift-retry-btn');
+                const scheduleId = button.closest('[data-schedule-id]').getAttribute('data-schedule-id');
+                if (scheduleId && !button.disabled) {
+                    // Remove retry button and restore check-in button
+                    removeRetryButton(scheduleId);
+                    handleShiftCheckInWithGPS(parseInt(scheduleId));
+                }
+            }
         });
+    }
+}
+
+// CẬP NHẬT: Hàm lấy vị trí GPS hiện tại với 3 lần thử
+function getCurrentLocation() {
+    return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+            reject(new Error('Trình duyệt không hỗ trợ GPS'));
+            return;
+        }
+
+        const options = {
+            enableHighAccuracy: true,
+            timeout: 12000, // 12 giây cho mỗi lần thử
+            maximumAge: 30000 // 30 giây
+        };
+
+        let attemptCount = 0;
+        const maxAttempts = 3; // 3 lần thử
+        let isResolved = false;
+
+        function tryGetLocation() {
+            if (isResolved) return; // Prevent multiple resolves
+
+            attemptCount++;
+            console.log(`GPS attempt ${attemptCount}/${maxAttempts}`);
+
+            // Cập nhật loading message
+            if (attemptCount === 1) {
+                showLoadingGPS('Đang lấy vị trí GPS... (Lần thử 1/3)');
+            } else if (attemptCount === 2) {
+                showLoadingGPS('Đang thử lại lấy vị trí GPS... (Lần thử 2/3)');
+            } else if (attemptCount === 3) {
+                showLoadingGPS('Lần thử cuối cùng... (Lần thử 3/3)');
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    if (isResolved) return;
+                    isResolved = true;
+                    console.log('GPS success on attempt', attemptCount, ':', position.coords);
+                    resolve({
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude,
+                        accuracy: position.coords.accuracy,
+                        attempts: attemptCount
+                    });
+                },
+                (error) => {
+                    if (isResolved) return;
+                    console.log(`GPS error attempt ${attemptCount}:`, error);
+
+                    let errorMessage = 'Không thể lấy vị trí GPS';
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            isResolved = true;
+                            errorMessage = 'Bạn đã từ chối chia sẻ vị trí. Vui lòng bật GPS và cho phép truy cập vị trí trong cài đặt trình duyệt.';
+                            reject(new Error(errorMessage));
+                            return;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMessage = 'Không thể xác định vị trí. Vui lòng kiểm tra GPS và kết nối mạng.';
+                            break;
+                        case error.TIMEOUT:
+                            errorMessage = 'Hết thời gian chờ lấy vị trí GPS.';
+                            break;
+                    }
+
+                    if (attemptCount < maxAttempts) {
+                        console.log(`Retrying GPS in 2 seconds... (${maxAttempts - attemptCount} attempts left)`);
+                        setTimeout(tryGetLocation, 2000); // 2 giây delay giữa các lần thử
+                    } else {
+                        isResolved = true;
+                        reject(new Error(`${errorMessage} (Đã thử ${maxAttempts} lần)`));
+                    }
+                },
+                options
+            );
+        }
+
+        tryGetLocation();
+    });
+}
+
+// THÊM MỚI: Hàm kiểm tra permissions GPS
+async function checkGPSPermission() {
+    if (!navigator.permissions) {
+        return 'unknown';
+    }
+
+    try {
+        const permission = await navigator.permissions.query({name: 'geolocation'});
+        return permission.state; // 'granted', 'denied', 'prompt'
+    } catch (error) {
+        console.log('Cannot check GPS permission:', error);
+        return 'unknown';
+    }
+}
+
+// CẬP NHẬT: Hàm hiển thị loading với cancel functionality
+function showLoadingGPS(message) {
+    // Tạo loading overlay nếu chưa có
+    let loadingDiv = document.getElementById('gps-loading');
+    if (!loadingDiv) {
+        loadingDiv = document.createElement('div');
+        loadingDiv.id = 'gps-loading';
+        loadingDiv.className = 'gps-loading-overlay';
+        loadingDiv.innerHTML = `
+            <div class="gps-loading-content">
+                <div class="gps-spinner"></div>
+                <p class="gps-loading-text"></p>
+                <p class="gps-loading-hint">Vui lòng đợi trong khi hệ thống lấy vị trí GPS...</p>
+                <button class="gps-cancel-btn">Hủy</button>
+            </div>
+        `;
+
+        // Add CSS styles
+        loadingDiv.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        `;
+
+        const content = loadingDiv.querySelector('.gps-loading-content');
+        content.style.cssText = `
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 350px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        `;
+
+        const spinner = loadingDiv.querySelector('.gps-spinner');
+        spinner.style.cssText = `
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        `;
+
+        const hint = loadingDiv.querySelector('.gps-loading-hint');
+        hint.style.cssText = `
+            font-size: 12px;
+            color: #666;
+            margin: 10px 0 20px 0;
+            line-height: 1.4;
+        `;
+
+        const cancelBtn = loadingDiv.querySelector('.gps-cancel-btn');
+        cancelBtn.style.cssText = `
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 15px;
+        `;
+
+        // Add spinner animation
+        if (!document.getElementById('gps-spinner-style')) {
+            const style = document.createElement('style');
+            style.id = 'gps-spinner-style';
+            style.textContent = `
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        document.body.appendChild(loadingDiv);
+
+        // Add cancel functionality
+        cancelBtn.onclick = () => {
+            hideLoadingGPS();
+            isGPSRequestInProgress = false; // Reset flag
+            resetCheckInButton(); // Reset button state
+            showTimesheetNotificationCheckin('Đã hủy việc lấy vị trí GPS', 'info');
+        };
+    }
+
+    loadingDiv.querySelector('.gps-loading-text').textContent = message;
+    loadingDiv.style.display = 'flex';
+}
+
+// THÊM MỚI: Hàm ẩn loading
+function hideLoadingGPS() {
+    const loadingDiv = document.getElementById('gps-loading');
+    if (loadingDiv) {
+        loadingDiv.style.display = 'none';
+    }
+}
+
+// THÊM MỚI: Reset check-in button state
+function resetCheckInButton() {
+    // Find all check-in buttons and reset their state
+    const checkinBtns = document.querySelectorAll('.shift-checkin-btn');
+    checkinBtns.forEach(btn => {
+        if (btn.disabled) {
+            btn.disabled = false;
+            btn.innerHTML = '<span class="material-icons">📍</span> Check-in GPS';
+        }
+    });
+}
+
+// THÊM MỚI: Hàm hiển thị lỗi về khoảng cách
+function showLocationError(currentDistance, allowedDistance) {
+    const errorHtml = `
+        <div class="location-error-details">
+            <h4>⚠️ Vị trí không hợp lệ</h4>
+            <p>Khoảng cách hiện tại: <strong>${currentDistance}m</strong></p>
+            <p>Khoảng cách cho phép: <strong>${allowedDistance}m</strong></p>
+            <p>Vui lòng đến nhà thuốc để check-in.</p>
+        </div>
+    `;
+
+    showTimesheetNotificationCheckin(errorHtml, 'error');
+}
+
+// THÊM MỚI: Hàm thêm nút "Thử lại" khi GPS fail
+function addRetryButton(scheduleId) {
+    const shiftElement = document.querySelector(`[data-schedule-id="${scheduleId}"]`);
+    if (!shiftElement) return;
+
+    const actionsDiv = shiftElement.querySelector('.shift-actions');
+    if (!actionsDiv) return;
+
+    // Kiểm tra đã có button retry chưa
+    if (actionsDiv.querySelector('.shift-retry-btn')) return;
+
+    // Ẩn button check-in hiện tại
+    const checkinBtn = actionsDiv.querySelector('.shift-checkin-btn');
+    if (checkinBtn) {
+        checkinBtn.style.display = 'none';
+    }
+
+    // Thêm button thử lại
+    const retryBtn = document.createElement('button');
+    retryBtn.className = 'shift-retry-btn available';
+    retryBtn.innerHTML = '<span class="material-icons">🔄</span> Thử lại GPS';
+    retryBtn.style.cssText = `
+        background: #FF9800;
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin-right: 8px;
+    `;
+
+    actionsDiv.appendChild(retryBtn);
+
+    // Thêm ghi chú
+    const noteDiv = document.createElement('div');
+    noteDiv.className = 'gps-error-note';
+    noteDiv.innerHTML = '<small style="color: #f44336;">❌ GPS không khả dụng - Click để thử lại</small>';
+    noteDiv.style.cssText = `
+        font-size: 11px;
+        color: #f44336;
+        margin-top: 5px;
+    `;
+
+    actionsDiv.appendChild(noteDiv);
+}
+
+// THÊM MỚI: Hàm xóa nút thử lại
+function removeRetryButton(scheduleId) {
+    const shiftElement = document.querySelector(`[data-schedule-id="${scheduleId}"]`);
+    if (!shiftElement) return;
+
+    const actionsDiv = shiftElement.querySelector('.shift-actions');
+    if (!actionsDiv) return;
+
+    // Xóa button retry và note
+    const retryBtn = actionsDiv.querySelector('.shift-retry-btn');
+    const errorNote = actionsDiv.querySelector('.gps-error-note');
+
+    if (retryBtn) retryBtn.remove();
+    if (errorNote) errorNote.remove();
+
+    // Hiện lại button check-in
+    const checkinBtn = actionsDiv.querySelector('.shift-checkin-btn');
+    if (checkinBtn) {
+        checkinBtn.style.display = 'inline-flex';
+        checkinBtn.disabled = false;
+        checkinBtn.innerHTML = '<span class="material-icons">📍</span> Check-in GPS';
+    }
+}
+
+// CẬP NHẬT: Handle check-in cho specific shift VỚI GPS - BỎ MANUAL CHECK-IN
+async function handleShiftCheckInWithGPS(scheduleId) {
+    console.log('handleShiftCheckInWithGPS called with scheduleId:', scheduleId);
+
+    // Prevent multiple simultaneous requests
+    if (isGPSRequestInProgress) {
+        console.log('GPS request already in progress, ignoring...');
+        return;
+    }
+
+    if (!currentUserIdCheckin) {
+        showTimesheetNotificationCheckin('Không thể xác định người dùng. Vui lòng tải lại trang.', 'error');
+        return;
+    }
+
+    // Kiểm tra thời gian trước khi gửi request
+    const currentShift = currentShifts.find(s => s.scheduleId === scheduleId);
+    if (!currentShift || !currentShift.canCheckInNow) {
+        showTimesheetNotificationCheckin('Chưa đến thời gian check-in hoặc đã quá thời gian cho phép', 'error');
+        return;
+    }
+
+    // Set flag to prevent multiple requests
+    isGPSRequestInProgress = true;
+
+    const shiftBtn = document.querySelector(`[data-schedule-id="${scheduleId}"] .shift-checkin-btn`);
+    if (shiftBtn) {
+        shiftBtn.disabled = true;
+        shiftBtn.innerHTML = '<span class="material-icons spinning">refresh</span> Đang xử lý...';
+    }
+
+    try {
+        // Kiểm tra permission trước
+        const permission = await checkGPSPermission();
+        console.log('GPS permission status:', permission);
+
+        if (permission === 'denied') {
+            throw new Error('Quyền truy cập vị trí đã bị từ chối. Vui lòng vào cài đặt trình duyệt để bật GPS.');
+        }
+
+        // Lấy vị trí hiện tại với 3 lần thử tự động
+        const location = await getCurrentLocation();
+        console.log('GPS Location obtained after', location.attempts, 'attempts:', {
+            lat: location.lat,
+            lng: location.lng,
+            accuracy: location.accuracy
+        });
+
+        // Cập nhật loading
+        showLoadingGPS('Đang thực hiện check-in...');
+
+        // Validate location data trước khi gửi
+        if (!location || typeof location.lat !== 'number' || typeof location.lng !== 'number') {
+            throw new Error('Dữ liệu GPS không hợp lệ');
+        }
+
+        // Gửi request check-in với GPS
+        const requestBody = {
+            scheduleId: scheduleId,
+            lat: location.lat,
+            lng: location.lng
+        };
+
+        // Thêm accuracy nếu có
+        if (location.accuracy) {
+            requestBody.accuracy = location.accuracy;
+        }
+
+        console.log('Sending check-in request:', requestBody);
+
+        const response = await fetch('http://localhost:8080/employee/timesheet/check-in-shift', {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(requestBody)
+        });
+
+        console.log('Check-in response status:', response.status);
+
+        // Parse response
+        let data;
+        try {
+            data = await response.json();
+            console.log('Check-in response data:', data);
+        } catch (parseError) {
+            console.error('Error parsing response:', parseError);
+            throw new Error('Lỗi khi xử lý phản hồi từ server');
+        }
+
+        if (response.ok) {
+            showTimesheetNotificationCheckin(data.message || 'Check-in thành công!', 'success');
+            if (data.gpsVerified) {
+                showTimesheetNotificationCheckin(`✅ Vị trí GPS đã được xác thực (Lần thử: ${location.attempts})`, 'success');
+            }
+            await loadTimesheetStatusByShift(); // Refresh status immediately
+
+            // Xóa retry button nếu có
+            removeRetryButton(scheduleId);
+        } else {
+            // Xử lý các loại lỗi khác nhau
+            if (response.status === 400) {
+                // Bad Request - có thể là lỗi validation
+                const errorMsg = data.message || data.error || 'Dữ liệu không hợp lệ';
+                throw new Error(`Lỗi yêu cầu: ${errorMsg}`);
+            } else if (response.status === 403) {
+                throw new Error('Không có quyền thực hiện check-in');
+            } else if (response.status === 409) {
+                throw new Error('Đã check-in rồi hoặc xung đột thời gian');
+            } else if (data.distance && data.allowedDistance) {
+                showLocationError(data.distance, data.allowedDistance);
+                // Thêm retry button cho trường hợp distance
+                setTimeout(() => {
+                    addRetryButton(scheduleId);
+                }, 1000);
+                return; // Don't throw error for distance issues
+            } else {
+                throw new Error(data.message || `Lỗi server (${response.status})`);
+            }
+        }
+    } catch (error) {
+        console.error('Error during GPS check-in:', error);
+
+        // Hiển thị lỗi chi tiết
+        const errorMessage = error.message || 'Lỗi khi check-in với GPS';
+
+        // Kiểm tra loại lỗi
+        if (error.message.includes('từ chối') || error.message.includes('permission')) {
+            // Lỗi permission - không cho thử lại
+            showTimesheetNotificationCheckin(
+                `${errorMessage}<br><br>🔧 <strong>Hướng dẫn:</strong><br>
+                1. Mở cài đặt trình duyệt<br>
+                2. Tìm mục "Quyền" hoặc "Permissions"<br>
+                3. Bật quyền "Vị trí" cho trang web này<br>
+                4. Làm mới trang và thử lại`,
+                'error'
+            );
+        } else {
+            // Các lỗi khác - cho phép thử lại
+            showTimesheetNotificationCheckin(
+                `${errorMessage}<br><br>🔄 <strong>Có thể thử lại:</strong> Click nút "Thử lại GPS" để thử lần nữa.`,
+                'error'
+            );
+
+            // Thêm retry button sau 2 giây
+            setTimeout(() => {
+                addRetryButton(scheduleId);
+            }, 2000);
+        }
+
+        // Reset button state on error
+        resetCheckInButton();
+    } finally {
+        hideLoadingGPS();
+        isGPSRequestInProgress = false; // Reset flag
+    }
+}
+
+// CẬP NHẬT: Hàm get button HTML để hiển thị GPS icon
+function getShiftButtonHTML(shift) {
+    const scheduleId = shift.scheduleId;
+
+    if (shift.status === 'not_started') {
+        if (shift.canCheckInNow) {
+            return `
+                <button class="shift-checkin-btn available gps-enabled" data-schedule-id="${scheduleId}">
+                    <span class="material-icons">📍</span>
+                    Check-in GPS
+                </button>
+            `;
+        } else {
+            const now = new Date();
+            const currentTime = now.toTimeString().substring(0, 5);
+            const allowedStart = shift.allowedCheckInStart ? shift.allowedCheckInStart.substring(0, 5) : '';
+            const allowedEnd = shift.allowedCheckInEnd ? shift.allowedCheckInEnd.substring(0, 5) : '';
+
+            if (currentTime < allowedStart) {
+                return `
+                    <button class="shift-checkin-btn disabled" disabled title="Chưa đến thời gian check-in">
+                        <span class="material-icons">schedule</span>
+                        Chờ ${allowedStart}
+                    </button>
+                `;
+            } else {
+                return `
+                    <button class="shift-checkin-btn expired" disabled title="Đã quá thời gian check-in">
+                        <span class="material-icons">schedule_send</span>
+                        Quá hạn
+                    </button>
+                `;
+            }
+        }
+    } else if (shift.status === 'working') {
+        // KIỂM TRA THỜI GIAN CHECK-OUT
+        if (shift.canCheckOutNow) {
+            return `
+                <button class="shift-checkout-btn available" data-schedule-id="${scheduleId}">
+                    <span class="material-icons">logout</span>
+                    Check-out
+                </button>
+            `;
+        } else {
+            const checkOutTime = shift.checkOutAllowedFrom ? shift.checkOutAllowedFrom.substring(0, 5) : '';
+            return `
+                <button class="shift-checkout-btn disabled" disabled title="Chưa đến giờ tan làm">
+                    <span class="material-icons">schedule</span>
+                    Chờ ${checkOutTime}
+                </button>
+            `;
+        }
+    } else {
+        return `
+            <span class="shift-completed-label">
+                <span class="material-icons">check_circle</span>
+                Hoàn thành
+            </span>
+        `;
     }
 }
 
@@ -50,6 +588,21 @@ async function autoInitializeCheckin() {
     console.log('Starting auto check-in initialization...');
 
     try {
+        // Kiểm tra hỗ trợ GPS ngay từ đầu
+        if (!navigator.geolocation) {
+            showTimesheetNotificationCheckin('⚠️ Trình duyệt không hỗ trợ GPS. Không thể check-in.', 'error');
+        } else {
+            // Kiểm tra permission GPS
+            const permission = await checkGPSPermission();
+            if (permission === 'denied') {
+                showTimesheetNotificationCheckin('⚠️ Quyền GPS đã bị từ chối. Vui lòng bật GPS trong cài đặt trình duyệt.', 'warning');
+            } else if (permission === 'prompt') {
+                showTimesheetNotificationCheckin('💡 Hệ thống sẽ yêu cầu quyền GPS khi check-in.', 'info');
+            } else if (permission === 'granted') {
+                showTimesheetNotificationCheckin('✅ GPS đã sẵn sàng cho check-in.', 'success');
+            }
+        }
+
         // Đợi để các function khác load xong trước
         await new Promise(resolve => setTimeout(resolve, 1000));
 
@@ -245,7 +798,7 @@ function displayFallbackScheduleUI(schedules) {
             <div class="schedule-time">${formatTime(schedule.startTime)} - ${formatTime(schedule.endTime)}</div>
             <div class="schedule-shift">${schedule.fullName || 'Ca làm việc'}</div>
             <div class="schedule-note" style="font-size: 12px; color: #718096; margin-top: 4px;">
-                Backend chưa hỗ trợ check-in theo ca
+                Backend chưa hỗ trợ check-in theo ca với GPS
             </div>
         </div>
     `).join('');
@@ -262,7 +815,7 @@ function updateFallbackGlobalStatus() {
     const checkoutBtn = document.getElementById('checkoutBtn');
 
     if (checkinStatus) {
-        checkinStatus.textContent = 'Chưa hỗ trợ check-in theo ca';
+        checkinStatus.textContent = 'Chưa hỗ trợ check-in theo ca với GPS';
         checkinStatus.style.color = '#718096';
     }
     if (checkoutStatus) {
@@ -339,15 +892,15 @@ function getShiftTimeInfoHTML(shift) {
         if (shift.canCheckInNow) {
             return `
                 <div class="shift-time-info available">
-                    <span class="material-icons">schedule</span>
-                    Có thể check-in đến ${allowedEnd}
+                    <span class="material-icons">📍</span>
+                    Có thể check-in GPS đến ${allowedEnd} (Tự động thử 3 lần)
                 </div>
             `;
         } else if (currentTime < allowedStart) {
             return `
                 <div class="shift-time-info waiting">
                     <span class="material-icons">schedule</span>
-                    Check-in từ ${allowedStart} đến ${allowedEnd}
+                    Check-in GPS từ ${allowedStart} đến ${allowedEnd}
                 </div>
             `;
         } else {
@@ -400,68 +953,6 @@ function getShiftStatusText(status) {
     }
 }
 
-// Get button HTML for shift - KHÔNG SỬ DỤNG ONCLICK NỮA
-function getShiftButtonHTML(shift) {
-    const scheduleId = shift.scheduleId;
-
-    if (shift.status === 'not_started') {
-        if (shift.canCheckInNow) {
-            return `
-                <button class="shift-checkin-btn available" data-schedule-id="${scheduleId}">
-                    <span class="material-icons">login</span>
-                    Check-in
-                </button>
-            `;
-        } else {
-            const now = new Date();
-            const currentTime = now.toTimeString().substring(0, 5);
-            const allowedStart = shift.allowedCheckInStart ? shift.allowedCheckInStart.substring(0, 5) : '';
-            const allowedEnd = shift.allowedCheckInEnd ? shift.allowedCheckInEnd.substring(0, 5) : '';
-
-            if (currentTime < allowedStart) {
-                return `
-                    <button class="shift-checkin-btn disabled" disabled title="Chưa đến thời gian check-in">
-                        <span class="material-icons">schedule</span>
-                        Chờ ${allowedStart}
-                    </button>
-                `;
-            } else {
-                return `
-                    <button class="shift-checkin-btn expired" disabled title="Đã quá thời gian check-in">
-                        <span class="material-icons">schedule_send</span>
-                        Quá hạn
-                    </button>
-                `;
-            }
-        }
-    } else if (shift.status === 'working') {
-        // KIỂM TRA THỜI GIAN CHECK-OUT
-        if (shift.canCheckOutNow) {
-            return `
-                <button class="shift-checkout-btn available" data-schedule-id="${scheduleId}">
-                    <span class="material-icons">logout</span>
-                    Check-out
-                </button>
-            `;
-        } else {
-            const checkOutTime = shift.checkOutAllowedFrom ? shift.checkOutAllowedFrom.substring(0, 5) : '';
-            return `
-                <button class="shift-checkout-btn disabled" disabled title="Chưa đến giờ tan làm">
-                    <span class="material-icons">schedule</span>
-                    Chờ ${checkOutTime}
-                </button>
-            `;
-        }
-    } else {
-        return `
-            <span class="shift-completed-label">
-                <span class="material-icons">check_circle</span>
-                Hoàn thành
-            </span>
-        `;
-    }
-}
-
 // Format time for display
 function formatTimeDisplay(timeString) {
     try {
@@ -493,7 +984,7 @@ function updateGlobalStatusFromShifts(shifts) {
 
     // Cập nhật trạng thái tổng quan
     if (workingShifts.length > 0) {
-        checkinStatus.textContent = `${workingShifts.length} ca đang làm việc`;
+        checkinStatus.textContent = `${workingShifts.length} ca đang làm việc (GPS)`;
         checkinStatus.style.color = '#3182ce';
 
         if (canCheckOutShifts.length > 0) {
@@ -509,7 +1000,7 @@ function updateGlobalStatusFromShifts(shifts) {
         checkoutStatus.textContent = 'Đã hoàn thành ca';
         checkoutStatus.style.color = '#dd6b20';
     } else if (availableShifts.length > 0) {
-        checkinStatus.textContent = `${availableShifts.length} ca có thể check-in`;
+        checkinStatus.textContent = `${availableShifts.length} ca có thể check-in GPS`;
         checkinStatus.style.color = '#38a169';
         checkoutStatus.textContent = 'Chờ check-in';
         checkoutStatus.style.color = '#718096';
@@ -567,6 +1058,9 @@ function calculateWorkDurationCheckin(startTime, endTime) {
     }
 }
 
+
+
+
 // Handle check-in for specific shift - CẬP NHẬT VỚI KIỂM TRA THỜI GIAN
 async function handleShiftCheckIn(scheduleId) {
     console.log('handleShiftCheckIn called with scheduleId:', scheduleId);
@@ -619,7 +1113,6 @@ async function handleShiftCheckIn(scheduleId) {
         }
     }
 }
-
 // Handle check-out for specific shift - CẬP NHẬT VỚI KIỂM TRA THỜI GIAN
 async function handleShiftCheckOut(scheduleId) {
     console.log('handleShiftCheckOut called with scheduleId:', scheduleId);
@@ -765,7 +1258,7 @@ async function refreshTimesheetStatus() {
 
 // Keep these original functions for backward compatibility
 async function handleCheckIn() {
-    showTimesheetNotificationCheckin('Vui lòng sử dụng nút check-in của từng ca làm việc', 'info');
+    showTimesheetNotificationCheckin('Vui lòng sử dụng nút check-in GPS của từng ca làm việc', 'info');
 }
 
 async function handleCheckOut() {
@@ -786,7 +1279,13 @@ function showTimesheetNotificationCheckin(message, type = "info") {
     // Create notification element
     const notification = document.createElement("div");
     notification.className = `timesheet-notification timesheet-notification-${type}`;
-    notification.textContent = message;
+
+    // Handle HTML content
+    if (typeof message === 'string' && message.includes('<')) {
+        notification.innerHTML = message;
+    } else {
+        notification.textContent = message;
+    }
 
     // Style the notification
     Object.assign(notification.style, {
@@ -800,8 +1299,9 @@ function showTimesheetNotificationCheckin(message, type = "info") {
         zIndex: "9999",
         transform: "translateX(100%)",
         transition: "transform 0.3s ease",
-        maxWidth: "300px",
-        wordWrap: "break-word"
+        maxWidth: "350px",
+        wordWrap: "break-word",
+        boxShadow: "0 4px 12px rgba(0,0,0,0.15)"
     });
 
     // Set background color based on type
@@ -811,6 +1311,9 @@ function showTimesheetNotificationCheckin(message, type = "info") {
             break;
         case "error":
             notification.style.background = "linear-gradient(135deg, #fa709a 0%, #fee140 100%)";
+            break;
+        case "warning":
+            notification.style.background = "linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%)";
             break;
         default:
             notification.style.background = "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)";
@@ -824,7 +1327,7 @@ function showTimesheetNotificationCheckin(message, type = "info") {
         notification.style.transform = "translateX(0)";
     }, 100);
 
-    // Remove after 4 seconds
+    // Remove after 5 seconds
     setTimeout(() => {
         notification.style.transform = "translateX(100%)";
         setTimeout(() => {
@@ -832,7 +1335,7 @@ function showTimesheetNotificationCheckin(message, type = "info") {
                 document.body.removeChild(notification);
             }
         }, 300);
-    }, 4000);
+    }, 5000);
 }
 
 // Clean up intervals when page unloads
@@ -845,4 +1348,4 @@ window.addEventListener('beforeunload', () => {
     }
 });
 
-// ===== KẾT THÚC PHẦN CHECK-IN/CHECK-OUT THEO CA =====
+// ===== KẾT THÚC PHẦN CHECK-IN/CHECK-OUT THEO CA VỚI GPS =====

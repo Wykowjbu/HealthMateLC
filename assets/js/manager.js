@@ -47,7 +47,6 @@ async function handleUserProfile() {
     }
 }
 
-
 function initializeUserDropdown() {
     const userProfile = document.querySelector(".user-profile");
     const userDropdown = document.getElementById("userDropdown");
@@ -214,6 +213,25 @@ function formatDateLocal(date) {
     return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
 }
 
+// THÊM MỚI: Hàm kiểm tra ngày có từ hiện tại trở đi không
+function isDateFromToday(dateString) {
+    const inputDate = new Date(dateString);
+    const today = new Date();
+
+    // Reset time to compare only dates
+    today.setHours(0, 0, 0, 0);
+    inputDate.setHours(0, 0, 0, 0);
+
+    return inputDate >= today;
+}
+
+// THÊM MỚI: Hàm format ngày theo múi giờ Việt Nam
+function getCurrentDateVN() {
+    const now = new Date();
+    const vnTime = new Date(now.getTime() + (7 * 60 * 60 * 1000)); // UTC+7
+    return vnTime.toISOString().split('T')[0];
+}
+
 // Replace the loadSchedules function with this updated version
 async function loadSchedules() {
   try {
@@ -332,25 +350,37 @@ function generateCalendar(schedules) {
   for (let day = 1; day <= daysInMonth; day++) {
     const currentDateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
     const isToday = today.getDate() === day && today.getMonth() === month && today.getFullYear() === year;
+    const isFromToday = isDateFromToday(currentDateStr);
 
     // Get schedules for this day
     const daySchedules = schedules.filter(s => s.date === currentDateStr);
 
     let shiftsHTML = '';
     if (daySchedules.length > 0) {
-      shiftsHTML = daySchedules.map(schedule => `
-        <div class="calendar-shift"
-             onmouseover="showShiftTooltip(event, '${schedule.fullName}', '${formatTime(schedule.startTime)}', '${formatTime(schedule.endTime)}')"
-             onmouseout="hideShiftTooltip()"
-             onclick="editScheduleFromCalendar(${schedule.scheduleId}, ${schedule.userId}, '${schedule.fullName}', '${schedule.date}', '${schedule.startTime}', '${schedule.endTime}')">
-          ${(schedule.fullName || 'NV').substring(0, 8)}
-          <span class="calendar-shift-time">${formatTime(schedule.startTime).substring(0, 5)}</span>
-        </div>
-      `).join('');
+      shiftsHTML = daySchedules.map(schedule => {
+        const canEdit = isFromToday; // Chỉ cho phép edit lịch từ hôm nay trở đi
+        const clickHandler = canEdit
+          ? `onclick="editScheduleFromCalendar(${schedule.scheduleId}, ${schedule.userId}, '${schedule.fullName}', '${schedule.date}', '${schedule.startTime}', '${schedule.endTime}')"`
+          : '';
+        const cursorStyle = canEdit ? 'cursor: pointer;' : 'cursor: not-allowed; opacity: 0.6;';
+        const title = canEdit ? 'Click để chỉnh sửa' : 'Không thể chỉnh sửa lịch trong quá khứ';
+
+        return `
+          <div class="calendar-shift ${canEdit ? 'editable' : 'past-schedule'}"
+               onmouseover="showShiftTooltip(event, '${schedule.fullName}', '${formatTime(schedule.startTime)}', '${formatTime(schedule.endTime)}', ${canEdit})"
+               onmouseout="hideShiftTooltip()"
+               ${clickHandler}
+               style="${cursorStyle}"
+               title="${title}">
+            ${(schedule.fullName || 'NV').substring(0, 8)}
+            <span class="calendar-shift-time">${formatTime(schedule.startTime).substring(0, 5)}</span>
+          </div>
+        `;
+      }).join('');
     }
 
     calendarHTML += `
-      <div class="calendar-day ${isToday ? 'today' : ''}">
+      <div class="calendar-day ${isToday ? 'today' : ''} ${!isFromToday ? 'past-day' : ''}">
         <div class="calendar-day-number">${day}</div>
         <div class="calendar-shifts">${shiftsHTML}</div>
       </div>
@@ -374,8 +404,8 @@ function generateCalendar(schedules) {
   return calendarHTML;
 }
 
-// Add tooltip functionality
-function showShiftTooltip(event, employeeName, startTime, endTime) {
+// CẬP NHẬT: Add tooltip functionality với thông tin có thể edit hay không
+function showShiftTooltip(event, employeeName, startTime, endTime, canEdit = true) {
   let tooltip = document.getElementById('shift-tooltip');
   if (!tooltip) {
     tooltip = document.createElement('div');
@@ -384,9 +414,14 @@ function showShiftTooltip(event, employeeName, startTime, endTime) {
     document.body.appendChild(tooltip);
   }
 
+  const editStatus = canEdit
+    ? '<span style="color: #4CAF50;">✓ Có thể chỉnh sửa</span>'
+    : '<span style="color: #f44336;">✗ Không thể chỉnh sửa (quá khứ)</span>';
+
   tooltip.innerHTML = `
     <strong>${employeeName}</strong><br>
-    ${startTime} - ${endTime}
+    ${startTime} - ${endTime}<br>
+    <small>${editStatus}</small>
   `;
 
   tooltip.style.left = event.pageX + 10 + 'px';
@@ -401,8 +436,14 @@ function hideShiftTooltip() {
   }
 }
 
-// Add function to edit schedule from calendar
+// CẬP NHẬT: Add function to edit schedule from calendar với kiểm tra thời gian
 function editScheduleFromCalendar(scheduleId, userId, fullName, date, startTime, endTime) {
+  // Kiểm tra xem có thể chỉnh sửa không
+  if (!isDateFromToday(date)) {
+    alert('⚠️ Không thể chỉnh sửa lịch làm việc trong quá khứ!\nChỉ có thể chỉnh sửa lịch từ hôm nay trở đi.');
+    return;
+  }
+
   // Switch to edit schedule section
   navigate('edit_schedule');
 
@@ -453,6 +494,16 @@ async function handleCreateSchedule() {
         } else {
             console.error('Element employeeSelect not found');
         }
+
+        // CẬP NHẬT: Set minimum date cho date picker thành hôm nay
+        const workDateInput = document.getElementById('workDate');
+        if (workDateInput) {
+            workDateInput.min = getCurrentDateVN();
+            // Set default value thành hôm nay
+            if (!workDateInput.value) {
+                workDateInput.value = getCurrentDateVN();
+            }
+        }
     } catch (error) {
         console.error('Lỗi khi tải danh sách nhân viên:', error);
         alert('Không thể tải danh sách nhân viên. Vui lòng thử lại. Lỗi: ' + error.message);
@@ -466,6 +517,12 @@ async function saveSchedule() {
     const endTime = document.getElementById('endTime').value + ':00';
 
     console.log('Saving schedule with:', { userId, date, startTime, endTime });
+
+    // CẬP NHẬT: Kiểm tra ngày có từ hôm nay trở đi không
+    if (!isDateFromToday(date)) {
+        alert('⚠️ Không thể tạo lịch làm việc cho ngày trong quá khứ!\nVui lòng chọn ngày từ hôm nay trở đi.');
+        return;
+    }
 
     if (userId && date && startTime && endTime) {
         try {
@@ -524,11 +581,11 @@ async function initEditScheduleSection() {
   }
 }
 
+// CẬP NHẬT: loadEmployeeSchedules với filter chỉ hiển thị lịch từ hôm nay trở đi
 async function loadEmployeeSchedules(userId) {
   if (!userId) {
     document.getElementById('employeeScheduleList').innerHTML = '<p>Vui lòng chọn nhân viên.</p>';
     return;
-
   }
 
   try {
@@ -547,19 +604,53 @@ async function loadEmployeeSchedules(userId) {
     const schedules = await response.json();
     console.log('Dữ liệu lịch của nhân viên:', schedules);
 
+    // CẬP NHẬT: Lọc chỉ hiển thị lịch từ hôm nay trở đi
+    const futureSchedules = schedules.filter(schedule => isDateFromToday(schedule.date));
+    const pastSchedules = schedules.filter(schedule => !isDateFromToday(schedule.date));
+
     const scheduleList = document.getElementById('employeeScheduleList');
-    if (schedules.length > 0) {
-      scheduleList.innerHTML = schedules.sort((a, b) => new Date(a.date) - new Date(b.date)).map(schedule => `
-        <div class="employee-shift">
-          ${schedule.date} (${formatTime(schedule.startTime)} - ${formatTime(schedule.endTime)})
-          <button class="btn btn-primary" onclick="editSchedule(${schedule.scheduleId}, ${schedule.userId}, '${schedule.fullName}', '${schedule.date}', '${schedule.startTime}', '${schedule.endTime}')">
-            <span class="material-icons">edit</span> Sửa
-          </button>
-          <button class="btn btn-danger" onclick="showDeleteScheduleModal(${schedule.scheduleId}, '${schedule.fullName}', '${schedule.date}', '${schedule.startTime}', '${schedule.endTime}', ${schedule.userId})">
-            <span class="material-icons">delete</span> Xóa
-          </button>
-        </div>
-      `).join('');
+
+    if (futureSchedules.length > 0 || pastSchedules.length > 0) {
+      let html = '';
+
+      // Hiển thị lịch có thể chỉnh sửa (từ hôm nay trở đi)
+      if (futureSchedules.length > 0) {
+        html += '<h4 style="color: #4CAF50; margin: 20px 0 10px 0;">📅 Lịch có thể chỉnh sửa (Từ hôm nay trở đi)</h4>';
+        html += futureSchedules.sort((a, b) => new Date(a.date) - new Date(b.date)).map(schedule => `
+          <div class="employee-shift editable">
+            <div class="schedule-info">
+              <strong>${schedule.date}</strong> (${formatTime(schedule.startTime)} - ${formatTime(schedule.endTime)})
+              <span class="schedule-status" style="color: #4CAF50; font-size: 12px;">✓ Có thể chỉnh sửa</span>
+            </div>
+            <div class="schedule-actions">
+              <button class="btn btn-primary" onclick="editSchedule(${schedule.scheduleId}, ${schedule.userId}, '${schedule.fullName}', '${schedule.date}', '${schedule.startTime}', '${schedule.endTime}')">
+                <span class="material-icons">edit</span> Sửa
+              </button>
+              <button class="btn btn-danger" onclick="showDeleteScheduleModal(${schedule.scheduleId}, '${schedule.fullName}', '${schedule.date}', '${schedule.startTime}', '${schedule.endTime}', ${schedule.userId})">
+                <span class="material-icons">delete</span> Xóa
+              </button>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // Hiển thị lịch quá khứ (chỉ để xem)
+      if (pastSchedules.length > 0) {
+        html += '<h4 style="color: #757575; margin: 20px 0 10px 0;">📋 Lịch đã qua (Chỉ xem)</h4>';
+        html += pastSchedules.sort((a, b) => new Date(b.date) - new Date(a.date)).map(schedule => `
+          <div class="employee-shift past-schedule" style="opacity: 0.6; background-color: #f5f5f5;">
+            <div class="schedule-info">
+              <strong>${schedule.date}</strong> (${formatTime(schedule.startTime)} - ${formatTime(schedule.endTime)})
+              <span class="schedule-status" style="color: #757575; font-size: 12px;">✗ Không thể chỉnh sửa</span>
+            </div>
+            <div class="schedule-actions">
+              <span style="color: #757575; font-size: 12px;">Lịch đã qua</span>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      scheduleList.innerHTML = html;
     } else {
       scheduleList.innerHTML = '<p>Nhân viên này chưa có lịch làm việc.</p>';
     }
@@ -569,7 +660,14 @@ async function loadEmployeeSchedules(userId) {
   }
 }
 
+// CẬP NHẬT: editSchedule với kiểm tra thời gian
 async function editSchedule(scheduleId, userId, fullName, date, startTime, endTime) {
+  // Kiểm tra xem có thể chỉnh sửa không
+  if (!isDateFromToday(date)) {
+    alert('⚠️ Không thể chỉnh sửa lịch làm việc trong quá khứ!\nChỉ có thể chỉnh sửa lịch từ hôm nay trở đi.');
+    return;
+  }
+
   const modal = document.getElementById('editScheduleModal');
   const form = document.getElementById('editScheduleForm');
   form.dataset.scheduleId = scheduleId;
@@ -578,9 +676,17 @@ async function editSchedule(scheduleId, userId, fullName, date, startTime, endTi
   document.getElementById('editWorkDate').value = date;
   document.getElementById('editStartTime').value = startTime.slice(0, 5);
   document.getElementById('editEndTime').value = endTime.slice(0, 5);
+
+  // CẬP NHẬT: Set minimum date cho date picker thành hôm nay
+  const editWorkDateInput = document.getElementById('editWorkDate');
+  if (editWorkDateInput) {
+    editWorkDateInput.min = getCurrentDateVN();
+  }
+
   modal.style.display = 'block';
 }
 
+// CẬP NHẬT: saveEditedSchedule với kiểm tra thời gian
 async function saveEditedSchedule() {
   const form = document.getElementById('editScheduleForm');
   const scheduleId = form.dataset.scheduleId;
@@ -588,6 +694,12 @@ async function saveEditedSchedule() {
   const date = document.getElementById('editWorkDate').value;
   const startTime = document.getElementById('editStartTime').value + ':00';
   const endTime = document.getElementById('editEndTime').value + ':00';
+
+  // CẬP NHẬT: Kiểm tra ngày có từ hôm nay trở đi không
+  if (!isDateFromToday(date)) {
+    alert('⚠️ Không thể cập nhật lịch làm việc cho ngày trong quá khứ!\nVui lòng chọn ngày từ hôm nay trở đi.');
+    return;
+  }
 
   if (scheduleId && userId && date && startTime && endTime) {
     try {
@@ -621,10 +733,20 @@ async function saveEditedSchedule() {
   }
 }
 
+// CẬP NHẬT: confirmDeleteSchedule với kiểm tra thời gian
 async function confirmDeleteSchedule() {
   const modal = document.getElementById('deleteScheduleModal');
   const scheduleId = modal.dataset.scheduleId;
   const userId = modal.dataset.userId;
+  const scheduleDate = modal.dataset.scheduleDate; // Cần thêm date vào modal
+
+  // Kiểm tra xem có thể xóa không (chỉ cho phép xóa lịch từ hôm nay trở đi)
+  if (scheduleDate && !isDateFromToday(scheduleDate)) {
+    alert('⚠️ Không thể xóa lịch làm việc trong quá khứ!\nChỉ có thể xóa lịch từ hôm nay trở đi.');
+    closeDeleteModal();
+    return;
+  }
+
   console.log('Deleting schedule with ID:', scheduleId, 'for userId:', userId); // Debug
   try {
     const response = await fetch(`https://healthmate-lc-83d3cba0821e.herokuapp.com/manager/schedule?scheduleId=${scheduleId}`, {
@@ -638,14 +760,14 @@ async function confirmDeleteSchedule() {
       throw new Error(`HTTP error! status: ${response.status}, Details: ${errorText}`);
     }
     console.log('Schedule deleted successfully'); // Debug
-    alert('Lịch làm việc đã được xóa!');
+    alert('✅ Lịch làm việc đã được xóa thành công!');
     closeDeleteModal();
     console.log('Refreshing schedules: calling loadEmployeeSchedules and loadSchedules'); // Debug
     await loadEmployeeSchedules(userId); // Làm mới danh sách lịch trong section chỉnh sửa
     await loadSchedules(); // Làm mới section Lịch làm việc tuần này
   } catch (error) {
     console.error('Lỗi khi xóa lịch:', error);
-    alert('Không thể xóa lịch. Vui lòng thử lại. Lỗi: ' + error.message);
+    alert('❌ Không thể xóa lịch. Vui lòng thử lại.\nLỗi: ' + error.message);
   }
 }
 
@@ -653,10 +775,18 @@ function closeEditModal() {
   document.getElementById('editScheduleModal').style.display = 'none';
 }
 
+// CẬP NHẬT: showDeleteScheduleModal với kiểm tra thời gian
 function showDeleteScheduleModal(scheduleId, fullName, date, startTime, endTime, userId) {
+  // Kiểm tra xem có thể xóa không
+  if (!isDateFromToday(date)) {
+    alert('⚠️ Không thể xóa lịch làm việc trong quá khứ!\nChỉ có thể xóa lịch từ hôm nay trở đi.');
+    return;
+  }
+
   const modal = document.getElementById('deleteScheduleModal');
   modal.dataset.scheduleId = scheduleId;
   modal.dataset.userId = userId; // Lưu userId vào modal
+  modal.dataset.scheduleDate = date; // CẬP NHẬT: Lưu date vào modal để kiểm tra
   document.getElementById('deleteScheduleEmployee').textContent = fullName;
   document.getElementById('deleteScheduleDate').textContent = date;
   document.getElementById('deleteScheduleTime').textContent = `${formatTime(startTime)} - ${formatTime(endTime)}`;
@@ -742,7 +872,7 @@ async function exportAttendance() {
     }
 }
 
-//#region History Empployee 
+//#region History Empployee
 async function initEmployeeHistorySection() {
   const historyList = document.getElementById("employeeHistoryList");
   const searchInput = document.getElementById("employeeHistorySearch");
