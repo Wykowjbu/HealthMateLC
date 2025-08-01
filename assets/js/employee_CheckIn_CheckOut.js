@@ -431,7 +431,7 @@ async function handleShiftCheckInWithGPS(scheduleId) {
 
         console.log('Sending check-in request:', requestBody);
 
-        const response = await fetch('http://localhost:8080/employee/timesheet/check-in-shift', {
+        const response = await fetch('https://healthmate-lc-83d3cba0821e.herokuapp.com/employee/timesheet/check-in-shift', {
             method: 'POST',
             credentials: 'include',
             headers: {
