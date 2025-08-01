@@ -256,60 +256,174 @@
         </div>
 
         <div class="btn-container">
-          <a href="index.html" class="btn btn-primary">Về trang chủ ngay</a>
-          <button onclick="window.print()" class="btn btn-secondary">
-            In hóa đơn
-          </button>
+          <a href="employee.html" class="btn btn-primary">Về trang chủ ngay</a>
         </div>
       </div>
     </div>
 
     <script>
-      // ✅ Hàm kiểm tra nếu URL chứa `/success/` hoặc có parameters PayOS
-      function checkPaymentStatus() {
-        const currentURL = window.location.href;
+      // ✅ Hàm chính - Xử lý URL và gọi API
+      function processPaymentResult() {
         const urlParams = new URLSearchParams(window.location.search);
 
-        // Kiểm tra nếu có orderCode từ URL parameters (PayOS)
-        const orderCodeFromParams = urlParams.get("orderCode");
-        if (orderCodeFromParams) {
-          document.getElementById("orderId").textContent = orderCodeFromParams;
-          return; // Không cần check URL path nữa vì đã có từ parameters
+        // Lấy thông tin từ URL
+        const orderCode = urlParams.get("orderCode");
+        const status = urlParams.get("status");
+        const transactionId = urlParams.get("id");
+        const code = urlParams.get("code");
+        const cancel = urlParams.get("cancel");
+
+        console.log("🔍 Payment Result Parameters:", {
+          orderCode,
+          status,
+          transactionId,
+          code,
+          cancel,
+        });
+
+        // Kiểm tra có đầy đủ thông tin không
+        if (!orderCode || !status) {
+          console.error("❌ Thiếu thông tin orderCode hoặc status");
+          return;
         }
 
-        // Kiểm tra URL path cho trường hợp khác
-        if (currentURL.includes("/success/")) {
-          const orderCode = getOrderCodeFromURL(currentURL);
-          if (orderCode) {
-            updateOrderStatus(orderCode, "SUCCESS");
-            document.getElementById("orderId").textContent = orderCode;
-          }
-        }
+        // Hiển thị thông tin cơ bản ngay lập tức
+        displayBasicInfo(orderCode, status, transactionId, code);
+
+        // Gọi API cập nhật trạng thái
+        updateOrderStatusAPI(orderCode, status);
       }
 
-      // ✅ Lấy mã order từ URL
-      function getOrderCodeFromURL(url) {
-        const segments = url.split("/");
-        const index = segments.indexOf("web");
-        if (index !== -1 && segments.length > index + 1) {
-          return segments[index + 1];
-        }
-        return null;
-      }
-
-      // ✅ Gửi API về backend để cập nhật trạng thái
-      function updateOrderStatus(orderCode, paymentStatus) {
-        // Hiển thị mã đơn hàng ngay khi có
+      // ✅ Hiển thị thông tin cơ bản từ URL
+      function displayBasicInfo(orderCode, status, transactionId, code) {
+        // Hiển thị mã đơn hàng
         document.getElementById("orderId").textContent = orderCode;
 
-        // Xác định status để gửi lên backend
-        let apiStatus = "paid";
-        if (paymentStatus === "CANCELLED" || paymentStatus === "cancel") {
-          apiStatus = "cancelled";
-        } else if (paymentStatus === "PENDING") {
-          apiStatus = "pending";
+        // Hiển thị thời gian hiện tại
+        document.getElementById("paymentTime").textContent =
+          new Date().toLocaleString("vi-VN");
+
+        // Hiển thị ID giao dịch nếu có
+        if (transactionId) {
+          addOrderInfoField("transactionId", "ID giao dịch:", transactionId);
         }
 
+        // Hiển thị mã phản hồi
+        if (code) {
+          const codeText =
+            code === "00"
+              ? "Thành công"
+              : code === "01"
+              ? "Thất bại"
+              : `Mã: ${code}`;
+          addOrderInfoField("responseCode", "Mã phản hồi:", codeText);
+        }
+
+        // Set phương thức thanh toán
+        addOrderInfoField("paymentMethod", "Phương thức:", "PayOS");
+
+        // Cập nhật UI theo trạng thái
+        updateUIByStatus(status);
+      }
+
+      // ✅ Cập nhật UI theo trạng thái
+      function updateUIByStatus(status) {
+        const successIcon = document.querySelector(".success-icon");
+        const successTitle = document.querySelector(".success-title");
+        const successMessage = document.querySelector(".success-message");
+        const statusElement = document.getElementById("status");
+        const countdownContainer = document.querySelector(
+          ".countdown-container"
+        );
+        const btnPrimary = document.querySelector(".btn-primary");
+
+        switch (status) {
+          case "PAID":
+            // Thành công - UI xanh
+            successIcon.style.background = "var(--main_color_gradient)";
+            successIcon.innerHTML = "✓";
+            successTitle.textContent = "Thanh toán thành công!";
+            successMessage.textContent =
+              "Cảm ơn bạn đã tin tưởng và sử dụng dịch vụ của HealthMateLC. Đơn hàng của bạn đã được xử lý thành công.";
+            statusElement.textContent = "Đã thanh toán ✓";
+            statusElement.style.color = "#28a745";
+
+            // Hiển thị countdown và bắt đầu đếm ngược
+            countdownContainer.style.display = "block";
+            startCountdown();
+
+            // Hiệu ứng confetti
+            setTimeout(createConfetti, 500);
+            break;
+
+          case "CANCELLED":
+            // Hủy - UI đỏ
+            successIcon.style.background =
+              "linear-gradient(135deg, #dc3545, #c82333)";
+            successIcon.innerHTML = "✗";
+            successTitle.textContent = "Thanh toán đã bị hủy";
+            successMessage.textContent =
+              "Giao dịch của bạn đã bị hủy. Bạn có thể thử lại thanh toán hoặc liên hệ hỗ trợ nếu cần.";
+            statusElement.textContent = "Đã hủy thanh toán ✗";
+            statusElement.style.color = "#dc3545";
+
+            // Ẩn countdown
+            countdownContainer.style.display = "none";
+
+            // Thay đổi button
+            btnPrimary.textContent = "Thử lại thanh toán";
+            btnPrimary.href = "employee.html"; // Hoặc trang thanh toán
+            break;
+
+          case "PENDING":
+            // Chờ xử lý - UI vàng
+            successIcon.style.background =
+              "linear-gradient(135deg, #ffc107, #e0a800)";
+            successIcon.innerHTML = "⏳";
+            successTitle.textContent = "Đang chờ thanh toán";
+            successMessage.textContent =
+              "Giao dịch của bạn đang được xử lý. Vui lòng chờ trong giây lát hoặc kiểm tra lại sau.";
+            statusElement.textContent = "Đang chờ thanh toán ⏳";
+            statusElement.style.color = "#ffc107";
+
+            // Ẩn countdown
+            countdownContainer.style.display = "none";
+
+            // Thay đổi button
+            btnPrimary.textContent = "Kiểm tra lại";
+            break;
+
+          default:
+            // Trạng thái không xác định
+            statusElement.textContent = status;
+            statusElement.style.color = "#6c757d";
+            countdownContainer.style.display = "none";
+        }
+      }
+
+      // ✅ Gọi API cập nhật trạng thái
+      function updateOrderStatusAPI(orderCode, paymentStatus) {
+        // Map status từ PayOS sang backend
+        let apiStatus = "PENDING";
+        switch (paymentStatus) {
+          case "PAID":
+            apiStatus = "PAID";
+            break;
+          case "CANCELLED":
+            apiStatus = "CANCELLED";
+            break;
+          case "PENDING":
+            apiStatus = "PENDING";
+            break;
+          default:
+            apiStatus = "FAILED";
+        }
+
+        console.log(
+          `🚀 Gọi API cập nhật: orderCode=${orderCode}, status=${apiStatus}`
+        );
+
+        // Gọi API
         fetch("http://localhost:8080/payment/update-status", {
           method: "POST",
           headers: {
@@ -321,16 +435,17 @@
           }),
         })
           .then((res) => {
-            if (!res.ok) throw new Error("Cập nhật thất bại");
+            if (!res.ok) {
+              throw new Error(`HTTP error! status: ${res.status}`);
+            }
             return res.json();
           })
           .then((data) => {
             console.log("✅ Cập nhật trạng thái thành công:", data);
 
-            // Hiển thị thông tin từ data nếu có
+            // Hiển thị thêm thông tin từ API response nếu có
             if (data.orderInfo) {
               if (data.orderInfo.amount) {
-                // Thêm trường amount nếu chưa có
                 addOrderInfoField(
                   "amount",
                   "Số tiền:",
@@ -338,29 +453,23 @@
                     " VNĐ"
                 );
               }
-              if (data.orderInfo.paymentMethod) {
+              if (data.orderInfo.description) {
                 addOrderInfoField(
-                  "paymentMethod",
-                  "Phương thức:",
-                  data.orderInfo.paymentMethod
+                  "description",
+                  "Mô tả:",
+                  data.orderInfo.description
                 );
-              }
-              if (data.orderInfo.transactionTime) {
-                document.getElementById("paymentTime").textContent = new Date(
-                  data.orderInfo.transactionTime
-                ).toLocaleString("vi-VN");
               }
             }
           })
           .catch((err) => {
             console.error("❌ Lỗi cập nhật trạng thái:", err);
-            // Vẫn hiển thị thông tin UI nhưng ghi log lỗi API
+            // Vẫn hiển thị UI bình thường, chỉ log lỗi
           });
       }
 
-      // Helper function để thêm trường thông tin động
+      // ✅ Helper function để thêm thông tin động
       function addOrderInfoField(id, label, value) {
-        // Kiểm tra xem đã có field này chưa
         if (!document.getElementById(id)) {
           const orderDetails = document.querySelector(".order-details");
           const newInfo = document.createElement("div");
@@ -369,6 +478,7 @@
             <span>${label}</span>
             <strong id="${id}" style="color: var(--main_color);">${value}</strong>
           `;
+
           // Chèn trước trường trạng thái
           const statusField = document.getElementById("status").parentElement;
           orderDetails.insertBefore(newInfo, statusField);
@@ -377,138 +487,11 @@
         }
       }
 
-      // ✅ Thực thi khi trang load
-      window.addEventListener("DOMContentLoaded", () => {
-        // Set thời gian hiện tại trước
-        document.getElementById("paymentTime").textContent =
-          new Date().toLocaleString("vi-VN");
-
-        // Kiểm tra payment status từ URL
-        checkPaymentStatus();
-
-        // Xử lý URL parameters cho trường hợp fallback
-        handleURLParameters();
-      });
-
-      // ✅ Xử lý URL parameters từ PayOS
-      function handleURLParameters() {
-        const urlParams = new URLSearchParams(window.location.search);
-
-        // Lấy thông tin từ PayOS URL
-        const code = urlParams.get("code");
-        const transactionId = urlParams.get("id");
-        const cancel = urlParams.get("cancel");
-        const status = urlParams.get("status");
-        const orderCode = urlParams.get("orderCode");
-
-        // Hiển thị mã đơn hàng từ PayOS
-        if (orderCode) {
-          document.getElementById("orderId").textContent = orderCode;
-        }
-
-        // Hiển thị trạng thái từ PayOS và cập nhật UI
-        if (status) {
-          let statusText = "";
-          let statusColor = "";
-          let pageTitle = "Thanh toán thành công!";
-          let pageMessage =
-            "Cảm ơn bạn đã tin tưởng và sử dụng dịch vụ của HealthMateLC. Đơn hàng của bạn đã được xử lý thành công.";
-
-          switch (status) {
-            case "PAID":
-              statusText = "Đã thanh toán ✓";
-              statusColor = "#28a745";
-              break;
-            case "PENDING":
-              statusText = "Đang chờ thanh toán ⏳";
-              statusColor = "#ffc107";
-              pageTitle = "Đang chờ thanh toán";
-              pageMessage =
-                "Giao dịch của bạn đang được xử lý. Vui lòng chờ trong giây lát.";
-              break;
-            case "CANCELLED":
-              statusText = "Đã hủy thanh toán ✗";
-              statusColor = "#dc3545";
-              pageTitle = "Thanh toán đã bị hủy";
-              pageMessage =
-                "Giao dịch của bạn đã bị hủy. Bạn có thể thử lại hoặc liên hệ hỗ trợ nếu cần.";
-              // Thay đổi icon thành X
-              document.querySelector(".success-icon").innerHTML = "✗";
-              break;
-            default:
-              statusText = status;
-              statusColor = "#6c757d";
-          }
-
-          document.getElementById("status").textContent = statusText;
-          document.getElementById("status").style.color = statusColor;
-
-          // Cập nhật tiêu đề và thông báo
-          document.querySelector(".success-title").textContent = pageTitle;
-          document.querySelector(".success-message").textContent = pageMessage;
-
-          // Gửi API cập nhật trạng thái
-          if (orderCode) {
-            updateOrderStatus(orderCode, status);
-          }
-        }
-
-        // Kiểm tra nếu cancel=true (ưu tiên hơn status)
-        if (cancel === "true") {
-          document.getElementById("status").textContent = "Giao dịch bị hủy ✗";
-          document.getElementById("status").style.color = "#dc3545";
-          document.querySelector(".success-title").textContent =
-            "Giao dịch bị hủy!";
-          document.querySelector(".success-message").textContent =
-            "Giao dịch của bạn đã bị hủy. Vui lòng thử lại hoặc liên hệ hỗ trợ.";
-          document.querySelector(".success-icon").innerHTML = "✗";
-
-          // Gửi API với status CANCELLED
-          if (orderCode) {
-            updateOrderStatus(orderCode, "CANCELLED");
-          }
-        }
-
-        // Hiển thị thông tin giao dịch nếu có
-        if (transactionId) {
-          addOrderInfoField("transactionId", "ID giao dịch:", transactionId);
-        }
-
-        // Hiển thị mã phản hồi từ PayOS
-        if (code) {
-          let codeText = "";
-          switch (code) {
-            case "00":
-              codeText = "Thành công";
-              break;
-            case "01":
-              codeText = "Thất bại";
-              break;
-            default:
-              codeText = `Mã: ${code}`;
-          }
-          addOrderInfoField("responseCode", "Mã phản hồi:", codeText);
-        }
-
-        // Set phương thức thanh toán mặc định
-        addOrderInfoField("paymentMethod", "Phương thức:", "PayOS");
-
-        // Log tất cả parameters để debug
-        console.log("🔍 PayOS URL Parameters:", {
-          code,
-          transactionId,
-          cancel,
-          status,
-          orderCode,
-          allParams: Object.fromEntries(urlParams),
-        });
-      }
-
-      // Countdown timer - chỉ hoạt động nếu thanh toán thành công
+      // ✅ Countdown timer
       let countdown = 5;
-      const countdownElement = document.getElementById("countdown");
-
       function startCountdown() {
+        const countdownElement = document.getElementById("countdown");
+
         const timer = setInterval(() => {
           countdown--;
           countdownElement.textContent = countdown;
@@ -520,28 +503,7 @@
         }, 1000);
       }
 
-      // Chỉ bắt đầu countdown nếu thanh toán thành công
-      setTimeout(() => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const status = urlParams.get("status");
-        const cancel = urlParams.get("cancel");
-
-        if (status === "PAID" && cancel !== "true") {
-          startCountdown();
-        } else {
-          // Ẩn countdown nếu không thành công
-          document.querySelector(".countdown-container").style.display = "none";
-
-          // Thay đổi text button cho trường hợp hủy/lỗi
-          if (status === "CANCELLED" || cancel === "true") {
-            document.querySelector(".btn-primary").textContent =
-              "Thử lại thanh toán";
-            document.querySelector(".btn-primary").href = "index.html"; // Hoặc link đến trang thanh toán
-          }
-        }
-      }, 1000);
-
-      // Optional: Add confetti effect
+      // ✅ Hiệu ứng confetti
       function createConfetti() {
         const colors = ["#f88005", "#ed480d", "#f15c0a", "#ffd700", "#ff6b6b"];
         const confettiCount = 50;
@@ -578,18 +540,15 @@
                 opacity: 0,
               },
             ],
-            {
-              duration: fallDuration,
-              easing: "ease-in",
-            }
-          ).onfinish = () => {
-            confetti.remove();
-          };
+            { duration: fallDuration, easing: "ease-in" }
+          ).onfinish = () => confetti.remove();
         }
       }
 
-      // Trigger confetti effect on page load
-      setTimeout(createConfetti, 500);
+      // ✅ Khởi tạo khi trang load
+      window.addEventListener("DOMContentLoaded", () => {
+        processPaymentResult();
+      });
     </script>
   </body>
 </html>
