@@ -186,7 +186,7 @@ function populatePharmacyFilters() {
 async function checkApiConnection() {
   try {
     const response = await fetch(
-      "http://localhost:8080/customer-service/pharmacies",
+      "https://healthmate-lc-83d3cba0821e.herokuapp.com/customer-service/pharmacies",
       {
         method: "GET",
       }
@@ -224,7 +224,7 @@ async function loadRevenueReport(
 
   try {
     // Build API URL with query params
-    let url = "http://localhost:8080/customer-service/stats/revenue-report?";
+    let url = "https://healthmate-lc-83d3cba0821e.herokuapp.com/customer-service/stats/revenue-report?";
     if (pharmacyId !== "all" && pharmacyId) url += `pharmacyId=${pharmacyId}&`;
     if (startDate) url += `startDate=${startDate}&`;
     if (endDate) url += `endDate=${endDate}&`;
@@ -275,7 +275,7 @@ async function populateRevenuePharmacyFilter() {
   filter.innerHTML = `<option value="all">Tất cả nhà thuốc</option>`;
   try {
     const res = await fetch(
-      "http://localhost:8080/customer-service/pharmacies"
+      "https://healthmate-lc-83d3cba0821e.herokuapp.com/customer-service/pharmacies"
     );
     if (!res.ok) throw new Error("API error");
     const pharmacies = await res.json();

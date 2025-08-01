@@ -85,7 +85,7 @@ async function autoInitializeCheckin() {
 async function getCurrentUserIdFromSessionCheckin() {
     try {
         // Thử gọi endpoint mới status-by-shift thay vì endpoint cũ
-        const response = await fetch('http://localhost:8080/employee/timesheet/status-by-shift', {
+        const response = await fetch('https://healthmate-lc-83d3cba0821e.herokuapp.com/employee/timesheet/status-by-shift', {
             method: 'GET',
             credentials: 'include',
             headers: { 'Accept': 'application/json' }
@@ -116,7 +116,7 @@ async function getCurrentUserIdFromSessionCheckin() {
 // Fallback: Sử dụng profile endpoint để xác thực
 async function tryProfileEndpoint() {
     try {
-        const response = await fetch('http://localhost:8080/employee/profile', {
+        const response = await fetch('https://healthmate-lc-83d3cba0821e.herokuapp.com/employee/profile', {
             method: 'GET',
             credentials: 'include',
             headers: { 'Accept': 'application/json' }
@@ -168,7 +168,7 @@ async function loadTimesheetStatusByShift() {
 
     try {
         // Sử dụng endpoint mới để lấy trạng thái theo ca
-        const response = await fetch('http://localhost:8080/employee/timesheet/status-by-shift', {
+        const response = await fetch('https://healthmate-lc-83d3cba0821e.herokuapp.com/employee/timesheet/status-by-shift', {
             method: 'GET',
             credentials: 'include',
             headers: { 'Accept': 'application/json' }
@@ -208,7 +208,7 @@ async function loadTimesheetStatusByShift() {
 // Fallback: Hiển thị lịch làm việc cơ bản từ endpoint schedules
 async function displayFallbackSchedule() {
     try {
-        const response = await fetch('http://localhost:8080/employee/schedules', {
+        const response = await fetch('https://healthmate-lc-83d3cba0821e.herokuapp.com/employee/schedules', {
             method: 'GET',
             credentials: 'include',
             headers: { 'Accept': 'application/json' }
@@ -590,7 +590,7 @@ async function handleShiftCheckIn(scheduleId) {
     }
 
     try {
-        const response = await fetch('http://localhost:8080/employee/timesheet/check-in-shift', {
+        const response = await fetch('https://healthmate-lc-83d3cba0821e.herokuapp.com/employee/timesheet/check-in-shift', {
             method: 'POST',
             credentials: 'include',
             headers: {
@@ -657,7 +657,7 @@ async function handleShiftCheckOut(scheduleId) {
     }
 
     try {
-        const response = await fetch('http://localhost:8080/employee/timesheet/check-out-shift', {
+        const response = await fetch('https://healthmate-lc-83d3cba0821e.herokuapp.com/employee/timesheet/check-out-shift', {
             method: 'POST',
             credentials: 'include',
             headers: {
