@@ -226,7 +226,7 @@ async function loadOrders() {
     console.log("====================================");
 
     const response = await fetch(
-      "http://localhost:8080/employee/danh-sach-don-hang",
+      "https://healthmate-lc-83d3cba0821e.herokuapp.com/employee/danh-sach-don-hang",
       {
         method: "GET",
         headers: {
@@ -811,7 +811,7 @@ async function fetchCustomers() {
   try {
     console.log("Fetching customers...");
     const response = await fetch(
-      "http://localhost:8080/employee/danh-sach-khach-hang",
+      "https://healthmate-lc-83d3cba0821e.herokuapp.com/employee/danh-sach-khach-hang",
       {
         method: "GET",
         headers: { "Content-Type": "application/json" },
@@ -919,7 +919,7 @@ async function handleAddCustomer(event) {
 
   try {
     const response = await fetch(
-      "http://localhost:8080/employee/tao-moi-khach-hang",
+      "https://healthmate-lc-83d3cba0821e.herokuapp.com/employee/tao-moi-khach-hang",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1202,7 +1202,7 @@ async function handleMainEditCustomer(event) {
 
     // Send update request to backend
     const response = await fetch(
-      `http://localhost:8080/employee/cap-nhat-khach-hang/${formData.id}`,
+      `https://healthmate-lc-83d3cba0821e.herokuapp.com/employee/cap-nhat-khach-hang/${formData.id}`,
       {
         method: "PUT",
         headers: {
@@ -1624,7 +1624,7 @@ async function handleQuickAddCustomer(event) {
 
     // Send request to backend
     const response = await fetch(
-      "http://localhost:8080/employee/tao-moi-khach-hang",
+      "https://healthmate-lc-83d3cba0821e.herokuapp.com/employee/tao-moi-khach-hang",
       {
         method: "POST",
         headers: {
@@ -1762,7 +1762,7 @@ async function createOrder() {
 
     // Send to backend
     const response = await fetch(
-      "http://localhost:8080/employee/tao-don-hang",
+      "https://healthmate-lc-83d3cba0821e.herokuapp.com/employee/tao-don-hang",
       {
         method: "POST",
         headers: {
@@ -1874,7 +1874,7 @@ async function fetchProducts() {
   try {
     console.log("Fetching products...");
     const response = await fetch(
-      "http://localhost:8080/employee/danh-sach-san-pham",
+      "https://healthmate-lc-83d3cba0821e.herokuapp.com/employee/danh-sach-san-pham",
       {
         method: "GET",
         headers: { "Content-Type": "application/json" },
@@ -1946,7 +1946,7 @@ function displayProducts(productList) {
 async function fetchInventory() {
   try {
     console.log("Fetching inventory...");
-    const response = await fetch("http://localhost:8080/employee/inventory", {
+    const response = await fetch("https://healthmate-lc-83d3cba0821e.herokuapp.com/employee/inventory", {
       method: "GET",
       headers: { "Content-Type": "application/json" },
     });
@@ -2021,7 +2021,7 @@ async function fetchEmployeeInfo(employeeId) {
     console.log(`Fetching employee info for ID: ${employeeId}`);
 
     const response = await fetch(
-      `http://localhost:8080/employee/thong-tin-nhan-vien/${employeeId}`,
+      `https://healthmate-lc-83d3cba0821e.herokuapp.com/employee/thong-tin-nhan-vien/${employeeId}`,
       {
         method: "GET",
         headers: {
@@ -2052,7 +2052,7 @@ async function fetchEmployeeInfo(employeeId) {
 async function fetchEmployeeWorkHistory(userId) {
   try {
     const response = await fetch(
-      `http://localhost:8080/employee/lich-su-cong-tac/${userId}`,
+      `https://healthmate-lc-83d3cba0821e.herokuapp.com/employee/lich-su-cong-tac/${userId}`,
       {
         method: "GET",
         headers: { "Content-Type": "application/json" },
@@ -2446,7 +2446,7 @@ async function handleChangePassword(event) {
   try {
     const userId = getCurrentUserId();
     const response = await fetch(
-      `http://localhost:8080/employee/doi-mat-khau`,
+      `https://healthmate-lc-83d3cba0821e.herokuapp.com/employee/doi-mat-khau`,
       {
         method: "PUT",
         headers: {
@@ -2520,13 +2520,13 @@ async function loadMedicineInfo() {
 
     // Fetch products and inventory data
     const [productsResponse, inventoryResponse] = await Promise.all([
-      fetch("http://localhost:8080/employee/danh-sach-san-pham", {
+      fetch("https://healthmate-lc-83d3cba0821e.herokuapp.com/employee/danh-sach-san-pham", {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
         },
       }),
-      fetch("http://localhost:8080/employee/inventory", {
+      fetch("https://healthmate-lc-83d3cba0821e.herokuapp.com/employee/inventory", {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -2534,7 +2534,7 @@ async function loadMedicineInfo() {
       }),
     ]);
     // const productsResponse=products;
-    // const inventoryResponse = await fetch("http://localhost:8080/employee/inventory", {
+    // const inventoryResponse = await fetch("https://healthmate-lc-83d3cba0821e.herokuapp.com/employee/inventory", {
     //     method: "GET",
     //     headers: {
     //         "Content-Type": "application/json",
@@ -2813,7 +2813,7 @@ async function handleUserProfile() {
   console.log("Đang hiển thị thông tin user...");
   try {
     const response = await fetch(
-      "http://localhost:8080/employee/profile?detail=true",
+      "https://healthmate-lc-83d3cba0821e.herokuapp.com/employee/profile?detail=true",
       {
         method: "GET",
         credentials: "include",
@@ -2862,7 +2862,7 @@ async function handleUserProfile() {
 async function loadSchedules(month = null, year = null) {
   try {
     console.log("Fetching schedules from /employee/schedules...");
-    const response = await fetch("http://localhost:8080/employee/schedules", {
+    const response = await fetch("https://healthmate-lc-83d3cba0821e.herokuapp.com/employee/schedules", {
       method: "GET",
       credentials: "include",
       headers: { Accept: "application/json" },
