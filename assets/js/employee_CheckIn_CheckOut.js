@@ -638,7 +638,7 @@ async function autoInitializeCheckin() {
 async function getCurrentUserIdFromSessionCheckin() {
     try {
         // Thử gọi endpoint mới status-by-shift thay vì endpoint cũ
-        const response = await fetch('http://localhost:8080/employee/timesheet/status-by-shift', {
+        const response = await fetch('https://healthmate-lc-83d3cba0821e.herokuapp.com/employee/timesheet/status-by-shift', {
             method: 'GET',
             credentials: 'include',
             headers: { 'Accept': 'application/json' }
@@ -669,7 +669,7 @@ async function getCurrentUserIdFromSessionCheckin() {
 // Fallback: Sử dụng profile endpoint để xác thực
 async function tryProfileEndpoint() {
     try {
-        const response = await fetch('http://localhost:8080/employee/profile', {
+        const response = await fetch('https://healthmate-lc-83d3cba0821e.herokuapp.com/employee/profile', {
             method: 'GET',
             credentials: 'include',
             headers: { 'Accept': 'application/json' }
@@ -721,7 +721,7 @@ async function loadTimesheetStatusByShift() {
 
     try {
         // Sử dụng endpoint mới để lấy trạng thái theo ca
-        const response = await fetch('http://localhost:8080/employee/timesheet/status-by-shift', {
+        const response = await fetch('https://healthmate-lc-83d3cba0821e.herokuapp.com/employee/timesheet/status-by-shift', {
             method: 'GET',
             credentials: 'include',
             headers: { 'Accept': 'application/json' }
@@ -761,7 +761,7 @@ async function loadTimesheetStatusByShift() {
 // Fallback: Hiển thị lịch làm việc cơ bản từ endpoint schedules
 async function displayFallbackSchedule() {
     try {
-        const response = await fetch('http://localhost:8080/employee/schedules', {
+        const response = await fetch('https://healthmate-lc-83d3cba0821e.herokuapp.com/employee/schedules', {
             method: 'GET',
             credentials: 'include',
             headers: { 'Accept': 'application/json' }
@@ -1058,6 +1058,61 @@ function calculateWorkDurationCheckin(startTime, endTime) {
     }
 }
 
+
+
+
+// Handle check-in for specific shift - CẬP NHẬT VỚI KIỂM TRA THỜI GIAN
+async function handleShiftCheckIn(scheduleId) {
+    console.log('handleShiftCheckIn called with scheduleId:', scheduleId);
+
+    if (!currentUserIdCheckin) {
+        showTimesheetNotificationCheckin('Không thể xác định người dùng. Vui lòng tải lại trang.', 'error');
+        return;
+    }
+
+    // Kiểm tra thời gian trước khi gửi request
+    const currentShift = currentShifts.find(s => s.scheduleId === scheduleId);
+    if (!currentShift || !currentShift.canCheckInNow) {
+        showTimesheetNotificationCheckin('Chưa đến thời gian check-in hoặc đã quá thời gian cho phép', 'error');
+        return;
+    }
+
+    const shiftBtn = document.querySelector(`[data-schedule-id="${scheduleId}"] .shift-checkin-btn`);
+    if (shiftBtn) {
+        shiftBtn.disabled = true;
+        shiftBtn.innerHTML = '<span class="material-icons spinning">refresh</span> Đang xử lý...';
+    }
+
+    try {
+        const response = await fetch('https://healthmate-lc-83d3cba0821e.herokuapp.com/employee/timesheet/check-in-shift', {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ scheduleId: scheduleId })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            showTimesheetNotificationCheckin(data.message || 'Check-in thành công!', 'success');
+            await loadTimesheetStatusByShift(); // Refresh status immediately
+        } else {
+            throw new Error(data.message || 'Lỗi khi check-in');
+        }
+    } catch (error) {
+        console.error('Error during shift check-in:', error);
+        showTimesheetNotificationCheckin(error.message || 'Backend chưa hỗ trợ check-in theo ca', 'error');
+
+        // Reset button state on error
+        if (shiftBtn) {
+            shiftBtn.disabled = false;
+            shiftBtn.innerHTML = '<span class="material-icons">login</span> Check-in';
+        }
+    }
+}
 // Handle check-out for specific shift - CẬP NHẬT VỚI KIỂM TRA THỜI GIAN
 async function handleShiftCheckOut(scheduleId) {
     console.log('handleShiftCheckOut called with scheduleId:', scheduleId);
@@ -1095,7 +1150,7 @@ async function handleShiftCheckOut(scheduleId) {
     }
 
     try {
-        const response = await fetch('http://localhost:8080/employee/timesheet/check-out-shift', {
+        const response = await fetch('https://healthmate-lc-83d3cba0821e.herokuapp.com/employee/timesheet/check-out-shift', {
             method: 'POST',
             credentials: 'include',
             headers: {

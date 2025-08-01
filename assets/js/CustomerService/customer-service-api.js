@@ -4,7 +4,7 @@
  */
 
 // Cấu hình API
-const API_BASE_URL = "http://localhost:8080/customer-service"; // Thay đổi URL này theo cấu hình backend Spring Boot của bạn
+const API_BASE_URL = "https://healthmate-lc-83d3cba0821e.herokuapp.com/customer-service"; // Thay đổi URL này theo cấu hình backend Spring Boot của bạn
 
 // Thời gian cache (ms) - 5 phút
 const CACHE_DURATION = 5 * 60 * 1000;

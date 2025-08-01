@@ -103,7 +103,7 @@ document.addEventListener("DOMContentLoaded", () => {
         comment,
       };
       try {
-        const res = await fetch("http://localhost:8080/survey", {
+        const res = await fetch("https://healthmate-lc-83d3cba0821e.herokuapp.com/survey", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
